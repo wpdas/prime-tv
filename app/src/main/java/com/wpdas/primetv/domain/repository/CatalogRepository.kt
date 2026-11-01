@@ -15,6 +15,7 @@ sealed interface ChannelFilter {
     data object All : ChannelFilter
     data object Football : ChannelFilter
     data class Category(val id: String) : ChannelFilter
+    data class Favorites(val ids: List<String>) : ChannelFilter
 }
 
 data class SearchResults(
@@ -53,6 +54,16 @@ interface CatalogRepository {
     /** Programas no ar agora para os canais do filtro, indexados por [Channel.epgKey]. */
     suspend fun nowPlaying(filter: ChannelFilter, now: Long): Map<String, EpgProgram>
     fun nowNext(channel: Channel, now: Long, upcoming: Int): Flow<NowNext>
+
+    fun moviesByIds(ids: List<String>): Flow<List<Movie>>
+    fun seriesByIds(ids: List<String>): Flow<List<Series>>
+    fun channelsByIds(ids: List<String>): Flow<List<Channel>>
+    suspend fun movieOnce(id: String): Movie?
+    suspend fun seriesOnce(id: String): Series?
+    suspend fun channelOnce(id: String): Channel?
+    suspend fun episodesOnce(seriesId: String): List<Episode>
+    suspend fun episodeOnce(id: String): Episode?
+    suspend fun channelsOnce(filter: ChannelFilter): List<Channel>
 
     /** Busca por prefixo no índice FTS. Deve responder em menos de 100 ms. */
     suspend fun search(query: String, limit: Int): SearchResults

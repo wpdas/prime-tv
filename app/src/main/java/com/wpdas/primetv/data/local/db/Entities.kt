@@ -119,3 +119,26 @@ data class EpgChannelEntity(
     val displayKey: String,
     val iconUrl: String?,
 )
+
+/** Favoritos: filmes, séries e canais. [type]: movie | series | channel. */
+@Entity(tableName = "favorites", indices = [Index("type")])
+data class FavoriteEntity(
+    @PrimaryKey val itemId: String,
+    val type: String,
+    val addedAt: Long,
+)
+
+/**
+ * Histórico de reprodução. [itemId] é o filme, o episódio ou o canal; [seriesId] só
+ * para episódios. Canais guardam posição 0 e servem como "últimos canais".
+ */
+@Entity(tableName = "watch_history", indices = [Index("seriesId"), Index("updatedAt"), Index("type")])
+data class WatchHistoryEntity(
+    @PrimaryKey val itemId: String,
+    val type: String,
+    val seriesId: String?,
+    val positionMs: Long,
+    val durationMs: Long,
+    val updatedAt: Long,
+    val finished: Boolean,
+)

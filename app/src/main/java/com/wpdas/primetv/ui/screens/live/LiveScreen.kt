@@ -42,6 +42,8 @@ import com.wpdas.primetv.ui.components.ChannelRow
 import com.wpdas.primetv.ui.components.LiveBadge
 import com.wpdas.primetv.ui.components.LoadingSpinner
 import com.wpdas.primetv.ui.components.PrimeButton
+import com.wpdas.primetv.ui.components.PrimeButtonStyle
+import com.wpdas.primetv.ui.components.StatusToast
 import com.wpdas.primetv.ui.components.TopBar
 import com.wpdas.primetv.ui.theme.PrimeDimens
 import com.wpdas.primetv.ui.theme.PrimeTheme
@@ -104,7 +106,8 @@ fun LiveScreen(
                                 nowTitle = now?.title,
                                 timeRange = now?.let { timeRange(it) },
                                 progress = now?.progressAt(state.now) ?: 0f,
-                                onClick = { onPlay(channel) },
+                                onClick = { viewModel.stopPreview(); onPlay(channel) },
+                                onLongClick = { viewModel.toggleFavorite(channel) },
                                 onFocused = { viewModel.onChannelFocused(channel) },
                                 modifier = if (channel.id == channels.first().id) Modifier.focusRequester(firstChannelFocus) else Modifier,
                             )
@@ -112,14 +115,33 @@ fun LiveScreen(
                     }
                 }
             }
-            PreviewPanel(state = state, onPlay = onPlay, modifier = Modifier.width(380.dp).fillMaxHeight())
+            PreviewPanel(
+                state = state,
+                onPlay = { viewModel.stopPreview(); onPlay(it) },
+                onToggleFavorite = viewModel::toggleFavorite,
+                playerFactory = viewModel.playerFactory,
+                modifier = Modifier.width(380.dp).fillMaxHeight(),
+            )
         }
+    }
+    Box(Modifier.fillMaxSize()) {
+        StatusToast(
+            text = state.toastKey?.let { t(it) },
+            showSpinner = false,
+            modifier = Modifier.align(Alignment.BottomStart).padding(start = PrimeDimens.screenMargin, bottom = 20.dp),
+        )
     }
 }
 
 /** Prévia do canal em foco: arte, Agora / A seguir e ações. O player pequeno entra na fase 4. */
 @Composable
-private fun PreviewPanel(state: LiveUiState, onPlay: (Channel) -> Unit, modifier: Modifier = Modifier) {
+private fun PreviewPanel(
+    state: LiveUiState,
+    onPlay: (Channel) -> Unit,
+    onToggleFavorite: (Channel) -> Unit,
+    playerFactory: com.wpdas.primetv.data.player.PlayerFactory,
+    modifier: Modifier = Modifier,
+) {
     val colors = PrimeTheme.colors
     val typography = PrimeTheme.typography
     val channel = state.focused
@@ -129,6 +151,7 @@ private fun PreviewPanel(state: LiveUiState, onPlay: (Channel) -> Unit, modifier
                 Box(Modifier.align(Alignment.Center).size(160.dp, 90.dp).clip(PrimeTheme.shapes.card)) {
                     Artwork(channel.logoUrl, colors.surface, Modifier.fillMaxSize(), channel.name, contentScale = androidx.compose.ui.layout.ContentScale.Fit)
                 }
+                LivePreview(url = state.previewUrl, playerFactory = playerFactory, modifier = Modifier.fillMaxSize())
                 LiveBadge(t("common.live"), Modifier.align(Alignment.TopStart).padding(12.dp))
                 Text(
                     channel.name,
@@ -165,8 +188,17 @@ private fun PreviewPanel(state: LiveUiState, onPlay: (Channel) -> Unit, modifier
         }
         Spacer(Modifier.weight(1f))
         if (channel != null) {
+            val isFavorite = channel.id in state.favoriteIds
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 PrimeButton(text = t("live.watch"), onClick = { onPlay(channel) }, height = 44.dp, horizontalPadding = 20.dp, textStyle = typography.buttonMedium)
+                PrimeButton(
+                    text = t(if (isFavorite) "live.unfavorite" else "live.favorite"),
+                    onClick = { onToggleFavorite(channel) },
+                    style = PrimeButtonStyle.Secondary,
+                    height = 44.dp,
+                    horizontalPadding = 16.dp,
+                    textStyle = typography.buttonSmall,
+                )
             }
         }
     }

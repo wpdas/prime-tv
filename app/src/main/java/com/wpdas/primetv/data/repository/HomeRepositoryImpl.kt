@@ -6,20 +6,19 @@ import com.wpdas.primetv.domain.model.ContinueWatchingItem
 import com.wpdas.primetv.domain.model.FootballEvent
 import com.wpdas.primetv.domain.model.HomeTab
 import com.wpdas.primetv.domain.model.MediaItem
+import com.wpdas.primetv.domain.model.MediaType
 import com.wpdas.primetv.domain.model.SyncState
 import com.wpdas.primetv.domain.repository.CatalogRepository
 import com.wpdas.primetv.domain.repository.ChannelFilter
 import com.wpdas.primetv.domain.repository.HomeRepository
+import com.wpdas.primetv.domain.repository.LibraryRepository
 import com.wpdas.primetv.domain.sync.CatalogSync
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -32,9 +31,10 @@ import javax.inject.Singleton
 class HomeRepositoryImpl @Inject constructor(
     private val catalog: CatalogRepository,
     private val catalogSync: CatalogSync,
+    private val library: LibraryRepository,
 ) : HomeRepository {
 
-    private val myList = MutableStateFlow<Set<String>>(emptySet())
+    private val myList: Flow<Set<String>> get() = library.favoriteIds()
 
     override fun featured(): Flow<List<MediaItem>> =
         combine(catalog.recentMovies(FEATURED_MOVIES), catalog.series(null, FEATURED_SERIES), myList) { movies, series, ids ->
@@ -43,7 +43,7 @@ class HomeRepositoryImpl @Inject constructor(
             items.map { it.copy(inMyList = it.id in ids) }
         }
 
-    override fun continueWatching(): Flow<List<ContinueWatchingItem>> = flowOf(emptyList())
+    override fun continueWatching(): Flow<List<ContinueWatchingItem>> = library.continueWatching(CONTINUE_ITEMS)
 
     override fun footballNow(): Flow<List<FootballEvent>> = catalog.footballChannels(FOOTBALL_NOW).map { channels ->
         val now = System.currentTimeMillis()
@@ -70,7 +70,7 @@ class HomeRepositoryImpl @Inject constructor(
             catalog.footballMovies(ROW_ITEMS).map { list -> CategoryRow("football-vod", "Jogos e programas", list.map { it.toMediaItem() }) },
             catalog.footballSeries(ROW_ITEMS).map { list -> CategoryRow("football-series", "Séries de futebol", list.map { it.toMediaItem() }) },
         ) { a, b, c -> listOf(a, b, c).filter { it.items.isNotEmpty() } }
-        HomeTab.MY_LIST -> flowOf(emptyList())
+        HomeTab.MY_LIST -> myListRows()
         HomeTab.LIVE -> flowOf(emptyList())
     }.combine(myList) { rows, ids -> rows.map { row -> row.copy(items = row.items.map { it.copy(inMyList = it.id in ids) }) } }
 
@@ -92,8 +92,29 @@ class HomeRepositoryImpl @Inject constructor(
         status.entries.firstOrNull { it.value is SyncState.Running }?.key?.labelKey
     }
 
+    /** Minha lista: uma linha por tipo, na ordem em que foram favoritados. */
+    private fun myListRows(): Flow<List<CategoryRow>> = library.favoriteIds().flatMapLatest { ids ->
+        if (ids.isEmpty()) return@flatMapLatest flowOf(emptyList())
+        combine(
+            catalog.moviesByIds(ids.filter { it.startsWith("xm-") || it.startsWith("mm-") }),
+            catalog.seriesByIds(ids.filter { it.startsWith("xs-") || it.startsWith("ms-") }),
+            catalog.channelsByIds(ids.filter { it.startsWith("xl-") || it.startsWith("ml-") }),
+        ) { movies, series, channels ->
+            listOf(
+                CategoryRow("mylist-movies", "Filmes", movies.map { it.toMediaItem(true) }),
+                CategoryRow("mylist-series", "Séries", series.map { it.toMediaItem(true) }),
+                CategoryRow("mylist-channels", "Canais", channels.map { it.toMediaItem(true) }),
+            ).filter { it.items.isNotEmpty() }
+        }
+    }
+
     override suspend fun toggleMyList(itemId: String) {
-        myList.update { if (itemId in it) it - itemId else it + itemId }
+        val type = when {
+            itemId.startsWith("xs-") || itemId.startsWith("ms-") -> MediaType.SERIES
+            itemId.startsWith("xl-") || itemId.startsWith("ml-") -> MediaType.CHANNEL
+            else -> MediaType.MOVIE
+        }
+        library.toggleFavorite(itemId, type)
     }
 
     companion object {
@@ -101,6 +122,7 @@ class HomeRepositoryImpl @Inject constructor(
         private const val FEATURED_SERIES = 2
         private const val FOOTBALL_NOW = 10
         private const val ROW_ITEMS = 24
+        private const val CONTINUE_ITEMS = 12
         /** Id virtual usado pela grade para listar só canais de futebol. */
         const val FOOTBALL_CATEGORY = "football"
     }

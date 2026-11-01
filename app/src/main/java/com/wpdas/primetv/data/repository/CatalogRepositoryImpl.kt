@@ -54,10 +54,11 @@ class CatalogRepositoryImpl @Inject constructor(
     }.map { list -> list.map { CategoryCount(it.key, it.count) } }
 
     override fun channels(filter: ChannelFilter): Flow<List<Channel>> = when (filter) {
-        ChannelFilter.All -> dao.observeChannels(null)
-        ChannelFilter.Football -> dao.observeFootballChannelsAll()
-        is ChannelFilter.Category -> dao.observeChannels(filter.id)
-    }.map { list -> list.map { it.toDomain() } }
+        ChannelFilter.All -> dao.observeChannels(null).map { list -> list.map { it.toDomain() } }
+        ChannelFilter.Football -> dao.observeFootballChannelsAll().map { list -> list.map { it.toDomain() } }
+        is ChannelFilter.Category -> dao.observeChannels(filter.id).map { list -> list.map { it.toDomain() } }
+        is ChannelFilter.Favorites -> channelsByIds(filter.ids)
+    }
 
     override fun channel(id: String): Flow<Channel?> = dao.observeChannel(id).map { it?.toDomain() }
     override fun footballChannels(limit: Int): Flow<List<Channel>> = dao.observeFootballChannels(limit).map { l -> l.map { it.toDomain() } }
@@ -108,6 +109,7 @@ class CatalogRepositoryImpl @Inject constructor(
             ChannelFilter.All -> epg.nowPlaying(null, now)
             ChannelFilter.Football -> epg.nowPlayingFootball(now)
             is ChannelFilter.Category -> epg.nowPlaying(filter.id, now)
+            is ChannelFilter.Favorites -> epg.nowPlaying(null, now)
         }
         // Guias com sobreposição: fica o programa que começou por último.
         val best = HashMap<String, EpgProgram>()
@@ -125,6 +127,26 @@ class CatalogRepositoryImpl @Inject constructor(
             val current = programs.filter { it.start <= now && it.end > now }.maxByOrNull { it.start }
             NowNext(current, programs.filter { it.start > now }.sortedBy { it.start }.take(upcoming))
         }
+    }
+
+    override fun moviesByIds(ids: List<String>): Flow<List<Movie>> =
+        if (ids.isEmpty()) flowOf(emptyList()) else dao.observeMoviesByIds(ids).map { l -> l.map { it.toDomain() }.sortedBy { ids.indexOf(it.id) } }
+    override fun seriesByIds(ids: List<String>): Flow<List<Series>> =
+        if (ids.isEmpty()) flowOf(emptyList()) else dao.observeSeriesByIds(ids).map { l -> l.map { it.toDomain() }.sortedBy { ids.indexOf(it.id) } }
+    override fun channelsByIds(ids: List<String>): Flow<List<Channel>> =
+        if (ids.isEmpty()) flowOf(emptyList()) else dao.observeChannelsByIds(ids).map { l -> l.map { it.toDomain() }.sortedBy { ids.indexOf(it.id) } }
+    override suspend fun movieOnce(id: String): Movie? = withContext(io) { dao.movieById(id)?.toDomain() }
+    override suspend fun seriesOnce(id: String): Series? = withContext(io) { dao.seriesById(id)?.toDomain() }
+    override suspend fun channelOnce(id: String): Channel? = withContext(io) { dao.channelById(id)?.toDomain() }
+    override suspend fun episodesOnce(seriesId: String): List<Episode> = withContext(io) { dao.episodesOf(seriesId).map { it.toDomain() } }
+    override suspend fun episodeOnce(id: String): Episode? = withContext(io) { dao.episodeById(id)?.toDomain() }
+    override suspend fun channelsOnce(filter: ChannelFilter): List<Channel> = withContext(io) {
+        when (filter) {
+            ChannelFilter.All -> dao.channelsList(null)
+            ChannelFilter.Football -> dao.footballChannelsList()
+            is ChannelFilter.Category -> dao.channelsList(filter.id)
+            is ChannelFilter.Favorites -> dao.channelsByIds(filter.ids).sortedBy { filter.ids.indexOf(it.id) }
+        }.map { it.toDomain() }
     }
 
     override suspend fun search(query: String, limit: Int): SearchResults = withContext(io) {

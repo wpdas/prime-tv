@@ -67,6 +67,13 @@ fun DetailsScreen(
     val typography = PrimeTheme.typography
     val watchFocus = remember { FocusRequester() }
     LaunchedEffect(state.item?.id) { if (state.item != null) runCatching { watchFocus.requestFocus() } }
+    // Ao voltar do player, o progresso do filme pode ter mudado.
+    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event -> if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) viewModel.refreshProgress() }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     val item = state.item
     if (!state.loaded) {
@@ -107,13 +114,21 @@ fun DetailsScreen(
             Text(item.title, style = typography.screenTitle, color = colors.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
             item.synopsis?.let { Text(it, style = typography.body, color = colors.textBody, maxLines = 5, overflow = TextOverflow.Ellipsis) }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(top = 4.dp)) {
-                val first = state.firstEpisode
-                val watchLabel = if (state.isSeries && first != null) t("common.watch_episode", "episode" to "T${first.season}:E${first.number}") else t("common.watch")
+                val resume = state.resumeEpisode
+                val movieProgress = state.movieProgress
+                val watchLabel = when {
+                    state.isSeries && resume != null -> {
+                        val label = "T${resume.season}:E${resume.number}"
+                        if (state.resumeIsContinue) t("common.continue_episode", "episode" to label) else t("common.watch_episode", "episode" to label)
+                    }
+                    movieProgress != null && !movieProgress.finished && movieProgress.positionMs > 0 -> t("common.continue")
+                    else -> t("common.watch")
+                }
                 PrimeButton(
                     text = watchLabel,
-                    onClick = { onPlay(item.id, first) },
+                    onClick = { onPlay(item.id, resume) },
                     icon = Icons.Rounded.PlayArrow,
-                    enabled = !state.isSeries || first != null,
+                    enabled = !state.isSeries || resume != null,
                     modifier = Modifier.focusRequester(watchFocus),
                 )
                 PrimeButton(
@@ -167,7 +182,14 @@ private fun SeriesEpisodes(state: DetailsUiState, onSelectSeason: (Int) -> Unit,
             }
             LazyColumn(Modifier.fillMaxSize().focusRestorer().focusGroup(), verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(4.dp)) {
                 items(state.seasonEpisodes, key = { it.id }) { episode ->
-                    EpisodeRow(episode = episode, onClick = { onPlay(episode) }, placeholderColor = placeholder)
+                    val p = state.progress[episode.id]
+                    EpisodeRow(
+                        episode = episode,
+                        onClick = { onPlay(episode) },
+                        placeholderColor = placeholder,
+                        progress = p?.takeUnless { it.finished }?.fraction ?: 0f,
+                        stateLabel = if (p?.finished == true) t("details.watched") else null,
+                    )
                 }
             }
         }

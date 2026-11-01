@@ -9,7 +9,8 @@ import kotlinx.serialization.Serializable
 @Serializable data object LiveRoute
 /** Grade completa de uma categoria. [categoryId] null = todos; "football" = só futebol. */
 @Serializable data class CategoryRoute(val section: String, val categoryId: String?, val title: String)
-@Serializable data class PlayerRoute(val itemId: String, val episodeLabel: String? = null)
+/** [itemId]: filme, série ou canal. [episodeId] escolhe o episódio; sem ele, a série retoma de onde parou. */
+@Serializable data class PlayerRoute(val itemId: String, val episodeId: String? = null)
 @Serializable data object AppMenuRoute
 @Serializable data object SettingsRoute
 @Serializable data object SetupRoute

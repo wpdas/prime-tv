@@ -1,6 +1,6 @@
 package com.wpdas.primetv.domain.model
 
-enum class MediaType { MOVIE, SERIES, CHANNEL }
+enum class MediaType(val key: String) { MOVIE("movie"), SERIES("series"), CHANNEL("channel") }
 
 /** Item de catálogo exibido em cards, destaque e detalhes. */
 data class MediaItem(
@@ -28,6 +28,7 @@ data class ContinueWatchingItem(
     val episodeLabel: String?,      // "T1:E4" ou null para filme
     val remainingMinutes: Int,
     val progress: Float,
+    val episodeId: String? = null,
 )
 
 /** Evento de futebol ao vivo (canal + partida). */

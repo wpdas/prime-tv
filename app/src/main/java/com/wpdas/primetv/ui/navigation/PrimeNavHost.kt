@@ -5,7 +5,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
 import com.wpdas.primetv.domain.model.HomeTab
 import com.wpdas.primetv.domain.model.MediaItem
 import com.wpdas.primetv.domain.model.MediaType
@@ -14,6 +13,7 @@ import com.wpdas.primetv.ui.screens.details.DetailsScreen
 import com.wpdas.primetv.ui.screens.home.HomeScreen
 import com.wpdas.primetv.ui.screens.live.LiveScreen
 import com.wpdas.primetv.ui.screens.placeholder.PlaceholderScreen
+import com.wpdas.primetv.ui.screens.player.PlayerScreen
 import com.wpdas.primetv.ui.screens.search.SearchScreen
 import com.wpdas.primetv.ui.screens.setup.SetupScreen
 
@@ -60,17 +60,14 @@ fun PrimeNavHost(
         composable<DetailsRoute> {
             DetailsScreen(
                 onBack = navController::popBackStack,
-                onPlay = { id, episode -> navController.navigate(PlayerRoute(id, episode?.let { "T${it.season}:E${it.number}" })) },
+                onPlay = { id, episode -> navController.navigate(PlayerRoute(id, episode?.id)) },
                 onOpenItem = ::openItem,
             )
         }
         composable<SearchRoute> {
             SearchScreen(onBack = navController::popBackStack, onOpenItem = ::openItem)
         }
-        composable<PlayerRoute> {
-            val route = it.toRoute<PlayerRoute>()
-            PlaceholderScreen("screen.player", phase = 4, subtitle = listOfNotNull(route.itemId, route.episodeLabel).joinToString(" · "), onBack = navController::popBackStack)
-        }
+        composable<PlayerRoute> { PlayerScreen(onBack = navController::popBackStack) }
         composable<AppMenuRoute> { PlaceholderScreen("screen.app_menu", phase = 7, onBack = navController::popBackStack) }
         composable<SettingsRoute> { PlaceholderScreen("screen.settings", phase = 6, onBack = navController::popBackStack) }
         composable<SetupRoute> {

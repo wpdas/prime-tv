@@ -62,7 +62,7 @@ fun HomeScreen(
         onTopBarFocused = viewModel::onTopBarFocused,
         onCardFocused = viewModel::onCardFocused,
         onWatch = { onPlay(it.id, null) },
-        onContinue = { onPlay(it.item.id, it.episodeLabel) },
+        onContinue = { onPlay(it.item.id, it.episodeId) },
         onMoreInfo = { if (it.type == MediaType.CHANNEL) onPlay(it.id, null) else onOpenDetails(it.id) },
         onSeeAll = onSeeAll,
         onToggleMyList = viewModel::toggleMyList,

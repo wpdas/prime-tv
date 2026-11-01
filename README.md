@@ -11,9 +11,11 @@ App Android de IPTV com interface no estilo Netflix, feito para **TV Box com And
 - Ao vivo com categorias, guia de programação (XMLTV) com programa atual, progresso e "A seguir"
 - Detalhes de filmes e séries, com temporadas e episódios carregados sob demanda
 - Busca com teclado para controle remoto, voz (quando houver) e sugestões instantâneas
+- Player (HLS, MPEG-TS, MP4/MKV) com ±10 s, áudio e legendas, próximo episódio automático, troca de canal com cima/baixo e prévia sem áudio na tela Ao vivo
+- Histórico com "Continuar assistindo" e favoritos (Minha lista, categoria Favoritos em Ao vivo, segurar OK no canal)
 - Tudo navegável só com o D-pad, foco visível e interface escalada para qualquer resolução
 
-Ainda por vir: player, histórico e favoritos, recomendações do TMDB, configurações, atualização automática e releases assinadas.
+Ainda por vir: recomendações do TMDB, configurações, atualização automática em segundo plano, controle parental e releases assinadas.
 
 ## Telas
 
@@ -36,6 +38,10 @@ Ainda por vir: player, histórico e favoritos, recomendações do TMDB, configur
 | Busca | Categoria completa |
 |---|---|
 | ![Busca](docs/screenshots/08-busca.jpg) | ![Categoria](docs/screenshots/10-categoria.jpg) |
+
+| Player ao vivo | Player com episódios |
+|---|---|
+| ![Player ao vivo](docs/screenshots/11-player-ao-vivo.jpg) | ![Player com episódios](docs/screenshots/12-player-episodios.jpg) |
 
 ## Requisitos para compilar
 

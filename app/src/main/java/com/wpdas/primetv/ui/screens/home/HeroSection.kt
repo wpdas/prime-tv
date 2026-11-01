@@ -36,6 +36,7 @@ import androidx.tv.material3.Text
 import com.wpdas.primetv.core.i18n.t
 import com.wpdas.primetv.domain.model.MediaItem
 import com.wpdas.primetv.domain.model.MediaType
+
 import com.wpdas.primetv.ui.components.BackdropArtwork
 import com.wpdas.primetv.ui.components.PrimeButton
 import com.wpdas.primetv.ui.components.PrimeButtonStyle
@@ -98,9 +99,9 @@ fun HeroSection(
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(top = 10.dp)) {
-                val watchLabel = if (item.type == MediaType.SERIES) t("common.watch_episode", "episode" to "T1:E1") else t("common.watch")
+                // Séries retomam de onde pararam (o player decide o episódio), por isso o rótulo é genérico.
                 PrimeButton(
-                    text = watchLabel,
+                    text = t("common.watch"),
                     onClick = { onWatch(item) },
                     icon = Icons.Rounded.PlayArrow,
                     modifier = if (watchFocusRequester != null) Modifier.focusRequester(watchFocusRequester) else Modifier,

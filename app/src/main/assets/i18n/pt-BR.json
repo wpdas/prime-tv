@@ -124,5 +124,20 @@
   "search.hint": "Sugestões vêm do conteúdo já baixado da sua lista. O teclado de voz do controle também funciona aqui.",
   "search.results": "Resultados",
   "search.empty": "Nada encontrado para “{q}” na sua lista. Tente outro termo.",
-  "search.start": "Digite para buscar na sua lista."
+  "search.start": "Digite para buscar na sua lista.",
+  "common.continue": "Continuar",
+  "player.audio": "Áudio",
+  "player.subtitles": "Legendas",
+  "player.subtitles_off": "Desligadas",
+  "player.episodes": "Episódios",
+  "player.episodes_title": "Episódios · Temporada {n}",
+  "player.next_episode": "Próximo episódio",
+  "player.next_in": "Próximo episódio em {n} s",
+  "player.now_playing": "Assistindo",
+  "player.live_hint": "Cima e baixo trocam de canal",
+  "player.error": "Não foi possível reproduzir este título ({detail}).",
+  "player.error_live": "O canal não respondeu ({detail}). Tente de novo ou mude de canal.",
+  "favorites.added": "Adicionado aos favoritos",
+  "favorites.removed": "Removido dos favoritos",
+  "live.unfavorite": "Remover dos favoritos"
 }

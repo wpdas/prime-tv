@@ -14,14 +14,17 @@ import androidx.room.RoomDatabase
         SyncStateEntity::class,
         EpgProgramEntity::class,
         EpgChannelEntity::class,
+        FavoriteEntity::class,
+        WatchHistoryEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class PrimeDatabase : RoomDatabase() {
     abstract fun catalogDao(): CatalogDao
     abstract fun syncStateDao(): SyncStateDao
     abstract fun epgDao(): EpgDao
+    abstract fun libraryDao(): LibraryDao
 
     companion object {
         const val NAME = "primetv.db"
