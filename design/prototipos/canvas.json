@@ -1,0 +1,115 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-01T19:15:00Z"
+ },
+ "title": "PrimeTV — Design do app",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1280,
+   "h": 720,
+   "title": "01 · Início (Home)"
+  },
+  "Detalhes.dc.html": {
+   "x": 1360,
+   "y": 0,
+   "w": 1280,
+   "h": 720,
+   "title": "02 · Detalhes da série"
+  },
+  "AoVivo.dc.html": {
+   "x": 2720,
+   "y": 0,
+   "w": 1280,
+   "h": 720,
+   "title": "03 · Ao vivo + EPG"
+  },
+  "Busca.dc.html": {
+   "x": 4080,
+   "y": 0,
+   "w": 1280,
+   "h": 720,
+   "title": "04 · Busca com autocomplete",
+   "is_interactive": true
+  },
+  "Player.dc.html": {
+   "x": 0,
+   "y": 1100,
+   "w": 1280,
+   "h": 720,
+   "title": "05 · Player"
+  },
+  "MenuApp.dc.html": {
+   "x": 1360,
+   "y": 1100,
+   "w": 1280,
+   "h": 720,
+   "title": "06 · Menu do app + atualização",
+   "is_interactive": true
+  },
+  "Configuracoes.dc.html": {
+   "x": 2720,
+   "y": 1100,
+   "w": 1280,
+   "h": 720,
+   "title": "07 · Configurações",
+   "is_interactive": true
+  },
+  "Setup.dc.html": {
+   "x": 4080,
+   "y": 1100,
+   "w": 1280,
+   "h": 720,
+   "title": "08 · Configuração inicial"
+  },
+  "ReceberLink.dc.html": {
+   "x": 5440,
+   "y": 1100,
+   "w": 1280,
+   "h": 720,
+   "title": "09 · Receber link pelo celular"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Detalhes.dc.html",
+  "AoVivo.dc.html",
+  "Busca.dc.html",
+  "Player.dc.html",
+  "MenuApp.dc.html",
+  "Configuracoes.dc.html",
+  "Setup.dc.html",
+  "ReceberLink.dc.html"
+ ],
+ "notes": {
+  "t1": {
+   "x": 0,
+   "y": -300,
+   "text": "Navegação e conteúdo",
+   "kind": "title1",
+   "maxW": 5360
+  },
+  "t2": {
+   "x": 0,
+   "y": 800,
+   "text": "Player, sistema e configuração",
+   "kind": "title1",
+   "maxW": 6720
+  },
+  "tokens": {
+   "x": -620,
+   "y": 0,
+   "w": 460,
+   "fill": "purple",
+   "text": "Tokens PrimeTV\n\nFundo #0B0B0F\nSuperfície #16161C\nSuperfície 2 #22222A\nTexto #F2F2F2\nTexto secundário #A1A1AD\nAcento #8B5CF6\nAcento hover #7340E8\nFoco: anel 3px #8B5CF6 + escala 1.06\n\nFonte: Inter (500/600/700)\nTela base 1280×720 (escala para 1920×1080)\nMargem lateral 48px, raio 8px\n\nNavegação 100% por D-pad: todo item focável tem anel violeta visível."
+  }
+ },
+ "designSystems": []
+}

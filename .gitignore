@@ -1,0 +1,24 @@
+# Segredos e configuração local
+local.properties
+keystore.properties
+*.jks
+*.keystore
+
+# Gradle / Android Studio
+.gradle/
+build/
+*/build/
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+
+# Sistema
+.DS_Store
+
+# Kotlin 2.x / saídas locais
+.kotlin/
+app/release/

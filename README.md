@@ -1,0 +1,62 @@
+# PrimeTV
+
+App Android de IPTV com interface no estilo Netflix, feito para **TV Box com Android 11 comum** (não precisa ser Android TV) e uso com controle remoto. Suporta listas **M3U** e **Xtream Codes**, EPG, busca, recomendações (TMDB), aba de futebol e atualização automática pelo GitHub Releases.
+
+> Em desenvolvimento. Veja `docs/roadmap.md` e `docs/prompt-claude-code.md`.
+
+## Requisitos para compilar
+
+- JDK 17
+- Android SDK com `platforms;android-37` e `build-tools;36.0.0` (o Android Studio instala)
+- `local.properties` com `sdk.dir` e, opcionalmente, `TMDB_API_KEY=...` (sem a chave, o destaque usa itens da própria lista)
+
+```bash
+make build          # APK debug em app/build/outputs/apk/debug/
+make test           # testes unitários
+make install        # instala no aparelho/emulador conectado via adb
+make help           # todos os atalhos
+```
+
+## Instalar na TV Box
+
+O APK universal (`armeabi-v7a` + `arm64-v8a`) é publicado em cada release do GitHub.
+
+- **Pendrive:** copie o `.apk` para um pendrive, abra o gerenciador de arquivos da box e toque no arquivo. Se pedir, autorize "Instalar apps desconhecidos" para o gerenciador.
+- **Downloader / navegador:** baixe o `.apk` pelo link da release e abra o arquivo baixado.
+- **adb:** com depuração USB/rede ativa na box:
+  ```bash
+  adb connect <ip-da-box>:5555
+  adb install -r primetv-vX.Y.Z.apk
+  ```
+
+Depois da primeira instalação, o próprio app avisa quando há versão nova e faz a atualização.
+
+## Assinatura (release)
+
+O APK release é assinado com um keystore próprio, fora do repositório. **Todas as versões precisam da mesma chave**, senão o Android recusa a atualização por cima da anterior.
+
+Gerar o keystore uma única vez:
+
+```bash
+keytool -genkeypair -v -keystore primetv.jks -alias primetv \
+  -keyalg RSA -keysize 2048 -validity 10000
+```
+
+Criar `keystore.properties` na raiz (já ignorado pelo git):
+
+```properties
+storeFile=../primetv.jks
+storePassword=...
+keyAlias=primetv
+keyPassword=...
+```
+
+No CI, o keystore entra em base64 por secret (detalhes em `.github/workflows/release.yml`, fase 7).
+
+## Versionamento
+
+`versionName` e `versionCode` são derivados da tag git `vX.Y.Z`. Criar a tag e dar push dispara a release com o APK.
+
+## Créditos
+
+Este produto usa a API do TMDB, mas não é endossado ou certificado pelo TMDB.

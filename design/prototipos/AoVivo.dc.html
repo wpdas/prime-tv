@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>PrimeTV · Ao vivo</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#C4B5FD}a:hover{color:#DDD6FE}
+</style>
+</helmet>
+<div style="width: 1280px; height: 720px; box-sizing: border-box; background: #0B0B0F; color: #F2F2F2; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column">
+
+<header style="height: 72px; flex-shrink: 0; display: flex; align-items: center; gap: 32px; padding: 0 48px; box-sizing: border-box">
+<a href="MenuApp.dc.html" aria-label="Menu do PrimeTV" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: #F2F2F2">
+<span style="width: 36px; height: 36px; border-radius: 8px; background: #8B5CF6; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px; color: #FFFFFF">P</span>
+<span style="font-weight: 700; font-size: 20px; letter-spacing: -0.3px">Prime<span style="color: #8B5CF6">TV</span></span>
+</a>
+<nav aria-label="Seções" style="display: flex; align-items: center; gap: 6px">
+<a href="Busca.dc.html" aria-label="Buscar" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #A1A1AD">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></a>
+<a href="Main.dc.html" style="height: 44px; padding: 0 14px; display: flex; align-items: center; font-size: 17px; color: #A1A1AD; text-decoration: none">Início</a>
+<a href="AoVivo.dc.html" style="height: 44px; padding: 0 14px; display: flex; align-items: center; font-size: 17px; font-weight: 600; color: #F2F2F2; text-decoration: none; box-shadow: inset 0 -3px 0 #8B5CF6">Ao vivo</a>
+<a href="Main.dc.html" style="height: 44px; padding: 0 14px; display: flex; align-items: center; font-size: 17px; color: #A1A1AD; text-decoration: none">Filmes</a>
+<a href="Detalhes.dc.html" style="height: 44px; padding: 0 14px; display: flex; align-items: center; font-size: 17px; color: #A1A1AD; text-decoration: none">Séries</a>
+<a href="AoVivo.dc.html" style="height: 44px; padding: 0 14px; display: flex; align-items: center; font-size: 17px; color: #A1A1AD; text-decoration: none">Futebol</a>
+<a href="Main.dc.html" style="height: 44px; padding: 0 14px; display: flex; align-items: center; font-size: 17px; color: #A1A1AD; text-decoration: none">Minha lista</a>
+</nav>
+<span style="margin-left: auto; color: #A1A1AD; font-size: 16px">16:08</span>
+</header>
+
+<div style="flex: 1; min-height: 0; display: flex; gap: 20px; padding: 8px 48px 32px">
+
+<nav aria-label="Categorias de canais" style="width: 200px; flex-shrink: 0; display: flex; flex-direction: column; gap: 4px">
+<sc-for list="{{cats}}" as="c" hint-placeholder-count="8">
+<a href="AoVivo.dc.html" style="{{c.style}}"><span>{{c.label}}</span><span style="font-size: 13px; color: #A1A1AD">{{c.n}}</span></a>
+</sc-for>
+</nav>
+
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+<sc-for list="{{chs}}" as="ch" hint-placeholder-count="7">
+<div style="{{ch.style}}">
+<span style="width: 34px; font-size: 14px; color: #A1A1AD; text-align: right">{{ch.num}}</span>
+<span style="width: 56px; height: 36px; border-radius: 6px; background: #22222A; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #D4D4DC">{{ch.logo}}</span>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px">
+<div style="display: flex; justify-content: space-between; gap: 12px">
+<span style="font-size: 15px; font-weight: 600">{{ch.name}}</span>
+<span style="font-size: 13px; color: #A1A1AD">{{ch.time}}</span>
+</div>
+<span style="font-size: 14px; color: #D4D4DC; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ch.now}}</span>
+<span style="height: 3px; background: #2A2A33; border-radius: 2px; position: relative"><span style="position: absolute; left: 0; top: 0; bottom: 0; width: {{ch.pct}}; background: #8B5CF6; border-radius: 2px"></span></span>
+</div>
+</div>
+</sc-for>
+</div>
+
+<aside aria-label="Prévia do canal" style="width: 380px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px">
+<div role="img" aria-label="Prévia ao vivo do canal em foco" style="height: 214px; border-radius: 10px; background: #14261C; position: relative; overflow: hidden">
+<div style="position: absolute; left: 0; right: 0; top: 96px; height: 2px; background: #2C4A37"></div>
+<div style="position: absolute; left: 160px; top: 66px; width: 60px; height: 60px; border-radius: 50%; border: 2px solid #2C4A37"></div>
+<span style="position: absolute; left: 12px; top: 12px; font-size: 11px; font-weight: 700; color: #FFFFFF; background: #C2263B; padding: 3px 7px; border-radius: 4px">AO VIVO</span>
+<span style="position: absolute; right: 12px; bottom: 10px; font-size: 13px; font-weight: 600; background: #0B0B0F; padding: 4px 8px; border-radius: 4px">FLA 1 × 0 PAL · 34'</span>
+</div>
+<div>
+<span style="font-size: 13px; color: #A1A1AD">Agora · 16:00 – 18:00</span>
+<h2 style="margin: 4px 0 6px; font-size: 20px; font-weight: 700">Flamengo × Palmeiras</h2>
+<p style="margin: 0; font-size: 14px; line-height: 1.5; color: #D4D4DC">Brasileirão Série A, 33ª rodada. Transmissão ao vivo do Maracanã.</p>
+</div>
+<div style="border-top: 1px solid #22222A; padding-top: 12px; display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 13px; color: #A1A1AD">A seguir</span>
+<div style="display: flex; gap: 12px; font-size: 14px"><span style="color: #A1A1AD; width: 44px">18:00</span><span>Pós-jogo Premiere</span></div>
+<div style="display: flex; gap: 12px; font-size: 14px"><span style="color: #A1A1AD; width: 44px">19:00</span><span>Seleção Premiere</span></div>
+</div>
+<div style="display: flex; gap: 10px; margin-top: auto">
+<a href="Player.dc.html" style="height: 44px; padding: 0 20px; display: flex; align-items: center; border-radius: 8px; background: #8B5CF6; color: #FFFFFF; font-weight: 600; font-size: 17px; text-decoration: none">Assistir</a>
+<button style="height: 44px; padding: 0 16px; border-radius: 8px; border: 0; background: #2A2A33; color: #F2F2F2; font-family: inherit; font-size: 15px">Favoritar canal</button>
+</div>
+</aside>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":720}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const base = 'height: 44px; padding: 0 14px; display: flex; align-items: center; justify-content: space-between; border-radius: 8px; font-size: 16px; text-decoration: none; ';
+    const cats = [['Favoritos', 12], ['Futebol', 48, true], ['Esportes', 96], ['Abertos', 22], ['Notícias', 18], ['Filmes 24h', 64], ['Infantil', 31], ['Todos', 1240]]
+      .map(([label, n, on]) => ({ label, n, style: base + (on ? 'background: #1E1A2E; color: #F2F2F2; font-weight: 600; box-shadow: inset 3px 0 0 #8B5CF6' : 'color: #D4D4DC') }));
+    const chs = [
+      ['101', 'PRE 1', 'Premiere 1 HD', 'Flamengo × Palmeiras', '16:00', '45%', true],
+      ['102', 'PRE 2', 'Premiere 2 HD', 'Grêmio × Internacional', '16:00', '42%'],
+      ['110', 'ESPN', 'ESPN 2 HD', 'LaLiga: Real Madrid × Barcelona', '15:30', '70%'],
+      ['115', 'STV', 'SporTV HD', 'Seleção SporTV', '15:00', '85%'],
+      ['120', 'TNT', 'TNT Sports HD', 'Premier League: Liverpool × Arsenal', '16:30', '10%'],
+      ['130', 'BAND', 'Band Sports', 'Jogo Aberto', '15:45', '55%'],
+      ['131', 'CAZ', 'CazéTV', 'Santos × Bahia', '16:00', '40%']
+    ].map(([num, logo, name, now, time, pct, focus]) => ({ num, logo, name, now, time, pct,
+      style: 'height: 64px; flex-shrink: 0; display: flex; align-items: center; gap: 14px; padding: 0 14px; border-radius: 8px; box-sizing: border-box; ' + (focus ? 'background: #1E1A2E; outline: 3px solid #8B5CF6' : 'background: #131318') }));
+    return { cats, chs };
+  }
+}
+</script>
+</body>
+</html>

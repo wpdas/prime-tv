@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>PrimeTV · Busca</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#C4B5FD}a:hover{color:#DDD6FE}
+</style>
+</helmet>
+<div style="width: 1280px; height: 720px; box-sizing: border-box; background: #0B0B0F; color: #F2F2F2; font-family: Inter, system-ui, sans-serif; display: flex; gap: 40px; padding: 36px 48px">
+
+<div style="width: 380px; flex-shrink: 0; display: flex; flex-direction: column; gap: 16px">
+<a href="Main.dc.html" style="display: flex; align-items: center; gap: 8px; color: #A1A1AD; font-size: 15px; text-decoration: none; height: 32px">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>Voltar</a>
+<label for="busca" style="font-size: 13px; color: #A1A1AD">Buscar em filmes, séries e canais</label>
+<div style="position: relative">
+<input id="busca" value="{{q}}" readonly="readonly" placeholder="Digite um título" style="width: 100%; box-sizing: border-box; height: 52px; border-radius: 8px; border: 0; outline: 3px solid #8B5CF6; background: #1E1A2E; color: #F2F2F2; font-family: inherit; font-size: 20px; padding: 0 16px 0 46px">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A1A1AD" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="position: absolute; left: 16px; top: 16px"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+</div>
+<div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px">
+<sc-for list="{{keys}}" as="k" hint-placeholder-count="36">
+<button onClick="{{k.press}}" style="height: 40px; border-radius: 6px; border: 0; background: #1A1A21; color: #F2F2F2; font-family: inherit; font-size: 16px; font-weight: 500">{{k.label}}</button>
+</sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+<button onClick="{{space}}" style="height: 44px; border-radius: 6px; border: 0; background: #22222A; color: #F2F2F2; font-family: inherit; font-size: 15px">Espaço</button>
+<button onClick="{{back}}" style="height: 44px; border-radius: 6px; border: 0; background: #22222A; color: #F2F2F2; font-family: inherit; font-size: 15px">Apagar</button>
+<button onClick="{{clear}}" style="height: 44px; border-radius: 6px; border: 0; background: #22222A; color: #F2F2F2; font-family: inherit; font-size: 15px">Limpar</button>
+</div>
+<p style="margin: 0; font-size: 13px; line-height: 1.5; color: #A1A1AD">Sugestões vêm do conteúdo já baixado da sua lista. O teclado de voz do controle também funciona aqui.</p>
+</div>
+
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 18px; padding-top: 48px">
+<sc-if value="{{hasSugs}}" hint-placeholder-val="{{ true }}">
+<div style="background: #16161C; border-radius: 10px; padding: 8px; display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{sugs}}" as="s" hint-placeholder-count="5">
+<div style="{{s.style}}">
+<span style="font-size: 17px"><span style="color: #A1A1AD">{{s.pre}}</span><span style="font-weight: 700; color: #F2F2F2">{{s.mid}}</span><span style="color: #A1A1AD">{{s.post}}</span></span>
+<span style="font-size: 12px; font-weight: 600; color: #DDD6FE; background: #2E2350; padding: 4px 8px; border-radius: 4px">{{s.type}}</span>
+</div>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{noSugs}}" hint-placeholder-val="{{ false }}">
+<p style="margin: 0; font-size: 17px; color: #A1A1AD">Nada encontrado para “{{q}}” na sua lista. Tente outro termo.</p>
+</sc-if>
+<h2 style="margin: 0; font-size: 18px; font-weight: 600">Resultados <span style="color: #A1A1AD; font-weight: 500">· {{count}}</span></h2>
+<div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px">
+<sc-for list="{{res}}" as="r" hint-placeholder-count="5">
+<div style="border-radius: 8px; overflow: hidden; background: {{r.bg}}; height: 200px; display: flex; flex-direction: column; justify-content: flex-end; padding: 10px; box-sizing: border-box; gap: 2px">
+<span style="font-size: 14px; font-weight: 600">{{r.name}}</span>
+<span style="font-size: 12px; color: #D4D4DC">{{r.type}}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":720}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { q: 'far' }; }
+  renderVals() {
+    const q = this.state.q;
+    const norm = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    const cat = [
+      ['O Último Farol', 'Série', '#2B2440'], ['Farol do Norte', 'Filme', '#1F2E3A'], ['Faroeste Caboclo', 'Filme', '#3A2A24'],
+      ['Farofa e Cia', 'Série', '#24332A'], ['Fargo', 'Série', '#33243A'], ['Rede Farol TV', 'Canal', '#2A2A36'],
+      ['Rota 116', 'Filme', '#1F2E3A'], ['Casa de Vidro', 'Série', '#3A2A24'], ['Sertão Profundo', 'Série', '#24332A'],
+      ['Noite em Lisboa', 'Filme', '#33243A'], ['Premiere 1 HD', 'Canal', '#14261C'], ['Maré Alta', 'Filme', '#2B2440']
+    ];
+    const nq = norm(q.trim());
+    const hits = nq ? cat.filter(([n]) => norm(n).includes(nq)) : [];
+    const sugs = hits.slice(0, 5).map(([n, type], i) => {
+      const at = norm(n).indexOf(nq);
+      return { pre: n.slice(0, at), mid: n.slice(at, at + nq.length), post: n.slice(at + nq.length), type,
+        style: 'height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; border-radius: 6px;' + (i === 0 ? ' background: #22222A' : '') };
+    });
+    const res = hits.slice(0, 5).map(([name, type, bg]) => ({ name, type, bg }));
+    const keys = 'abcdefghijklmnopqrstuvwxyz0123456789'.split('').map((k) => ({ label: k, press: () => this.setState({ q: this.state.q + k }) }));
+    return {
+      q, keys, sugs, res, count: hits.length, hasSugs: hits.length > 0, noSugs: nq.length > 0 && hits.length === 0,
+      space: () => this.setState({ q: this.state.q + ' ' }),
+      back: () => this.setState({ q: this.state.q.slice(0, -1) }),
+      clear: () => this.setState({ q: '' })
+    };
+  }
+}
+</script>
+</body>
+</html>

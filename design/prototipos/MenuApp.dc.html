@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>PrimeTV · Menu do app e atualização</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#C4B5FD}a:hover{color:#DDD6FE}
+</style>
+</helmet>
+<div style="width: 1280px; height: 720px; box-sizing: border-box; background: #0B0B0F; color: #F2F2F2; font-family: Inter, system-ui, sans-serif; position: relative; overflow: hidden">
+
+<div aria-hidden="true" style="position: absolute; inset: 0; padding: 72px 48px 0; box-sizing: border-box; display: flex; flex-direction: column; gap: 22px">
+<div style="height: 300px; border-radius: 12px; background: #16161C"></div>
+<div style="display: flex; gap: 14px"><div style="width: 210px; height: 143px; border-radius: 8px; background: #2B2440"></div><div style="width: 210px; height: 143px; border-radius: 8px; background: #1F2E3A"></div><div style="width: 210px; height: 143px; border-radius: 8px; background: #3A2A24"></div><div style="width: 210px; height: 143px; border-radius: 8px; background: #24332A"></div><div style="width: 210px; height: 143px; border-radius: 8px; background: #33243A"></div></div>
+</div>
+<div style="position: absolute; inset: 0; background: rgba(5,5,8,0.78)"></div>
+
+<div style="position: absolute; left: 48px; top: 18px; display: flex; align-items: center; gap: 10px">
+<span style="width: 36px; height: 36px; border-radius: 8px; background: #8B5CF6; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px; color: #FFFFFF; outline: 3px solid #F2F2F2; outline-offset: 3px">P</span>
+<span style="font-weight: 700; font-size: 20px">Prime<span style="color: #8B5CF6">TV</span></span>
+</div>
+
+<div role="menu" aria-label="Menu do PrimeTV" style="position: absolute; left: 48px; top: 76px; width: 300px; background: #1A1A21; border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 2px">
+<div style="padding: 10px 12px 12px; border-bottom: 1px solid #2A2A33; margin-bottom: 4px">
+<div style="font-size: 15px; font-weight: 600">PrimeTV</div>
+<div style="font-size: 13px; color: #A1A1AD">Versão 1.0.0 · build 12</div>
+</div>
+<button role="menuitem" onClick="{{check}}" style="height: 48px; display: flex; align-items: center; gap: 12px; padding: 0 12px; border-radius: 8px; border: 0; background: #2E2350; color: #F2F2F2; font-family: inherit; font-size: 16px; font-weight: 600; text-align: left">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"></path><path d="M21 3v5h-5"></path></svg>Verificar atualização</button>
+<a role="menuitem" href="Configuracoes.dc.html" style="height: 48px; display: flex; align-items: center; gap: 12px; padding: 0 12px; border-radius: 8px; color: #D4D4DC; font-size: 16px; text-decoration: none">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"></path></svg>Configurações</a>
+<a role="menuitem" href="Setup.dc.html" style="height: 48px; display: flex; align-items: center; gap: 12px; padding: 0 12px; border-radius: 8px; color: #D4D4DC; font-size: 16px; text-decoration: none">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg>Trocar lista IPTV</a>
+<a role="menuitem" href="Main.dc.html" style="height: 48px; display: flex; align-items: center; gap: 12px; padding: 0 12px; border-radius: 8px; color: #D4D4DC; font-size: 16px; text-decoration: none">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8h.01M11 12h1v4h1"></path></svg>Sobre</a>
+</div>
+
+<div role="dialog" aria-label="Atualização do app" style="position: absolute; left: 440px; top: 150px; width: 520px; background: #16161C; border-radius: 14px; padding: 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<sc-if value="{{isChecking}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; align-items: center; gap: 14px">
+<span style="width: 22px; height: 22px; border-radius: 50%; border: 3px solid #3A3A46; border-top-color: #8B5CF6"></span>
+<span style="font-size: 18px; font-weight: 600">Verificando releases no GitHub</span>
+</div>
+<p style="margin: 0; font-size: 15px; color: #A1A1AD">Comparando a versão 1.0.0 com a última release publicada.</p>
+</sc-if>
+<sc-if value="{{isAvailable}}" hint-placeholder-val="{{ true }}">
+<span style="align-self: flex-start; font-size: 13px; font-weight: 600; color: #DDD6FE; background: #2E2350; padding: 5px 10px; border-radius: 6px">Nova versão disponível</span>
+<h2 style="margin: 0; font-size: 26px; font-weight: 700">PrimeTV 1.1.0</h2>
+<p style="margin: 0; font-size: 14px; color: #A1A1AD">Você tem a 1.0.0 · APK de 18,4 MB · publicada há 2 dias</p>
+<ul style="margin: 0; padding-left: 20px; font-size: 15px; line-height: 1.7; color: #D4D4DC">
+<li>Guia de programação mais rápido</li>
+<li>Novas palavras-chave para separar futebol</li>
+<li>Correções no player</li>
+</ul>
+<div style="display: flex; gap: 12px; margin-top: 4px">
+<button onClick="{{download}}" style="height: 48px; padding: 0 22px; border-radius: 8px; border: 0; background: #8B5CF6; color: #FFFFFF; font-family: inherit; font-weight: 600; font-size: 18px; outline: 3px solid #F2F2F2; outline-offset: 3px">Baixar e instalar</button>
+<button onClick="{{reset}}" style="height: 48px; padding: 0 20px; border-radius: 8px; border: 0; background: #2A2A33; color: #F2F2F2; font-family: inherit; font-size: 16px">Agora não</button>
+</div>
+</sc-if>
+<sc-if value="{{isDownloading}}" hint-placeholder-val="{{ false }}">
+<h2 style="margin: 0; font-size: 22px; font-weight: 700">Baixando PrimeTV 1.1.0</h2>
+<div style="height: 8px; border-radius: 4px; background: #2A2A33; position: relative"><div style="position: absolute; left: 0; top: 0; bottom: 0; width: 64%; border-radius: 4px; background: #8B5CF6"></div></div>
+<p style="margin: 0; font-size: 15px; color: #A1A1AD">11,8 de 18,4 MB. Ao terminar, o Android pede para confirmar a instalação.</p>
+<button onClick="{{reset}}" style="align-self: flex-start; height: 44px; padding: 0 18px; border-radius: 8px; border: 0; background: #2A2A33; color: #F2F2F2; font-family: inherit; font-size: 15px">Cancelar</button>
+</sc-if>
+<sc-if value="{{isUpToDate}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; align-items: center; gap: 12px">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"></path></svg>
+<span style="font-size: 20px; font-weight: 700">Você já tem a versão mais recente</span>
+</div>
+<p style="margin: 0; font-size: 15px; color: #A1A1AD">PrimeTV 1.0.0 · verificado agora</p>
+<button onClick="{{reset}}" style="align-self: flex-start; height: 44px; padding: 0 18px; border-radius: 8px; border: 0; background: #2A2A33; color: #F2F2F2; font-family: inherit; font-size: 15px">Fechar</button>
+</sc-if>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":720}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { step: 'available', checks: 0 }; }
+  renderVals() {
+    const s = this.state.step;
+    return {
+      isChecking: s === 'checking', isAvailable: s === 'available', isDownloading: s === 'downloading', isUpToDate: s === 'uptodate',
+      check: () => {
+        const n = this.state.checks + 1;
+        this.setState({ step: 'checking', checks: n });
+        setTimeout(() => this.setState({ step: n % 2 ? 'uptodate' : 'available' }), 1200);
+      },
+      download: () => this.setState({ step: 'downloading' }),
+      reset: () => this.setState({ step: 'uptodate' })
+    };
+  }
+}
+</script>
+</body>
+</html>

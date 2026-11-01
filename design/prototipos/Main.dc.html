@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>PrimeTV · Início</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#C4B5FD}a:hover{color:#DDD6FE}
+</style>
+</helmet>
+<div style="width: 1280px; height: 720px; box-sizing: border-box; background: #0B0B0F; color: #F2F2F2; font-family: Inter, system-ui, sans-serif; position: relative; overflow: hidden; display: flex; flex-direction: column">
+
+<header style="height: 72px; flex-shrink: 0; display: flex; align-items: center; gap: 32px; padding: 0 48px; box-sizing: border-box">
+<a href="MenuApp.dc.html" aria-label="Menu do PrimeTV" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: #F2F2F2">
+<span style="width: 36px; height: 36px; border-radius: 8px; background: {{accent}}; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px; color: #FFFFFF">P</span>
+<span style="font-weight: 700; font-size: 20px; letter-spacing: -0.3px">Prime<span style="color: {{accent}}">TV</span></span>
+</a>
+<nav aria-label="Seções" style="display: flex; align-items: center; gap: 6px">
+<a href="Busca.dc.html" aria-label="Buscar" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 22px; color: #A1A1AD">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+</a>
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="6">
+<a href="{{t.href}}" style="{{t.style}}">{{t.label}}</a>
+</sc-for>
+</nav>
+<div style="margin-left: auto; display: flex; align-items: center; gap: 20px; color: #A1A1AD; font-size: 16px">
+<span>16:08</span>
+<a href="Configuracoes.dc.html" aria-label="Configurações" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #A1A1AD">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg>
+</a>
+</div>
+</header>
+
+<section aria-label="Destaque" style="height: 300px; flex-shrink: 0; display: flex; margin: 0 48px; border-radius: 12px; overflow: hidden; background: #16161C">
+<div style="width: 520px; flex-shrink: 0; padding: 36px 40px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; gap: 14px">
+<div style="display: flex; gap: 8px; align-items: center">
+<span style="font-size: 13px; font-weight: 600; color: #DDD6FE; background: #2E2350; padding: 5px 10px; border-radius: 6px">Em alta esta semana</span>
+<span style="font-size: 13px; color: #A1A1AD">Disponível na sua lista</span>
+</div>
+<h1 style="margin: 0; font-size: 40px; font-weight: 700; letter-spacing: -0.8px; line-height: 1.05">O Último Farol</h1>
+<p style="margin: 0; font-size: 15px; color: #A1A1AD">Série · Suspense, Drama · 2 temporadas · 16 episódios · 7,8</p>
+<p style="margin: 0; font-size: 15px; line-height: 1.5; color: #D4D4DC">Uma faroleira isolada no litoral sul recebe sinais de rádio de um navio desaparecido há trinta anos.</p>
+<div style="display: flex; gap: 12px; margin-top: 6px">
+<a href="Player.dc.html" style="height: 48px; padding: 0 26px; display: flex; align-items: center; gap: 10px; border-radius: 8px; background: {{accent}}; color: #FFFFFF; font-weight: 600; font-size: 18px; text-decoration: none; outline: 3px solid #F2F2F2; outline-offset: 3px">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"></path></svg>Assistir T1:E1</a>
+<a href="Detalhes.dc.html" style="height: 48px; padding: 0 22px; display: flex; align-items: center; border-radius: 8px; background: #2A2A33; color: #F2F2F2; font-weight: 600; font-size: 17px; text-decoration: none">Mais informações</a>
+<button aria-label="Adicionar à minha lista" style="width: 48px; height: 48px; border-radius: 8px; border: 0; background: #2A2A33; color: #F2F2F2; display: flex; align-items: center; justify-content: center">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+</button>
+</div>
+</div>
+<div role="img" aria-label="Arte de fundo do destaque (backdrop do TMDB)" style="flex: 1; position: relative; background: #1C1730; overflow: hidden">
+<div style="position: absolute; width: 420px; height: 420px; border-radius: 50%; background: #2C2350; right: -60px; top: -120px"></div>
+<div style="position: absolute; width: 220px; height: 220px; border-radius: 50%; background: #3B2E6E; right: 150px; top: 40px"></div>
+<div style="position: absolute; left: 0; right: 0; bottom: 0; height: 110px; background: #120F1F"></div>
+<div style="position: absolute; left: 300px; bottom: 110px; width: 26px; height: 150px; background: #4A3A88"></div>
+<div style="position: absolute; left: 292px; bottom: 256px; width: 42px; height: 22px; background: #C4B5FD; border-radius: 4px"></div>
+<span style="position: absolute; right: 16px; bottom: 14px; font-size: 12px; color: #A1A1AD">Backdrop · TMDB</span>
+<div style="position: absolute; left: 24px; bottom: 16px; display: flex; gap: 6px">
+<span style="width: 22px; height: 4px; border-radius: 2px; background: #F2F2F2"></span>
+<span style="width: 8px; height: 4px; border-radius: 2px; background: #55555F"></span>
+<span style="width: 8px; height: 4px; border-radius: 2px; background: #55555F"></span>
+<span style="width: 8px; height: 4px; border-radius: 2px; background: #55555F"></span>
+</div>
+</div>
+</section>
+
+<section aria-label="Continuar assistindo" style="padding: 22px 48px 0; flex-shrink: 0">
+<h2 style="margin: 0 0 10px; font-size: 18px; font-weight: 600">Continuar assistindo</h2>
+<div style="display: flex; gap: 14px">
+<sc-for list="{{cont}}" as="c" hint-placeholder-count="5">
+<div style="{{c.cardStyle}}">
+<div style="height: 110px; background: {{c.bg}}; position: relative; display: flex; align-items: flex-end; padding: 10px 12px; box-sizing: border-box">
+<span style="font-size: 14px; font-weight: 600; color: #F2F2F2">{{c.title}}</span>
+<span style="position: absolute; left: 0; bottom: 0; height: 4px; width: {{c.pct}}; background: {{accentRef}}"></span>
+</div>
+<div style="padding: 8px 12px; font-size: 13px; color: #A1A1AD; background: #16161C">{{c.meta}}</div>
+</div>
+</sc-for>
+</div>
+</section>
+
+<section aria-label="Futebol agora" style="padding: 22px 48px 0; flex-shrink: 0">
+<h2 style="margin: 0 0 10px; font-size: 18px; font-weight: 600">Futebol agora <span style="font-size: 14px; font-weight: 500; color: #A1A1AD">· separado automaticamente por palavras-chave</span></h2>
+<div style="display: flex; gap: 14px">
+<sc-for list="{{fut}}" as="f" hint-placeholder-count="5">
+<div style="width: 220px; height: 92px; flex-shrink: 0; border-radius: 8px; background: #16161C; padding: 12px 14px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between">
+<div style="display: flex; align-items: center; gap: 8px">
+<span style="font-size: 11px; font-weight: 700; color: #FFFFFF; background: #C2263B; padding: 3px 7px; border-radius: 4px">AO VIVO</span>
+<span style="font-size: 13px; color: #A1A1AD">{{f.ch}}</span>
+</div>
+<span style="font-size: 15px; font-weight: 600">{{f.game}}</span>
+</div>
+</sc-for>
+</div>
+</section>
+
+<div role="status" style="position: absolute; right: 48px; bottom: 20px; display: flex; align-items: center; gap: 10px; background: #22222A; border-radius: 8px; padding: 10px 14px; font-size: 14px; color: #D4D4DC">
+<span style="width: 14px; height: 14px; border-radius: 50%; border: 2px solid #3A3A46; border-top-color: {{accent}}"></span>
+Atualizando Filmes em segundo plano
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#8B5CF6","options":["#8B5CF6","#7340E8","#A78BFA"]},"$preview":{"width":1280,"height":720}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent ?? '#8B5CF6';
+    const base = 'height: 44px; padding: 0 14px; display: flex; align-items: center; font-size: 17px; text-decoration: none; border-radius: 8px; ';
+    const tabs = [
+      ['Início', 'Main.dc.html', true], ['Ao vivo', 'AoVivo.dc.html'], ['Filmes', 'Main.dc.html'],
+      ['Séries', 'Detalhes.dc.html'], ['Futebol', 'AoVivo.dc.html'], ['Minha lista', 'Main.dc.html']
+    ].map(([label, href, on]) => ({ label, href,
+      style: base + (on ? 'color: #F2F2F2; font-weight: 600; box-shadow: inset 0 -3px 0 ' + accent : 'color: #A1A1AD; font-weight: 500') }));
+    const cont = [
+      ['O Último Farol', 'T1:E4 · faltam 22 min', '#2B2440', '62%', true],
+      ['Rota 116', 'Filme · faltam 48 min', '#1F2E3A', '35%'],
+      ['Casa de Vidro', 'T3:E9 · faltam 12 min', '#3A2A24', '80%'],
+      ['Sertão Profundo', 'T1:E2 · faltam 31 min', '#24332A', '20%'],
+      ['Noite em Lisboa', 'Filme · faltam 1h05', '#33243A', '15%']
+    ].map(([title, meta, bg, pct, focus]) => ({ title, meta, bg, pct,
+      cardStyle: 'width: 210px; flex-shrink: 0; border-radius: 8px; overflow: hidden;' + (focus ? ' outline: 3px solid ' + accent + '; outline-offset: 3px; transform: scale(1.04)' : '') }));
+    const fut = [
+      ['Premiere 1', 'Flamengo × Palmeiras'], ['ESPN 2', 'Real Madrid × Barcelona'],
+      ['SporTV', 'Grêmio × Inter'], ['Premiere 3', 'Santos × Bahia'], ['TNT', 'Liverpool × Arsenal']
+    ].map(([ch, game]) => ({ ch, game }));
+    return { accent, accentRef: accent, tabs, cont, fut };
+  }
+}
+</script>
+</body>
+</html>
