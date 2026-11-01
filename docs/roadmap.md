@@ -53,6 +53,9 @@ Feito com escudos estilizados gerados no app (sigla + cores do clube para os mai
 ### Destaque com imagem em toda a largura ✅ (fase 5)
 Com backdrop do TMDB o destaque usa a imagem em toda a largura com o texto sobre um degradê; só com o pôster vertical da lista, mantém o layout do protótipo (texto à esquerda, imagem à direita).
 
+### Controle parental (adiado)
+Previsto na especificação (PIN de 4 dígitos, ocultar categorias adultas por palavras-chave e marcação manual), mas adiado: na prática o conteúdo adulto costuma vir habilitado ou não na própria lista, por definição de quem contratou com o provedor. Reavaliar se houver pedido dos usuários. Quando entrar: PIN no DataStore (hash), filtro `isAdult`/palavras-chave nas consultas e diálogo de PIN na tela Ao vivo e nas categorias.
+
 ### Intro animada com logo e som
 Ao abrir o app, exibir uma vinheta curta (2–3 s) com a animação do logo PrimeTV e um áudio de fundo, no espírito da abertura da Netflix. Depende de dois ativos que ainda não existem: a logo em formato animável (vetor/Lottie ou sequência de quadros) e uma trilha curta com licença para uso. Deve ser pulável com qualquer tecla e não atrasar o carregamento da lista.
 

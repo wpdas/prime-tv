@@ -15,6 +15,8 @@ import com.wpdas.primetv.ui.screens.details.DetailsScreen
 import com.wpdas.primetv.ui.screens.home.HomeScreen
 import com.wpdas.primetv.ui.screens.live.LiveScreen
 import com.wpdas.primetv.ui.screens.placeholder.PlaceholderScreen
+import com.wpdas.primetv.ui.screens.receivelink.ReceiveLinkScreen
+import com.wpdas.primetv.ui.screens.settings.SettingsScreen
 import com.wpdas.primetv.ui.screens.player.PlayerScreen
 import com.wpdas.primetv.ui.screens.search.SearchScreen
 import com.wpdas.primetv.ui.screens.setup.SetupScreen
@@ -74,21 +76,34 @@ fun PrimeNavHost(
             AppMenuScreen(
                 onCheckUpdate = { navController.navigate(UpdateRoute) },
                 onSettings = { navController.navigate(SettingsRoute) },
-                onChangePlaylist = { navController.navigate(SetupRoute) },
+                onChangePlaylist = { navController.navigate(SetupRoute()) },
                 onAbout = { navController.navigate(AboutRoute) },
             )
         }
         composable<AboutRoute> { AboutScreen(onBack = navController::popBackStack) }
         composable<UpdateRoute> { PlaceholderScreen("screen.update", phase = 7, onBack = navController::popBackStack) }
-        composable<SettingsRoute> { PlaceholderScreen("screen.settings", phase = 6, onBack = navController::popBackStack) }
+        composable<SettingsRoute> {
+            SettingsScreen(
+                onBack = navController::popBackStack,
+                onChangePlaylist = { navController.navigate(SetupRoute()) },
+                onReceiveLink = { navController.navigate(ReceiveLinkRoute) },
+                onAbout = { navController.navigate(AboutRoute) },
+            )
+        }
         composable<SetupRoute> {
             SetupScreen(
                 onStartWatching = {
-                    navController.navigate(HomeRoute()) { popUpTo<SetupRoute> { inclusive = true } }
+                    // Lista nova: a Início recomeça do zero, sem telas antigas na pilha.
+                    navController.navigate(HomeRoute()) { popUpTo(navController.graph.id) { inclusive = true } }
                 },
                 onReceiveLink = { navController.navigate(ReceiveLinkRoute) },
             )
         }
-        composable<ReceiveLinkRoute> { PlaceholderScreen("screen.receive_link", phase = 6, onBack = navController::popBackStack) }
+        composable<ReceiveLinkRoute> {
+            ReceiveLinkScreen(
+                onBack = navController::popBackStack,
+                onUseLink = { link -> navController.navigate(SetupRoute(prefill = link)) { popUpTo<ReceiveLinkRoute> { inclusive = true } } },
+            )
+        }
     }
 }

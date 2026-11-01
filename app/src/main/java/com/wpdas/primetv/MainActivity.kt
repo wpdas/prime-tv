@@ -10,6 +10,9 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.wpdas.primetv.core.i18n.I18n
+import com.wpdas.primetv.domain.crests.TeamCrestRepository
+import com.wpdas.primetv.ui.components.LocalCrestResolver
+import androidx.compose.runtime.CompositionLocalProvider
 import com.wpdas.primetv.ui.navigation.PrimeNavHost
 import com.wpdas.primetv.ui.theme.PrimeTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -20,6 +23,7 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
 
     @Inject lateinit var i18n: I18n
+    @Inject lateinit var crests: TeamCrestRepository
     private val mainViewModel: MainViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,7 +33,9 @@ class MainActivity : ComponentActivity() {
             PrimeTheme(i18n = i18n) {
                 // null enquanto não sabemos se há lista configurada (fundo da janela cobre).
                 val start by mainViewModel.startDestination.collectAsStateWithLifecycle()
-                start?.let { PrimeNavHost(startDestination = it) }
+                CompositionLocalProvider(LocalCrestResolver provides crests) {
+                    start?.let { PrimeNavHost(startDestination = it) }
+                }
             }
         }
     }

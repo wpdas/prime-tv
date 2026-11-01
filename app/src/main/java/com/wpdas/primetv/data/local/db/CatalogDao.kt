@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 data class KeyCount(val key: String?, val count: Int)
 data class SearchHit(val refId: String, val type: String)
 data class ChannelEpgRef(val id: String, val name: String, val epgChannelId: String?)
+data class TitleRef(val id: String, val name: String, val categoryName: String?)
 
 @Dao
 interface CatalogDao {
@@ -25,6 +26,7 @@ interface CatalogDao {
     @Query("SELECT * FROM channels WHERE isFootball = 1 ORDER BY number") fun observeFootballChannelsAll(): Flow<List<ChannelEntity>>
     @Query("SELECT * FROM channels WHERE isFootball = 1 ORDER BY number LIMIT :limit") fun observeFootballChannels(limit: Int): Flow<List<ChannelEntity>>
     @Query("SELECT COUNT(*) FROM channels WHERE isFootball = 1") fun observeFootballChannelCount(): Flow<Int>
+    @Query("SELECT (SELECT COUNT(*) FROM movies WHERE isFootball = 1) + (SELECT COUNT(*) FROM series WHERE isFootball = 1)") fun observeFootballVodCount(): Flow<Int>
     @Query("SELECT * FROM channels WHERE id = :id") fun observeChannel(id: String): Flow<ChannelEntity?>
     @Query("SELECT * FROM channels WHERE id = :id") suspend fun channelById(id: String): ChannelEntity?
     @Query("SELECT * FROM channels WHERE id IN (:ids)") suspend fun channelsByIds(ids: List<String>): List<ChannelEntity>
@@ -34,6 +36,12 @@ interface CatalogDao {
     @Query("SELECT categoryId AS `key`, COUNT(*) AS count FROM channels GROUP BY categoryId") fun observeChannelCounts(): Flow<List<KeyCount>>
     @Query("SELECT id, name, epgChannelId FROM channels") suspend fun channelEpgRefs(): List<ChannelEpgRef>
     @Query("UPDATE channels SET epgKey = :key WHERE id = :id") suspend fun setEpgKey(id: String, key: String?)
+    @Query("SELECT id, name, categoryName FROM channels") suspend fun channelRefs(): List<TitleRef>
+    @Query("UPDATE channels SET isFootball = :value WHERE id = :id") suspend fun setChannelFootball(id: String, value: Boolean)
+    @Query("SELECT id, title AS name, categoryName FROM movies") suspend fun movieRefs(): List<TitleRef>
+    @Query("UPDATE movies SET isFootball = :value WHERE id = :id") suspend fun setMovieFootball(id: String, value: Boolean)
+    @Query("SELECT id, title AS name, categoryName FROM series") suspend fun seriesRefs(): List<TitleRef>
+    @Query("UPDATE series SET isFootball = :value WHERE id = :id") suspend fun setSeriesFootball(id: String, value: Boolean)
 
     // --- filmes ---
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertMovies(list: List<MovieEntity>)
@@ -133,4 +141,6 @@ interface TmdbDao {
     @Query("SELECT * FROM tmdb_match WHERE itemId = :itemId") suspend fun match(itemId: String): TmdbMatchEntity?
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putMatch(entry: TmdbMatchEntity)
     @Query("DELETE FROM tmdb_cache WHERE fetchedAt < :before") suspend fun pruneCache(before: Long)
+    @Query("SELECT * FROM team_crests WHERE teamKey = :key") suspend fun crest(key: String): TeamCrestEntity?
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putCrest(entry: TeamCrestEntity)
 }

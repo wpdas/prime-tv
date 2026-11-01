@@ -1,11 +1,8 @@
 package com.wpdas.primetv.data.local.prefs
 
 import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import com.wpdas.primetv.domain.model.PlaylistSource
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -14,8 +11,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
-
-private val Context.appDataStore: DataStore<Preferences> by preferencesDataStore(name = "primetv_prefs")
 
 /** Guarda a lista configurada no DataStore, cifrada pelo [SecureStore]. */
 @Singleton

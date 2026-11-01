@@ -38,6 +38,8 @@ interface CatalogRepository {
     fun channel(id: String): Flow<Channel?>
     fun footballChannels(limit: Int): Flow<List<Channel>>
     fun footballChannelCount(): Flow<Int>
+    /** Filmes + séries marcados como futebol. */
+    fun footballVodCount(): Flow<Int>
 
     fun movies(categoryId: String?, limit: Int): Flow<List<Movie>>
     fun recentMovies(limit: Int): Flow<List<Movie>>

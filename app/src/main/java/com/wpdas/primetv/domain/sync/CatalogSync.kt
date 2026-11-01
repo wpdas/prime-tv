@@ -14,5 +14,8 @@ interface CatalogSync {
     /** Sincroniza só uma seção. */
     fun sync(section: ContentSection)
 
+    /** Sincroniza o que estiver vencido segundo os intervalos configurados (chamado ao abrir o app). */
+    fun syncStale()
+
     fun cancel()
 }

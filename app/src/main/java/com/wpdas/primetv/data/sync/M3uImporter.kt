@@ -17,7 +17,7 @@ import com.wpdas.primetv.data.remote.m3u.M3uItem
 import com.wpdas.primetv.data.remote.m3u.M3uKind
 import com.wpdas.primetv.data.remote.m3u.M3uParser
 import com.wpdas.primetv.data.remote.m3u.SeriesPattern
-import com.wpdas.primetv.domain.football.FootballClassifier
+import com.wpdas.primetv.domain.football.FootballClassifierProvider
 import com.wpdas.primetv.domain.model.ContentSection
 import com.wpdas.primetv.domain.model.PlaylistError
 import com.wpdas.primetv.domain.model.PlaylistException
@@ -41,10 +41,11 @@ class M3uImporter @Inject constructor(
     private val db: PrimeDatabase,
     private val http: OkHttpClient,
     private val epgImporter: EpgImporter,
-    private val football: FootballClassifier,
+    private val footballProvider: FootballClassifierProvider,
 ) : PlaylistImporter {
 
     private val dao get() = db.catalogDao()
+    private val football get() = footballProvider.get()
 
     override suspend fun import(source: PlaylistSource, section: ContentSection, onProgress: (Int) -> Unit): ImportResult {
         val src = source as PlaylistSource.M3u

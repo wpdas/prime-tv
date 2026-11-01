@@ -1,0 +1,40 @@
+package com.wpdas.primetv.domain.model
+
+/** Intervalo de atualização automática de uma seção. */
+enum class SyncInterval(val hours: Int, val labelKey: String) {
+    H6(6, "interval.h6"),
+    H12(12, "interval.h12"),
+    D1(24, "interval.d1"),
+    D3(72, "interval.d3"),
+    D7(168, "interval.d7"),
+    MANUAL(0, "interval.manual");
+
+    val millis: Long get() = hours * 60L * 60L * 1000L
+    val isManual: Boolean get() = this == MANUAL
+
+    fun next(): SyncInterval = entries[(ordinal + 1) % entries.size]
+
+    companion object {
+        fun defaultFor(section: ContentSection) = if (section == ContentSection.EPG) H12 else D1
+    }
+}
+
+/** Tamanho do buffer do player. */
+enum class BufferProfile(val labelKey: String, val minBufferMs: Int, val maxBufferMs: Int, val playbackMs: Int, val rebufferMs: Int) {
+    LOW("buffer.low", 8_000, 30_000, 1_000, 2_000),
+    NORMAL("buffer.normal", 15_000, 50_000, 1_500, 3_000),
+    HIGH("buffer.high", 30_000, 90_000, 3_000, 5_000);
+
+    fun next(): BufferProfile = entries[(ordinal + 1) % entries.size]
+}
+
+data class AppSettings(
+    val syncIntervals: Map<ContentSection, SyncInterval> = ContentSection.entries.associateWith { SyncInterval.defaultFor(it) },
+    val unmeteredOnly: Boolean = false,
+    val footballKeywords: List<String> = emptyList(),
+    val preferSoftwareDecoder: Boolean = false,
+    val bufferProfile: BufferProfile = BufferProfile.NORMAL,
+    val language: String = "pt-BR",
+) {
+    fun interval(section: ContentSection): SyncInterval = syncIntervals[section] ?: SyncInterval.defaultFor(section)
+}

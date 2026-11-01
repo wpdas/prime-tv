@@ -15,6 +15,7 @@ import com.wpdas.primetv.data.repository.PlaylistRepositoryImpl
 import com.wpdas.primetv.data.repository.TmdbRepositoryImpl
 import com.wpdas.primetv.data.sync.CatalogSyncer
 import com.wpdas.primetv.domain.football.FootballClassifier
+import com.wpdas.primetv.domain.football.FootballClassifierProvider
 import com.wpdas.primetv.domain.repository.CatalogRepository
 import com.wpdas.primetv.domain.repository.HomeRepository
 import com.wpdas.primetv.domain.repository.LibraryRepository
@@ -36,6 +37,9 @@ abstract class DataModule {
     @Binds abstract fun bindCatalogRepository(impl: CatalogRepositoryImpl): CatalogRepository
     @Binds abstract fun bindLibraryRepository(impl: LibraryRepositoryImpl): LibraryRepository
     @Binds abstract fun bindRecommendationRepository(impl: TmdbRepositoryImpl): RecommendationRepository
+    @Binds abstract fun bindSettingsRepository(impl: com.wpdas.primetv.data.local.prefs.SettingsStore): com.wpdas.primetv.domain.repository.SettingsRepository
+    @Binds abstract fun bindLinkReceiver(impl: com.wpdas.primetv.data.link.FakeLinkReceiver): com.wpdas.primetv.domain.link.LinkReceiver
+    @Binds abstract fun bindTeamCrestRepository(impl: com.wpdas.primetv.data.remote.crests.CrestRepositoryImpl): com.wpdas.primetv.domain.crests.TeamCrestRepository
     @Binds abstract fun bindPlaylistRepository(impl: PlaylistRepositoryImpl): PlaylistRepository
     @Binds abstract fun bindCatalogSync(impl: CatalogSyncer): CatalogSync
 }
@@ -55,6 +59,7 @@ object DatabaseModule {
     @Provides fun provideLibraryDao(db: PrimeDatabase): LibraryDao = db.libraryDao()
     @Provides fun provideTmdbDao(db: PrimeDatabase): TmdbDao = db.tmdbDao()
 
-    /** Palavras-chave padrão; as configuráveis (DataStore) entram na fase 6. */
-    @Provides @Singleton fun provideFootballClassifier(): FootballClassifier = FootballClassifier()
+    /** Classificador sempre com as palavras-chave atuais das Configurações. */
+    @Provides @Singleton fun provideFootballClassifierProvider(settings: com.wpdas.primetv.domain.repository.SettingsRepository): FootballClassifierProvider =
+        FootballClassifierProvider { FootballClassifier(settings.settings.value.footballKeywords) }
 }

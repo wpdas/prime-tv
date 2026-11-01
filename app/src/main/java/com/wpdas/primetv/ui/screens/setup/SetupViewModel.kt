@@ -1,6 +1,9 @@
 package com.wpdas.primetv.ui.screens.setup
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.navigation.toRoute
+import com.wpdas.primetv.ui.navigation.SetupRoute
 import androidx.lifecycle.viewModelScope
 import com.wpdas.primetv.BuildConfig
 import com.wpdas.primetv.domain.model.ContentSection
@@ -21,15 +24,20 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SetupViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
     private val playlistRepository: PlaylistRepository,
     private val catalogSync: CatalogSync,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(SetupUiState(url = BuildConfig.IPTV_TEST_URL).withGuess())
+    private val prefill: String? = runCatching { savedStateHandle.toRoute<SetupRoute>().prefill }.getOrNull()?.takeIf { it.isNotBlank() }
+
+    private val _state = MutableStateFlow(SetupUiState(url = prefill ?: BuildConfig.IPTV_TEST_URL).withGuess())
     val state: StateFlow<SetupUiState> = _state.asStateFlow()
 
     init {
         catalogSync.status.onEach { status -> _state.update { it.copy(sync = status) } }.launchIn(viewModelScope)
+        // Link recebido pelo celular: conecta sem exigir mais um OK.
+        if (prefill != null) connect()
     }
 
     fun onUrlChange(url: String) {

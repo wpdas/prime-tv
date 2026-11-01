@@ -31,3 +31,8 @@ class FootballClassifier(keywords: List<String> = DEFAULT_KEYWORDS) {
         private val VERSUS = Regex("""(?<![a-z0-9])[a-z][a-z .'-]{2,}\s+(x|vs\.?|×)\s+[a-z][a-z .'-]{2,}""")
     }
 }
+
+/** Fornece o classificador com as palavras-chave vigentes. */
+fun interface FootballClassifierProvider {
+    fun get(): FootballClassifier
+}

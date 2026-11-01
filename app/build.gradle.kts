@@ -58,6 +58,8 @@ android {
 
         buildConfigField("String", "TMDB_API_KEY", "\"$tmdbApiKey\"")
         buildConfigField("String", "GITHUB_REPO", "\"wpdas/prime-tv\"")
+        // Site de "Receber link pelo celular" (fase 2 do roadmap; domínio a definir).
+        buildConfigField("String", "LINK_SITE_URL", "\"https://primetv.example/link\"")
         buildConfigField("String", "IPTV_TEST_URL", "\"\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

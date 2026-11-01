@@ -178,3 +178,11 @@ data class TmdbMatchEntity(
     val type: String,
     val matchedAt: Long,
 )
+
+/** Escudo de time (URL de terceiros). [url] null = procurado e não encontrado. */
+@Entity(tableName = "team_crests")
+data class TeamCrestEntity(
+    @PrimaryKey val teamKey: String,
+    val url: String?,
+    val fetchedAt: Long,
+)

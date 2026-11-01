@@ -14,10 +14,14 @@ App Android de IPTV com interface no estilo Netflix, feito para **TV Box com And
 - Player (HLS, MPEG-TS, MP4/MKV) com ±10 s, áudio e legendas, próximo episódio automático, troca de canal com cima/baixo e prévia sem áudio na tela Ao vivo
 - Histórico com "Continuar assistindo" e favoritos (Minha lista, categoria Favoritos em Ao vivo, segurar OK no canal)
 - Recomendações do TMDB (em alta, populares, em cartaz) só com o que existe na sua lista, com backdrop, sinopse em português, gêneros, nota e trailer no YouTube; cache local para funcionar offline
-- Arte gerada para jogos de futebol sem imagem (escudos estilizados "A × B")
+- Arte para jogos de futebol sem imagem: "Time A × Time B" com escudos. As imagens dos escudos são carregadas da internet, de uma base pública de dados esportivos (TheSportsDB), e pertencem aos respectivos clubes; o PrimeTV não as fornece nem as distribui, só exibe. Sem conexão ou sem escudo conhecido, entra um escudo estilizado com a sigla do time
 - Tudo navegável só com o D-pad, foco visível e interface escalada para qualquer resolução
 
-Ainda por vir: configurações, atualização automática em segundo plano, controle parental, "Receber link pelo celular" e releases assinadas.
+- Configurações: lista, intervalo de atualização por seção, palavras-chave de futebol, decodificador e buffer do player, idioma
+- Atualização automática em segundo plano (WorkManager), com verificação ao abrir o app
+- "Receber link pelo celular": código, QR e espera pelo link (o site que entrega o link é a próxima etapa do roadmap)
+
+Ainda por vir: atualização do app pelo GitHub Releases, assinatura e CI.
 
 ## Telas
 
@@ -45,9 +49,13 @@ Ainda por vir: configurações, atualização automática em segundo plano, cont
 |---|---|
 | ![Player ao vivo](docs/screenshots/11-player-ao-vivo.jpg) | ![Player com episódios](docs/screenshots/12-player-episodios.jpg) |
 
-| Sobre (atribuição TMDB) | |
+| Configurações | Palavras-chave de futebol |
 |---|---|
-| ![Sobre](docs/screenshots/13-sobre.jpg) | |
+| ![Configurações](docs/screenshots/14-configuracoes.jpg) | ![Futebol](docs/screenshots/15-configuracoes-futebol.jpg) |
+
+| Receber link pelo celular | Sobre (atribuição TMDB) |
+|---|---|
+| ![Receber link](docs/screenshots/16-receber-link.jpg) | ![Sobre](docs/screenshots/13-sobre.jpg) |
 
 ## Requisitos para compilar
 
@@ -104,4 +112,6 @@ No CI, o keystore entra em base64 por secret (detalhes em `.github/workflows/rel
 
 ## Créditos
 
-Este produto usa a API do TMDB, mas não é endossado ou certificado pelo TMDB.
+- Este produto usa a API do TMDB, mas não é endossado ou certificado pelo TMDB.
+- Escudos de times vêm do TheSportsDB e são exibidos a partir da internet; não são fornecidos pelo PrimeTV.
+- Tipografia Inter, sob a SIL Open Font License.

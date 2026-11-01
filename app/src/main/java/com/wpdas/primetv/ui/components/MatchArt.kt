@@ -123,9 +123,40 @@ object MatchArtist {
     }
 }
 
-/** Escudo estilizado com sigla, tamanho [size]. */
+/** Resolve a URL do escudo real (base pública de terceiros); null enquanto carrega ou se não houver. */
+val LocalCrestResolver = androidx.compose.runtime.staticCompositionLocalOf<com.wpdas.primetv.domain.crests.TeamCrestRepository?> { null }
+
+@Composable
+private fun rememberCrestUrl(team: String): String? {
+    val resolver = LocalCrestResolver.current ?: return null
+    val state = androidx.compose.runtime.produceState<String?>(initialValue = null, key1 = team) {
+        value = runCatching { resolver.crestUrl(team) }.getOrNull()
+    }
+    return state.value
+}
+
+/**
+ * Escudo do time: a imagem real quando a base de terceiros a tiver (carregada da internet,
+ * não fornecida pelo app); senão, o escudo estilizado com sigla.
+ */
 @Composable
 fun TeamBadge(team: String, size: Dp, modifier: Modifier = Modifier) {
+    val crest = rememberCrestUrl(team)
+    if (crest != null) {
+        coil3.compose.AsyncImage(
+            model = crest,
+            contentDescription = team,
+            modifier = modifier.size(size),
+            contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+        )
+        return
+    }
+    StylizedBadge(team, size, modifier)
+}
+
+/** Escudo estilizado com sigla, tamanho [size]. */
+@Composable
+fun StylizedBadge(team: String, size: Dp, modifier: Modifier = Modifier) {
     val (primary, secondary) = MatchArtist.colors(team)
     val abbreviation = MatchArtist.abbreviation(team)
     Box(modifier.size(size), contentAlignment = Alignment.Center) {

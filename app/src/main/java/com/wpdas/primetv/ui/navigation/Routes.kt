@@ -15,5 +15,6 @@ import kotlinx.serialization.Serializable
 @Serializable data object AboutRoute
 @Serializable data object UpdateRoute
 @Serializable data object SettingsRoute
-@Serializable data object SetupRoute
+/** [prefill]: URL recebida pelo celular; o Setup conecta automaticamente. */
+@Serializable data class SetupRoute(val prefill: String? = null)
 @Serializable data object ReceiveLinkRoute

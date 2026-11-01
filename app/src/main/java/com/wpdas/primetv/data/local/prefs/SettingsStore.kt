@@ -1,0 +1,95 @@
+package com.wpdas.primetv.data.local.prefs
+
+import android.content.Context
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import com.wpdas.primetv.core.di.ApplicationScope
+import com.wpdas.primetv.domain.football.FootballClassifier
+import com.wpdas.primetv.domain.model.AppSettings
+import com.wpdas.primetv.domain.model.BufferProfile
+import com.wpdas.primetv.domain.model.ContentSection
+import com.wpdas.primetv.domain.model.SyncInterval
+import com.wpdas.primetv.domain.repository.SettingsRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.first
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class SettingsStore @Inject constructor(
+    @ApplicationContext private val context: Context,
+    @ApplicationScope scope: CoroutineScope,
+) : SettingsRepository {
+
+    private val store get() = context.appDataStore
+
+    override val settings: StateFlow<AppSettings> = store.data
+        .map { prefs ->
+            AppSettings(
+                syncIntervals = ContentSection.entries.associateWith { section ->
+                    prefs[intervalKey(section)]?.let { v -> SyncInterval.entries.firstOrNull { it.name == v } } ?: SyncInterval.defaultFor(section)
+                },
+                unmeteredOnly = prefs[KEY_UNMETERED] ?: false,
+                footballKeywords = prefs[KEY_FOOTBALL]?.split('\n')?.filter { it.isNotBlank() } ?: FootballClassifier.DEFAULT_KEYWORDS,
+                preferSoftwareDecoder = prefs[KEY_SOFTWARE_DECODER] ?: false,
+                bufferProfile = prefs[KEY_BUFFER]?.let { v -> BufferProfile.entries.firstOrNull { it.name == v } } ?: BufferProfile.NORMAL,
+                language = prefs[KEY_LANGUAGE] ?: "pt-BR",
+            )
+        }
+        // Primeiro valor lido de forma síncrona: arquivo minúsculo, evita "piscar" com padrões errados.
+        .stateIn(scope, SharingStarted.Eagerly, runBlocking { readOnce() })
+
+    private suspend fun readOnce(): AppSettings = runCatching {
+        val prefs = store.data.first()
+        AppSettings(
+            syncIntervals = ContentSection.entries.associateWith { section ->
+                prefs[intervalKey(section)]?.let { v -> SyncInterval.entries.firstOrNull { it.name == v } } ?: SyncInterval.defaultFor(section)
+            },
+            unmeteredOnly = prefs[KEY_UNMETERED] ?: false,
+            footballKeywords = prefs[KEY_FOOTBALL]?.split('\n')?.filter { it.isNotBlank() } ?: FootballClassifier.DEFAULT_KEYWORDS,
+            preferSoftwareDecoder = prefs[KEY_SOFTWARE_DECODER] ?: false,
+            bufferProfile = prefs[KEY_BUFFER]?.let { v -> BufferProfile.entries.firstOrNull { it.name == v } } ?: BufferProfile.NORMAL,
+            language = prefs[KEY_LANGUAGE] ?: "pt-BR",
+        )
+    }.getOrDefault(AppSettings(footballKeywords = FootballClassifier.DEFAULT_KEYWORDS))
+
+    override suspend fun setSyncInterval(section: ContentSection, interval: SyncInterval) {
+        store.edit { it[intervalKey(section)] = interval.name }
+    }
+
+    override suspend fun setUnmeteredOnly(enabled: Boolean) {
+        store.edit { it[KEY_UNMETERED] = enabled }
+    }
+
+    override suspend fun setFootballKeywords(keywords: List<String>) {
+        store.edit { it[KEY_FOOTBALL] = keywords.map { k -> k.trim() }.filter { k -> k.isNotEmpty() }.distinct().joinToString("\n") }
+    }
+
+    override suspend fun setPreferSoftwareDecoder(enabled: Boolean) {
+        store.edit { it[KEY_SOFTWARE_DECODER] = enabled }
+    }
+
+    override suspend fun setBufferProfile(profile: BufferProfile) {
+        store.edit { it[KEY_BUFFER] = profile.name }
+    }
+
+    override suspend fun setLanguage(language: String) {
+        store.edit { it[KEY_LANGUAGE] = language }
+    }
+
+    private companion object {
+        fun intervalKey(section: ContentSection) = stringPreferencesKey("sync_interval_${section.name.lowercase()}")
+        val KEY_UNMETERED = booleanPreferencesKey("sync_unmetered_only")
+        val KEY_FOOTBALL = stringPreferencesKey("football_keywords")
+        val KEY_SOFTWARE_DECODER = booleanPreferencesKey("player_software_decoder")
+        val KEY_BUFFER = stringPreferencesKey("player_buffer")
+        val KEY_LANGUAGE = stringPreferencesKey("language")
+    }
+}

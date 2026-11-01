@@ -11,6 +11,13 @@ import com.wpdas.primetv.domain.model.PlaylistException
 import com.wpdas.primetv.domain.model.PlaylistSource
 import com.wpdas.primetv.domain.model.SyncState
 import com.wpdas.primetv.domain.sync.CatalogSync
+import com.wpdas.primetv.domain.repository.SettingsRepository
+import com.wpdas.primetv.domain.football.FootballClassifier
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -36,6 +43,8 @@ class CatalogSyncer @Inject constructor(
     private val xtreamImporter: XtreamImporter,
     private val m3uImporter: M3uImporter,
     private val syncStateDao: SyncStateDao,
+    private val settings: SettingsRepository,
+    private val reclassifier: FootballReclassifier,
     @ApplicationScope private val scope: CoroutineScope,
     @IoDispatcher private val io: CoroutineDispatcher,
 ) : CatalogSync {
@@ -48,6 +57,41 @@ class CatalogSyncer @Inject constructor(
 
     init {
         scope.launch(io) { restorePersistedState() }
+        // Palavras-chave de futebol mudaram: refaz a marcação do que já está no banco.
+        settings.settings.map { it.footballKeywords }.distinctUntilChanged().drop(1)
+            .onEach { keywords -> runCatching { reclassifier.run(FootballClassifier(keywords)) } }
+            .launchIn(scope)
+    }
+
+    /** Executa uma seção e espera o resultado (WorkManager). Respeita o mutex da sincronização normal. */
+    suspend fun runSectionNow(section: ContentSection): SyncState = mutex.withLock {
+        val source = playlistStore.source.first() ?: return SyncState.Idle
+        runSection(source, section)
+        _status.value[section] ?: SyncState.Idle
+    }
+
+    /** Ao abrir o app: sincroniza as seções cujo intervalo venceu (e as que nunca rodaram). */
+    override fun syncStale() {
+        if (job?.isActive == true) return
+        job = scope.launch(io) {
+            mutex.withLock {
+                val source = playlistStore.source.first() ?: return@withLock
+                val current = settings.settings.value
+                val now = System.currentTimeMillis()
+                for (section in ORDER) {
+                    val interval = current.interval(section)
+                    if (interval.isManual) continue
+                    val state = _status.value[section]
+                    val stale = when (state) {
+                        is SyncState.Done -> now - state.finishedAt >= interval.millis
+                        is SyncState.Skipped -> false
+                        is SyncState.Error -> now - state.at >= STALE_RETRY_MS
+                        else -> true
+                    }
+                    if (stale) runSection(source, section)
+                }
+            }
+        }
     }
 
     override fun syncAll() = launchSections(ORDER)
@@ -124,5 +168,6 @@ class CatalogSyncer @Inject constructor(
 
     private companion object {
         val ORDER = listOf(ContentSection.LIVE, ContentSection.MOVIES, ContentSection.SERIES, ContentSection.EPG)
+        const val STALE_RETRY_MS = 60 * 60 * 1000L
     }
 }

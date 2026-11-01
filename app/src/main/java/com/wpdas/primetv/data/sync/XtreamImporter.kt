@@ -17,7 +17,7 @@ import com.wpdas.primetv.data.remote.xtream.toDoubleLenient
 import com.wpdas.primetv.data.remote.xtream.toIntLenient
 import com.wpdas.primetv.data.remote.xtream.toLongLenient
 import com.wpdas.primetv.data.remote.xtream.yearLenient
-import com.wpdas.primetv.domain.football.FootballClassifier
+import com.wpdas.primetv.domain.football.FootballClassifierProvider
 import com.wpdas.primetv.domain.model.ContentSection
 import com.wpdas.primetv.domain.model.PlaylistSource
 import kotlinx.serialization.json.JsonArray
@@ -33,10 +33,11 @@ class XtreamImporter @Inject constructor(
     private val db: PrimeDatabase,
     private val client: XtreamClient,
     private val epgImporter: EpgImporter,
-    private val football: FootballClassifier,
+    private val footballProvider: FootballClassifierProvider,
 ) : PlaylistImporter {
 
     private val dao get() = db.catalogDao()
+    private val football get() = footballProvider.get()
 
     override suspend fun import(source: PlaylistSource, section: ContentSection, onProgress: (Int) -> Unit): ImportResult {
         val src = source as PlaylistSource.Xtream

@@ -63,6 +63,7 @@ class CatalogRepositoryImpl @Inject constructor(
     override fun channel(id: String): Flow<Channel?> = dao.observeChannel(id).map { it?.toDomain() }
     override fun footballChannels(limit: Int): Flow<List<Channel>> = dao.observeFootballChannels(limit).map { l -> l.map { it.toDomain() } }
     override fun footballChannelCount(): Flow<Int> = dao.observeFootballChannelCount()
+    override fun footballVodCount(): Flow<Int> = dao.observeFootballVodCount()
 
     override fun movies(categoryId: String?, limit: Int): Flow<List<Movie>> = dao.observeMovies(categoryId, limit).map { l -> l.map { it.toDomain() } }
     override fun recentMovies(limit: Int): Flow<List<Movie>> = dao.observeMovies(null, limit).map { l -> l.map { it.toDomain() } }
