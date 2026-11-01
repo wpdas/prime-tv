@@ -142,3 +142,39 @@ data class WatchHistoryEntity(
     val updatedAt: Long,
     val finished: Boolean,
 )
+
+/** Resposta de lista do TMDB (trending, populares) em JSON, com validade de ~12 h. */
+@Entity(tableName = "tmdb_cache")
+data class TmdbCacheEntity(
+    @PrimaryKey val key: String,
+    val json: String,
+    val fetchedAt: Long,
+)
+
+/** Detalhes de um título do TMDB (~7 dias). [type]: movie | series. */
+@Entity(tableName = "tmdb_details", primaryKeys = ["tmdbId", "type"])
+data class TmdbDetailsEntity(
+    val tmdbId: Int,
+    val type: String,
+    val title: String,
+    val overview: String?,
+    val backdropPath: String?,
+    val posterPath: String?,
+    val genres: String?,
+    val rating: Double?,
+    val voteCount: Int?,
+    val year: Int?,
+    val seasons: Int?,
+    val episodes: Int?,
+    val trailerKey: String?,
+    val fetchedAt: Long,
+)
+
+/** Correspondência item da lista -> TMDB (null = procurado e não encontrado), para não repetir buscas. */
+@Entity(tableName = "tmdb_match")
+data class TmdbMatchEntity(
+    @PrimaryKey val itemId: String,
+    val tmdbId: Int?,
+    val type: String,
+    val matchedAt: Long,
+)

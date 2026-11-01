@@ -10,6 +10,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import coil3.compose.AsyncImage
 import com.wpdas.primetv.domain.model.MediaItem
+import com.wpdas.primetv.domain.model.MediaType
+import androidx.compose.ui.unit.dp
 
 /**
  * Arte de um item (pôster da lista, backdrop do TMDB). Sem URL, desenha um
@@ -35,13 +37,20 @@ fun Artwork(
     }
 }
 
+/** Pôster do item; canais com nome de partida e sem logo próprio ganham a arte de escudos. */
 @Composable
-fun PosterArtwork(item: MediaItem, modifier: Modifier = Modifier) =
-    Artwork(item.posterUrl, Color(item.placeholderColor), modifier, item.title)
+fun PosterArtwork(item: MediaItem, modifier: Modifier = Modifier) {
+    val match = if (item.type == MediaType.CHANNEL && item.posterUrl == null) MatchArtist.parse(item.title) else null
+    if (match != null) MatchArt(match, modifier, badgeSize = 48.dp)
+    else Artwork(item.posterUrl, Color(item.placeholderColor), modifier, item.title)
+}
 
 @Composable
-fun BackdropArtwork(item: MediaItem, modifier: Modifier = Modifier) =
-    Artwork(item.backdropUrl ?: item.posterUrl, Color(item.placeholderColor), modifier, null)
+fun BackdropArtwork(item: MediaItem, modifier: Modifier = Modifier) {
+    val match = if (item.type == MediaType.CHANNEL && item.backdropUrl == null && item.posterUrl == null) MatchArtist.parse(item.title) else null
+    if (match != null) MatchArt(match, modifier, badgeSize = 72.dp)
+    else Artwork(item.backdropUrl ?: item.posterUrl, Color(item.placeholderColor), modifier, null)
+}
 
 private fun placeholderGradient(base: Color): Brush = Brush.linearGradient(
     colors = listOf(base.lighten(0.18f), base, base.darken(0.25f)),

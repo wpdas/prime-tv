@@ -55,14 +55,14 @@ internal fun placeholderFor(id: String): Long = PLACEHOLDERS[(id.hashCode() and 
 fun Movie.toMediaItem(inMyList: Boolean = false) = MediaItem(
     id = id, title = TextNormalizer.displayTitle(title), type = MediaType.MOVIE, posterUrl = posterUrl, backdropUrl = null,
     placeholderColor = placeholderFor(id), year = year, genres = listOfNotNull(categoryName), rating = rating,
-    synopsis = null, inMyList = inMyList,
+    synopsis = null, inMyList = inMyList, tmdbId = tmdbId,
 )
 
 fun Series.toMediaItem(inMyList: Boolean = false) = MediaItem(
     id = id, title = TextNormalizer.displayTitle(title), type = MediaType.SERIES, posterUrl = posterUrl, backdropUrl = backdropUrl,
     placeholderColor = placeholderFor(id), year = year,
     genres = genre?.split(',', '/', '|')?.map { it.trim() }?.filter { it.isNotEmpty() }?.take(3) ?: listOfNotNull(categoryName),
-    rating = rating, synopsis = plot, inMyList = inMyList,
+    rating = rating, synopsis = plot, inMyList = inMyList, tmdbId = tmdbId,
 )
 
 fun Channel.toMediaItem(inMyList: Boolean = false) = MediaItem(

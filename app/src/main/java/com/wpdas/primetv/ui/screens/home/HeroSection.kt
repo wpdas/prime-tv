@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -62,16 +63,44 @@ fun HeroSection(
 ) {
     val colors = PrimeTheme.colors
     val typography = PrimeTheme.typography
-    Row(
+    val fullBleed = item.backdropUrl != null
+    Box(
         modifier
             .fillMaxWidth()
             .height(300.dp)
             .clip(PrimeTheme.shapes.panel)
             .background(colors.surface),
     ) {
+        // Arte: com backdrop (TMDB) ocupa tudo e o texto fica sobre um degradê; só com pôster, fica à direita.
+        AnimatedContent(targetState = item.id, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "heroArt") {
+            if (fullBleed) {
+                BackdropArtwork(item, Modifier.fillMaxSize())
+            } else {
+                Row(Modifier.fillMaxSize()) {
+                    Spacer(Modifier.width(520.dp))
+                    BackdropArtwork(item, Modifier.weight(1f).fillMaxHeight())
+                }
+            }
+        }
+        if (fullBleed) {
+            Box(
+                Modifier.fillMaxSize().background(
+                    Brush.horizontalGradient(0f to colors.surface, 0.42f to colors.surface.copy(alpha = 0.92f), 0.72f to Color.Transparent),
+                ),
+            )
+            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.6f to Color.Transparent, 1f to colors.surface.copy(alpha = 0.6f))))
+        } else {
+            Box(
+                Modifier
+                    .padding(start = 520.dp)
+                    .fillMaxHeight()
+                    .width(80.dp)
+                    .background(Brush.horizontalGradient(listOf(colors.surface, Color.Transparent))),
+            )
+        }
         Column(
             Modifier
-                .width(520.dp)
+                .width(560.dp)
                 .fillMaxHeight()
                 .padding(horizontal = 40.dp, vertical = 26.dp),
         ) {
@@ -114,29 +143,17 @@ fun HeroSection(
                 )
             }
         }
-        Box(Modifier.weight(1f).fillMaxHeight()) {
-            AnimatedContent(targetState = item.id, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "heroArt") {
-                BackdropArtwork(item, Modifier.fillMaxSize())
-            }
-            // Degradê para o texto do painel não "cortar" seco na arte.
-            Box(
-                Modifier
-                    .fillMaxHeight()
-                    .width(80.dp)
-                    .background(Brush.horizontalGradient(listOf(colors.surface, Color.Transparent))),
-            )
-            if (showDots) {
-                Row(
-                    Modifier.align(Alignment.BottomStart).padding(start = 24.dp, bottom = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    repeat(dots) { i ->
-                        Box(
-                            Modifier
-                                .size(if (i == activeDot) 22.dp else 8.dp, 4.dp)
-                                .background(if (i == activeDot) colors.text else colors.dotInactive, RoundedCornerShape(2.dp)),
-                        )
-                    }
+        if (showDots) {
+            Row(
+                Modifier.align(Alignment.BottomEnd).padding(end = 24.dp, bottom = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                repeat(dots) { i ->
+                    Box(
+                        Modifier
+                            .size(if (i == activeDot) 22.dp else 8.dp, 4.dp)
+                            .background(if (i == activeDot) colors.text else colors.dotInactive, RoundedCornerShape(2.dp)),
+                    )
                 }
             }
         }

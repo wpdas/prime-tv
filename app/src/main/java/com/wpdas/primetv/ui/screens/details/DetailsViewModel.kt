@@ -11,6 +11,8 @@ import com.wpdas.primetv.domain.model.MediaType
 import com.wpdas.primetv.domain.model.PlaylistException
 import com.wpdas.primetv.domain.repository.CatalogRepository
 import com.wpdas.primetv.domain.repository.LibraryRepository
+import com.wpdas.primetv.domain.repository.RecommendationRepository
+import com.wpdas.primetv.domain.model.TmdbInfo
 import com.wpdas.primetv.domain.model.WatchProgress
 import com.wpdas.primetv.ui.navigation.DetailsRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -41,7 +43,23 @@ data class DetailsUiState(
     val categoryName: String? = null,
     /** Progresso por id de episódio (séries) ou do próprio filme (chave = id do filme). */
     val progress: Map<String, WatchProgress> = emptyMap(),
+    val tmdb: TmdbInfo? = null,
 ) {
+    /** Item com os dados do TMDB por cima dos da lista (capa da lista continua tendo prioridade). */
+    val display: MediaItem? get() {
+        val base = item ?: return null
+        val info = tmdb ?: return base
+        return base.copy(
+            backdropUrl = info.backdropUrl ?: base.backdropUrl,
+            posterUrl = base.posterUrl ?: info.posterUrl,
+            synopsis = info.overview?.takeIf { it.isNotBlank() } ?: base.synopsis,
+            genres = info.genres.take(3).ifEmpty { base.genres },
+            rating = info.rating ?: base.rating,
+            year = base.year ?: info.year,
+            seasons = base.seasons ?: info.seasons,
+            episodes = base.episodes ?: info.episodes,
+        )
+    }
     val isSeries: Boolean get() = item?.type == MediaType.SERIES
     val seasonEpisodes: List<Episode> get() = episodes.filter { it.season == selectedSeason }
     val firstEpisode: Episode? get() = episodes.firstOrNull()
@@ -67,7 +85,18 @@ class DetailsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val catalog: CatalogRepository,
     private val library: LibraryRepository,
+    private val recommendations: RecommendationRepository,
 ) : ViewModel() {
+
+    private val tmdbInfo = MutableStateFlow<TmdbInfo?>(null)
+    private var enrichStarted = false
+
+    /** Busca o TMDB uma vez por tela, assim que o item da lista estiver carregado. */
+    private fun enrichOnce(item: MediaItem) {
+        if (enrichStarted) return
+        enrichStarted = true
+        viewModelScope.launch { tmdbInfo.value = runCatching { recommendations.enrich(item) }.getOrNull() }
+    }
 
     private val itemId: String = savedStateHandle.toRoute<DetailsRoute>().itemId
     private val selectedSeason = MutableStateFlow<Int?>(null)
@@ -85,16 +114,19 @@ class DetailsViewModel @Inject constructor(
     }
 
     private fun observeMovie() {
-        combine(catalog.movie(itemId), library.favoriteIds(), progressTick) { movie, favorites, _ -> movie to favorites }
-            .flatMapLatest { (movie, favorites) ->
+        combine(catalog.movie(itemId), library.favoriteIds(), progressTick, tmdbInfo) { movie, favorites, _, info -> Triple(movie, favorites, info) }
+            .flatMapLatest { (movie, favorites, info) ->
                 if (movie == null) return@flatMapLatest flowOf(DetailsUiState(loaded = true))
+                val item = movie.toMediaItem(inMyList = movie.id in favorites)
+                enrichOnce(item)
                 catalog.movies(movie.categoryId, RELATED + 1).map { related ->
                     DetailsUiState(
                         loaded = true,
-                        item = movie.toMediaItem(inMyList = movie.id in favorites),
+                        item = item,
                         related = related.filter { it.id != movie.id }.take(RELATED).map { it.toMediaItem() },
                         categoryName = movie.categoryName,
                         progress = library.progress(movie.id)?.let { mapOf(movie.id to it) }.orEmpty(),
+                        tmdb = info,
                     )
                 }
             }.onEach { s -> _state.value = s }.launchIn(viewModelScope)
@@ -114,9 +146,10 @@ class DetailsViewModel @Inject constructor(
         }
         combine(
             catalog.seriesById(itemId), catalog.episodes(itemId), selectedSeason, episodesStatus,
-            combine(library.favoriteIds(), library.seriesProgress(itemId)) { f, p -> f to p },
-        ) { series, episodes, chosen, status, (favorites, progress) ->
+            combine(library.favoriteIds(), library.seriesProgress(itemId), tmdbInfo) { f, p, i -> Triple(f, p, i) },
+        ) { series, episodes, chosen, status, (favorites, progress, info) ->
             if (series == null) return@combine DetailsUiState(loaded = true)
+            enrichOnce(series.toMediaItem())
             val seasons = episodes.map { it.season }.distinct().sorted()
             val latest = progress.values.maxByOrNull { it.updatedAt }
             val resumeSeason = latest?.let { l -> episodes.firstOrNull { it.id == l.itemId }?.season }
@@ -125,6 +158,7 @@ class DetailsViewModel @Inject constructor(
                 loaded = true,
                 item = series.toMediaItem(inMyList = series.id in favorites).copy(seasons = seasons.size.takeIf { it > 0 }, episodes = episodes.size.takeIf { it > 0 }),
                 progress = progress,
+                tmdb = info,
                 seasons = seasons,
                 selectedSeason = season,
                 episodes = episodes,

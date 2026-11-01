@@ -3,6 +3,7 @@ package com.wpdas.primetv.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -18,7 +19,7 @@ import com.wpdas.primetv.domain.model.FootballEvent
 import com.wpdas.primetv.ui.theme.PrimeFocus
 import com.wpdas.primetv.ui.theme.PrimeTheme
 
-/** Card 220×92 de "Futebol agora": selo AO VIVO, canal e partida. */
+/** Card 260×92 de "Futebol agora": selo AO VIVO, canal, partida e escudos gerados. */
 @Composable
 fun FootballCard(
     event: FootballEvent,
@@ -30,7 +31,7 @@ fun FootballCard(
     val shape = PrimeTheme.shapes.card
     Surface(
         onClick = onClick,
-        modifier = modifier.size(220.dp, 92.dp),
+        modifier = modifier.size(260.dp, 92.dp),
         shape = PrimeFocus.shape(shape),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = colors.surface,
@@ -43,15 +44,22 @@ fun FootballCard(
         scale = PrimeFocus.scale(),
         border = PrimeFocus.border(shape),
     ) {
-        Column(
-            Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (event.isLive) LiveBadge(liveLabel)
-                Text(event.channelName, style = PrimeTheme.typography.caption, color = colors.textSecondary, maxLines = 1)
+        val match = MatchArtist.parse(event.title) ?: MatchArtist.parse(event.channelName)
+        Row(Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.SpaceBetween) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (event.isLive) LiveBadge(liveLabel)
+                    Text(event.channelName, style = PrimeTheme.typography.caption, color = colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                Text(event.title, style = PrimeTheme.typography.bodyStrong, color = colors.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
-            Text(event.title, style = PrimeTheme.typography.bodyStrong, color = colors.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (match != null) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                    TeamBadge(match.home, 30.dp)
+                    Text("×", style = PrimeTheme.typography.captionSmall, color = colors.textSecondary)
+                    TeamBadge(match.away, 30.dp)
+                }
+            }
         }
     }
 }

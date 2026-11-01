@@ -139,5 +139,16 @@
   "player.error_live": "O canal não respondeu ({detail}). Tente de novo ou mude de canal.",
   "favorites.added": "Adicionado aos favoritos",
   "favorites.removed": "Removido dos favoritos",
-  "live.unfavorite": "Remover dos favoritos"
+  "live.unfavorite": "Remover dos favoritos",
+  "details.tmdb_credit": "Sinopse, gêneros e nota via TMDB",
+  "menu.check_update": "Verificar atualização",
+  "menu.settings": "Configurações",
+  "menu.change_playlist": "Trocar lista IPTV",
+  "menu.about": "Sobre",
+  "screen.update": "Atualização do app",
+  "about.version": "Versão {version} · build {code}",
+  "about.description": "PrimeTV é um player de IPTV para TV Box com Android. Ele não fornece, hospeda nem indica listas: o conteúdo vem da lista que você mesmo configura.",
+  "about.repository": "Código e releases: {repo}",
+  "about.tmdb_notice": "Este produto usa a API do TMDB, mas não é endossado ou certificado pelo TMDB.",
+  "about.inter_notice": "Tipografia Inter, sob a SIL Open Font License."
 }

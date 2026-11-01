@@ -12,6 +12,8 @@ import com.wpdas.primetv.domain.repository.CatalogRepository
 import com.wpdas.primetv.domain.repository.ChannelFilter
 import com.wpdas.primetv.domain.repository.HomeRepository
 import com.wpdas.primetv.domain.repository.LibraryRepository
+import com.wpdas.primetv.domain.repository.RecommendationRepository
+import kotlinx.coroutines.flow.onStart
 import com.wpdas.primetv.domain.sync.CatalogSync
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -32,16 +34,26 @@ class HomeRepositoryImpl @Inject constructor(
     private val catalog: CatalogRepository,
     private val catalogSync: CatalogSync,
     private val library: LibraryRepository,
+    private val recommendations: RecommendationRepository,
 ) : HomeRepository {
 
     private val myList: Flow<Set<String>> get() = library.favoriteIds()
 
-    override fun featured(): Flow<List<MediaItem>> =
-        combine(catalog.recentMovies(FEATURED_MOVIES), catalog.series(null, FEATURED_SERIES), myList) { movies, series, ids ->
-            val items = movies.map { it.toMediaItem().copy(badgeKey = "home.badge_recent") } +
+    /** Recomendações do TMDB que existem na lista; sem chave ou sem correspondência, itens recentes. */
+    override fun featured(): Flow<List<MediaItem>> {
+        val fallback = combine(catalog.recentMovies(FEATURED_MOVIES), catalog.series(null, FEATURED_SERIES)) { movies, series ->
+            movies.map { it.toMediaItem().copy(badgeKey = "home.badge_recent") } +
                 series.map { it.toMediaItem().copy(badgeKey = "home.badge_series") }
-            items.map { it.copy(inMyList = it.id in ids) }
         }
+        val recommended = if (recommendations.isAvailable) {
+            recommendations.featured(FEATURED_TMDB).onStart { emit(emptyList()) }
+        } else {
+            flowOf(emptyList())
+        }
+        return combine(recommended, fallback, myList) { tmdb, recent, ids ->
+            (tmdb.ifEmpty { recent }).map { it.copy(inMyList = it.id in ids) }
+        }
+    }
 
     override fun continueWatching(): Flow<List<ContinueWatchingItem>> = library.continueWatching(CONTINUE_ITEMS)
 
@@ -119,6 +131,7 @@ class HomeRepositoryImpl @Inject constructor(
 
     companion object {
         private const val FEATURED_MOVIES = 4
+        private const val FEATURED_TMDB = 8
         private const val FEATURED_SERIES = 2
         private const val FOOTBALL_NOW = 10
         private const val ROW_ITEMS = 24

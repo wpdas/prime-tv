@@ -75,7 +75,11 @@ fun DetailsScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    val item = state.item
+    val item = state.display
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val trailerIntent = androidx.compose.runtime.remember(state.tmdb?.trailerYoutubeKey) {
+        state.tmdb?.trailerYoutubeKey?.let { key -> youtubeIntent(context, key) }
+    }
     if (!state.loaded) {
         Box(Modifier.fillMaxSize().background(colors.background), contentAlignment = Alignment.Center) { LoadingSpinner(size = 32.dp) }
         return
@@ -89,10 +93,16 @@ fun DetailsScreen(
         return
     }
 
+    Box(Modifier.fillMaxSize().background(colors.background)) {
+        // Backdrop do TMDB ao fundo, bem escurecido, só para dar clima.
+        item.backdropUrl?.let { url ->
+            com.wpdas.primetv.ui.components.Artwork(url, colors.background, Modifier.fillMaxSize())
+            Box(Modifier.fillMaxSize().background(colors.background.copy(alpha = 0.82f)))
+            Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(colors.background, colors.background.copy(alpha = 0.3f)))))
+        }
     Row(
         Modifier
             .fillMaxSize()
-            .background(colors.background)
             .padding(horizontal = PrimeDimens.screenMargin, vertical = 40.dp),
         horizontalArrangement = Arrangement.spacedBy(40.dp),
     ) {
@@ -104,9 +114,11 @@ fun DetailsScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(listOfNotNull(typeLabel(item.type), item.year?.toString()).joinToString(" · "), style = typography.caption, color = colors.textSecondary)
                     if (item.genres.isNotEmpty()) Text(item.genres.joinToString(", "), style = typography.caption, color = colors.textSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    if (state.isSeries && state.seasons.isNotEmpty()) {
-                        val seasonsText = if (state.seasons.size == 1) t("details.season_count_one") else t("details.seasons_count", "n" to state.seasons.size)
-                        Text("$seasonsText · ${t("details.episodes_count", "n" to state.episodeCount)}", style = typography.caption, color = colors.textSecondary)
+                    if (state.isSeries && (state.seasons.isNotEmpty() || item.seasons != null)) {
+                        val seasonsCount = state.seasons.size.takeIf { it > 0 } ?: item.seasons ?: 0
+                        val episodesCount = state.episodeCount.takeIf { it > 0 } ?: item.episodes ?: 0
+                        val seasonsText = if (seasonsCount == 1) t("details.season_count_one") else t("details.seasons_count", "n" to seasonsCount)
+                        Text("$seasonsText · ${t("details.episodes_count", "n" to episodesCount)}", style = typography.caption, color = colors.textSecondary)
                     }
                     item.rating?.let { Text(t("details.rating", "n" to String.format(Locale("pt", "BR"), "%.1f", it)), style = typography.caption, color = colors.accentSoftText) }
                 }
@@ -140,6 +152,17 @@ fun DetailsScreen(
                     textStyle = typography.listTitle,
                 )
             }
+            if (trailerIntent != null) {
+                PrimeButton(
+                    text = t("details.watch_trailer"),
+                    onClick = { runCatching { context.startActivity(trailerIntent) } },
+                    style = PrimeButtonStyle.Outline,
+                    icon = Icons.Rounded.PlayArrow,
+                    height = 44.dp,
+                    horizontalPadding = 16.dp,
+                )
+            }
+            state.tmdb?.let { Text(t("details.tmdb_credit"), style = typography.captionSmall, color = colors.textSecondary) }
         }
 
         // ---------------- coluna direita: temporadas/episódios ou relacionados ----------------
@@ -160,6 +183,18 @@ fun DetailsScreen(
             }
         }
     }
+    }
+}
+
+/** Abre o trailer no app do YouTube (celular ou TV). null quando nenhum está instalado. */
+private fun youtubeIntent(context: android.content.Context, key: String): android.content.Intent? {
+    val pm = context.packageManager
+    val candidates = listOf(
+        android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("vnd.youtube:$key")),
+        android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://www.youtube.com/watch?v=$key")).setPackage("com.google.android.youtube.tv"),
+        android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://www.youtube.com/watch?v=$key")).setPackage("com.google.android.youtube"),
+    )
+    return candidates.firstOrNull { it.resolveActivity(pm) != null }
 }
 
 @Composable

@@ -47,11 +47,11 @@ Estratégia de qualidade (a investigar antes de implementar):
 ### Ao vivo: ocultar TV aberta em "Todos"
 Configuração em Ao vivo / Configurações para definir se a categoria "Todos" inclui ou exclui os canais de TV aberta. A maioria dos usuários de TV Box já tem esses canais na TV comum e não quer vê-los misturados. Precisa de um critério para identificar TV aberta (categoria da lista, palavras-chave configuráveis como "abertos", "aberta", "TV aberta", nomes de emissoras) e de um padrão sensato (sugestão: ocultar).
 
-### Arte para jogos de futebol sem imagem
-Canais e eventos "Time A x Time B" quase nunca têm capa. Montar a arte em tempo de execução: escudo do time A, um "×" e o escudo do time B, sobre o fundo do app. Pacote de escudos embutido para os clubes mais comuns (Brasil e Europa) com apelidos ("Fla", "Atlético-MG", "São Paulo"); sem escudo conhecido, usar as iniciais em um círculo com cor derivada do nome. Entra junto com as imagens do TMDB (fase 5).
+### Arte para jogos de futebol sem imagem ✅ (fase 5)
+Feito com escudos estilizados gerados no app (sigla + cores do clube para os mais comuns do Brasil e da Europa; cores derivadas do nome para os demais) e um "×" no meio. Imagens reais de escudos ficaram de fora por serem marcas registradas. Melhoria futura: mais clubes no mapa de cores e apelidos.
 
-### Destaque com imagem em toda a largura
-Hoje o destaque da Início segue o protótipo: texto à esquerda, imagem à direita. Com os backdrops horizontais do TMDB (fase 5), avaliar a imagem ocupando toda a largura com o texto sobre um degradê escuro, estilo Netflix. Com os pôsteres verticais da lista isso ficaria cortado, por isso a decisão fica para a fase 5.
+### Destaque com imagem em toda a largura ✅ (fase 5)
+Com backdrop do TMDB o destaque usa a imagem em toda a largura com o texto sobre um degradê; só com o pôster vertical da lista, mantém o layout do protótipo (texto à esquerda, imagem à direita).
 
 ### Intro animada com logo e som
 Ao abrir o app, exibir uma vinheta curta (2–3 s) com a animação do logo PrimeTV e um áudio de fundo, no espírito da abertura da Netflix. Depende de dois ativos que ainda não existem: a logo em formato animável (vetor/Lottie ou sequência de quadros) e uma trilha curta com licença para uso. Deve ser pulável com qualquer tecla e não atrasar o carregamento da lista.

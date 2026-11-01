@@ -20,6 +20,7 @@ data class MediaItem(
     val inMyList: Boolean = false,
     /** Rótulo opcional de onde veio a recomendação (ex.: "Em alta esta semana"). */
     val badgeKey: String? = null,
+    val tmdbId: Int? = null,
 )
 
 /** Linha "Continuar assistindo". [progress] de 0 a 1. */

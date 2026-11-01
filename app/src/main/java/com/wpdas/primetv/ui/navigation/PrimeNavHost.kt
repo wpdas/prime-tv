@@ -8,6 +8,8 @@ import androidx.navigation.compose.rememberNavController
 import com.wpdas.primetv.domain.model.HomeTab
 import com.wpdas.primetv.domain.model.MediaItem
 import com.wpdas.primetv.domain.model.MediaType
+import com.wpdas.primetv.ui.screens.about.AboutScreen
+import com.wpdas.primetv.ui.screens.appmenu.AppMenuScreen
 import com.wpdas.primetv.ui.screens.category.CategoryScreen
 import com.wpdas.primetv.ui.screens.details.DetailsScreen
 import com.wpdas.primetv.ui.screens.home.HomeScreen
@@ -68,7 +70,16 @@ fun PrimeNavHost(
             SearchScreen(onBack = navController::popBackStack, onOpenItem = ::openItem)
         }
         composable<PlayerRoute> { PlayerScreen(onBack = navController::popBackStack) }
-        composable<AppMenuRoute> { PlaceholderScreen("screen.app_menu", phase = 7, onBack = navController::popBackStack) }
+        composable<AppMenuRoute> {
+            AppMenuScreen(
+                onCheckUpdate = { navController.navigate(UpdateRoute) },
+                onSettings = { navController.navigate(SettingsRoute) },
+                onChangePlaylist = { navController.navigate(SetupRoute) },
+                onAbout = { navController.navigate(AboutRoute) },
+            )
+        }
+        composable<AboutRoute> { AboutScreen(onBack = navController::popBackStack) }
+        composable<UpdateRoute> { PlaceholderScreen("screen.update", phase = 7, onBack = navController::popBackStack) }
         composable<SettingsRoute> { PlaceholderScreen("screen.settings", phase = 6, onBack = navController::popBackStack) }
         composable<SetupRoute> {
             SetupScreen(

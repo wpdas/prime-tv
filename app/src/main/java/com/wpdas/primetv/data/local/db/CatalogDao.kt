@@ -44,6 +44,7 @@ interface CatalogDao {
     @Query("SELECT * FROM movies WHERE id = :id") fun observeMovie(id: String): Flow<MovieEntity?>
     @Query("SELECT * FROM movies WHERE id = :id") suspend fun movieById(id: String): MovieEntity?
     @Query("SELECT * FROM movies WHERE id IN (:ids)") suspend fun moviesByIds(ids: List<String>): List<MovieEntity>
+    @Query("SELECT * FROM movies WHERE normalizedTitle IN (:keys) LIMIT 10") suspend fun moviesByNormalizedTitles(keys: List<String>): List<MovieEntity>
     @Query("SELECT * FROM movies WHERE id IN (:ids)") fun observeMoviesByIds(ids: List<String>): Flow<List<MovieEntity>>
     @Query("SELECT categoryId AS `key`, COUNT(*) AS count FROM movies GROUP BY categoryId") fun observeMovieCounts(): Flow<List<KeyCount>>
 
@@ -56,6 +57,7 @@ interface CatalogDao {
     @Query("SELECT * FROM series WHERE id = :id") fun observeSeriesById(id: String): Flow<SeriesEntity?>
     @Query("SELECT * FROM series WHERE id = :id") suspend fun seriesById(id: String): SeriesEntity?
     @Query("SELECT * FROM series WHERE id IN (:ids)") suspend fun seriesByIds(ids: List<String>): List<SeriesEntity>
+    @Query("SELECT * FROM series WHERE normalizedTitle IN (:keys) LIMIT 10") suspend fun seriesByNormalizedTitles(keys: List<String>): List<SeriesEntity>
     @Query("SELECT * FROM series WHERE id IN (:ids)") fun observeSeriesByIds(ids: List<String>): Flow<List<SeriesEntity>>
     @Query("UPDATE series SET episodesLoaded = :loaded WHERE id = :id") suspend fun setEpisodesLoaded(id: String, loaded: Boolean)
     @Query("SELECT categoryId AS `key`, COUNT(*) AS count FROM series GROUP BY categoryId") fun observeSeriesCounts(): Flow<List<KeyCount>>
@@ -120,4 +122,15 @@ interface LibraryDao {
     @Query("SELECT * FROM watch_history WHERE seriesId = :seriesId ORDER BY updatedAt DESC LIMIT 1") suspend fun latestOfSeries(seriesId: String): WatchHistoryEntity?
     @Query("SELECT * FROM watch_history WHERE type = 'channel' ORDER BY updatedAt DESC LIMIT :limit") fun observeRecentChannels(limit: Int): Flow<List<WatchHistoryEntity>>
     @Query("DELETE FROM watch_history WHERE itemId = :itemId") suspend fun deleteHistory(itemId: String)
+}
+
+@Dao
+interface TmdbDao {
+    @Query("SELECT * FROM tmdb_cache WHERE `key` = :key") suspend fun cache(key: String): TmdbCacheEntity?
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putCache(entry: TmdbCacheEntity)
+    @Query("SELECT * FROM tmdb_details WHERE tmdbId = :tmdbId AND type = :type") suspend fun details(tmdbId: Int, type: String): TmdbDetailsEntity?
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putDetails(entry: TmdbDetailsEntity)
+    @Query("SELECT * FROM tmdb_match WHERE itemId = :itemId") suspend fun match(itemId: String): TmdbMatchEntity?
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putMatch(entry: TmdbMatchEntity)
+    @Query("DELETE FROM tmdb_cache WHERE fetchedAt < :before") suspend fun pruneCache(before: Long)
 }

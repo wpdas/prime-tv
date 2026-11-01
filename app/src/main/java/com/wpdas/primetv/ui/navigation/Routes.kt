@@ -12,6 +12,8 @@ import kotlinx.serialization.Serializable
 /** [itemId]: filme, série ou canal. [episodeId] escolhe o episódio; sem ele, a série retoma de onde parou. */
 @Serializable data class PlayerRoute(val itemId: String, val episodeId: String? = null)
 @Serializable data object AppMenuRoute
+@Serializable data object AboutRoute
+@Serializable data object UpdateRoute
 @Serializable data object SettingsRoute
 @Serializable data object SetupRoute
 @Serializable data object ReceiveLinkRoute
