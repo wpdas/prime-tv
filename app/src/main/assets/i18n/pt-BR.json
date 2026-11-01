@@ -1,6 +1,5 @@
 {
   "app.name": "PrimeTV",
-
   "common.back": "Voltar",
   "common.watch": "Assistir",
   "common.watch_episode": "Assistir {episode}",
@@ -13,7 +12,6 @@
   "common.cancel": "Cancelar",
   "common.close": "Fechar",
   "common.coming_soon": "Esta tela entra na fase {phase} do roadmap.",
-
   "nav.search": "Buscar",
   "nav.home": "Início",
   "nav.live": "Ao vivo",
@@ -23,12 +21,10 @@
   "nav.my_list": "Minha lista",
   "nav.settings": "Configurações",
   "nav.app_menu": "Menu do PrimeTV",
-
   "section.live": "Ao vivo",
   "section.movies": "Filmes",
   "section.series": "Séries",
   "section.epg": "Guia",
-
   "meta.movie": "Filme",
   "meta.series": "Série",
   "meta.channel": "Canal",
@@ -39,7 +35,6 @@
   "meta.remaining": "faltam {time}",
   "meta.minutes_short": "{n} min",
   "meta.hours_minutes_short": "{h}h{m}",
-
   "home.badge_trending": "Em alta esta semana",
   "home.badge_popular": "Popular",
   "home.badge_now_playing": "Em cartaz",
@@ -50,7 +45,6 @@
   "home.updating_section": "Atualizando {section} em segundo plano",
   "home.empty_my_list": "Sua lista está vazia. Use \"+ Minha lista\" em um filme, série ou canal.",
   "home.empty_rows": "Nada por aqui ainda.",
-
   "screen.search": "Busca",
   "screen.details": "Detalhes",
   "screen.live": "Ao vivo",
@@ -58,5 +52,37 @@
   "screen.app_menu": "Menu do app",
   "screen.settings": "Configurações",
   "screen.setup": "Configuração inicial",
-  "screen.receive_link": "Receber link pelo celular"
+  "screen.receive_link": "Receber link pelo celular",
+  "source.xtream": "Xtream Codes",
+  "source.m3u": "Lista M3U",
+  "setup.title": "Vamos conectar sua lista",
+  "setup.step": "Passo 1 de 2 · você pode trocar a lista depois em Configurações.",
+  "setup.url_label": "URL da lista IPTV",
+  "setup.url_placeholder": "http://servidor:porta/get.php?username=…&password=…",
+  "setup.hint": "O link já deve vir com usuário e senha embutidos, do jeito que o seu provedor enviou. Aceitamos listas M3U e servidores Xtream Codes.",
+  "setup.detected": "Detectado: {type}",
+  "setup.looks_like": "Parece: {type}",
+  "setup.epg_found": "Guia de programação encontrado automaticamente",
+  "setup.epg_missing": "Esta lista não traz guia de programação",
+  "setup.connect": "Conectar",
+  "setup.connecting": "Conectando…",
+  "setup.receive_link": "Receber link pelo celular",
+  "setup.loading_title": "Carregando sua lista",
+  "setup.loading_hint": "Você já pode entrar assim que Ao vivo terminar. O resto continua em segundo plano.",
+  "setup.start": "Começar a assistir",
+  "sync.waiting": "Aguardando",
+  "sync.starting": "Conectando ao servidor…",
+  "sync.downloading": "Baixando… {n}",
+  "sync.done_live": "{n} canais",
+  "sync.done_movies": "{n} filmes",
+  "sync.done_series": "{n} séries",
+  "sync.done_epg": "Guia atualizado",
+  "sync.skipped_epg_pending": "Guia de programação chega na próxima etapa",
+  "sync.skipped_no_epg": "Lista sem guia de programação",
+  "error.invalid_url": "Esse link não parece válido. Confira se copiou o endereço completo.",
+  "error.no_internet": "Sem internet. Verifique a conexão da TV Box.",
+  "error.server_unreachable": "O servidor da lista não respondeu. Tente de novo em instantes.",
+  "error.invalid_credentials": "Usuário ou senha recusados pelo servidor. Peça um link novo ao seu provedor.",
+  "error.invalid_playlist": "O link respondeu, mas não é uma lista M3U nem um servidor Xtream.",
+  "error.unknown": "Algo deu errado ({detail}). Tente de novo."
 }

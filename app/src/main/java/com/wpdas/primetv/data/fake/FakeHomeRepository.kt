@@ -6,8 +6,9 @@ import com.wpdas.primetv.domain.model.FootballEvent
 import com.wpdas.primetv.domain.model.HomeTab
 import com.wpdas.primetv.domain.model.MediaItem
 import com.wpdas.primetv.domain.model.MediaType
+import com.wpdas.primetv.domain.model.SyncState
 import com.wpdas.primetv.domain.repository.HomeRepository
-import kotlinx.coroutines.delay
+import com.wpdas.primetv.domain.sync.CatalogSync
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
@@ -18,7 +19,9 @@ import javax.inject.Singleton
 
 /** Dados inventados para navegar na tela de Início antes de existir catálogo real (fase 1). */
 @Singleton
-class FakeHomeRepository @Inject constructor() : HomeRepository {
+class FakeHomeRepository @Inject constructor(
+    private val catalogSync: CatalogSync,
+) : HomeRepository {
 
     private val myList = MutableStateFlow(setOf("farol"))
 
@@ -122,12 +125,9 @@ class FakeHomeRepository @Inject constructor() : HomeRepository {
         rows.map { row -> row.copy(items = row.items.map { it.copy(inMyList = it.id in ids) }) }
     }
 
-    override fun backgroundUpdate(): Flow<String?> = flow {
-        emit(null)
-        delay(3_000)
-        emit("section.movies")
-        delay(5_000)
-        emit(null)
+    /** Seção que a sincronização real está baixando agora (Início só mostra o aviso). */
+    override fun backgroundUpdate(): Flow<String?> = catalogSync.status.map { status ->
+        status.entries.firstOrNull { it.value is SyncState.Running }?.key?.labelKey
     }
 
     override suspend fun toggleMyList(itemId: String) {

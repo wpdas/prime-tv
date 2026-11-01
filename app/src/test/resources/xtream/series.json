@@ -1,0 +1,4 @@
+[
+ {"num":1,"name":" Forca de Mulher ","series_id":4692,"cover":"http://img.exemplo/forca.jpg","plot":"Bahar luta.","cast":"A, B","director":"C","genre":"Drama","releaseDate":"2017-10-24","last_modified":"1723144062","rating":"8","rating_5based":4,"backdrop_path":["http://img.exemplo/forca_bd.jpg"],"youtube_trailer":"","episode_run_time":"45","category_id":"10011"},
+ {"num":2,"name":"Casa de Vidro","series_id":"4693","cover":"","plot":null,"genre":"","releaseDate":"","rating":"","rating_5based":0,"backdrop_path":"http://img.exemplo/casa_bd.jpg","category_id":"10011"}
+]

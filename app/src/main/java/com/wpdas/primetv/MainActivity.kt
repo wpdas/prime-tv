@@ -3,6 +3,9 @@ package com.wpdas.primetv
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -17,13 +20,16 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
 
     @Inject lateinit var i18n: I18n
+    private val mainViewModel: MainViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enterFullscreen()
         setContent {
             PrimeTheme(i18n = i18n) {
-                PrimeNavHost()
+                // null enquanto não sabemos se há lista configurada (fundo da janela cobre).
+                val start by mainViewModel.startDestination.collectAsStateWithLifecycle()
+                start?.let { PrimeNavHost(startDestination = it) }
             }
         }
     }

@@ -8,10 +8,14 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.wpdas.primetv.ui.screens.home.HomeScreen
 import com.wpdas.primetv.ui.screens.placeholder.PlaceholderScreen
+import com.wpdas.primetv.ui.screens.setup.SetupScreen
 
 @Composable
-fun PrimeNavHost(navController: NavHostController = rememberNavController()) {
-    NavHost(navController = navController, startDestination = HomeRoute) {
+fun PrimeNavHost(
+    startDestination: Any,
+    navController: NavHostController = rememberNavController(),
+) {
+    NavHost(navController = navController, startDestination = startDestination) {
         composable<HomeRoute> {
             HomeScreen(
                 onOpenSearch = { navController.navigate(SearchRoute) },
@@ -34,7 +38,14 @@ fun PrimeNavHost(navController: NavHostController = rememberNavController()) {
         }
         composable<AppMenuRoute> { PlaceholderScreen("screen.app_menu", phase = 7, onBack = navController::popBackStack) }
         composable<SettingsRoute> { PlaceholderScreen("screen.settings", phase = 6, onBack = navController::popBackStack) }
-        composable<SetupRoute> { PlaceholderScreen("screen.setup", phase = 2, onBack = navController::popBackStack) }
+        composable<SetupRoute> {
+            SetupScreen(
+                onStartWatching = {
+                    navController.navigate(HomeRoute) { popUpTo(SetupRoute) { inclusive = true } }
+                },
+                onReceiveLink = { navController.navigate(ReceiveLinkRoute) },
+            )
+        }
         composable<ReceiveLinkRoute> { PlaceholderScreen("screen.receive_link", phase = 6, onBack = navController::popBackStack) }
     }
 }

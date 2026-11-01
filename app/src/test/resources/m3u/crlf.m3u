@@ -1,0 +1,3 @@
+#EXTM3U
+#EXTINF:-1 tvg-id="X" group-title="Grupo",Canal CRLF
+http://servidor.exemplo/crlf/1

@@ -1,0 +1,30 @@
+#EXTM3U url-tvg="http://epg.exemplo.com/guia.xml.gz,http://outro.exemplo/x.xml"
+#EXTINF:-1 tvg-id="GLOBO SP" tvg-name="Globo SP FHD" tvg-logo="http://img.exemplo/globo.png" group-title="Canais Abertos",Globo SP FHD
+http://servidor.exemplo:8080/usuario/senha/1001
+#EXTINF:-1 tvg-id="" tvg-name="Band HD" tvg-logo="" group-title="Canais Abertos",Band HD
+http://servidor.exemplo:8080/usuario/senha/1002.ts
+
+#EXTINF:-1 group-title="Esportes, Futebol",Premiere 1 FHD
+http://servidor.exemplo:8080/usuario/senha/2001.m3u8
+#EXTINF:-1 tvg-logo=http://img.exemplo/semaspas.png group-title=Noticias,GloboNews
+http://servidor.exemplo:8080/usuario/senha/3001
+#EXTINF:0,Canal sem atributos
+http://servidor.exemplo:8080/usuario/senha/4001
+#EXTINF:-1 tvg-name="A Queda - 2022 UHD 4K" tvg-logo="http://img.exemplo/queda.jpg" group-title="Lançamentos",A Queda - 2022 UHD 4K
+http://servidor.exemplo:8080/movie/usuario/senha/446736.mp4
+#EXTINF:-1 tvg-name="Rota 116 [L]" group-title="Ação",Rota 116 [L]
+http://servidor.exemplo:8080/movie/usuario/senha/446737.mkv
+#EXTINF:-1 tvg-logo="http://img.exemplo/farol.jpg" group-title="Séries | Suspense",O Último Farol S01E01
+http://servidor.exemplo:8080/series/usuario/senha/90001.mp4
+#EXTINF:-1 tvg-logo="http://img.exemplo/farol.jpg" group-title="Séries | Suspense",O Último Farol S01E02
+http://servidor.exemplo:8080/series/usuario/senha/90002.mp4
+#EXTINF:-1 group-title="Séries | Suspense",O Último Farol S02E01
+http://servidor.exemplo:8080/series/usuario/senha/90011.mp4
+#EXTGRP:Novelas
+#EXTINF:-1,Casa de Vidro T3 E9
+http://servidor.exemplo:8080/vod/casa_de_vidro_t3e9.mp4
+#EXTINF:-1 group-title="Filmes",Noite em Lisboa 1x02
+http://servidor.exemplo:8080/vod/noite.mp4
+#EXTVLCOPT:http-user-agent=Teste
+#EXTINF:-1 group-title="VOD",Filme Avulso
+http://servidor.exemplo:8080/vod/filme_avulso.avi
