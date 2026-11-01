@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE tv SYSTEM "xmltv.dtd">
+<tv generator-info-name="Teste">
+<channel id=""><display-name>Copa do Mundo</display-name><icon src="http://img/copa.png" /></channel>
+<channel id="GLOBO SAO PAULO"><display-name>Globo SP</display-name><display-name>Globo</display-name><icon src="http://img/globo.png" /></channel>
+<channel id="PREMIERE 1"><display-name>Premiere 1 FHD</display-name></channel>
+<programme start="20261101163000 -0300" stop="20261101193000 -0300" channel="GLOBO SAO PAULO"><title lang="pt">Jornal &amp; Notícias</title><desc>Edição da noite</desc></programme>
+<programme start="20261101193000 -0300" stop="20261101203000 -0300" channel="GLOBO SAO PAULO"><title>Novela</title></programme>
+<programme start="20261101180000" stop="20261101200000" channel="PREMIERE 1"><title>Flamengo x Palmeiras</title><desc>Brasileirão</desc><category>Esporte</category></programme>
+<programme start="20261101200000 -0300" stop="20261101190000 -0300" channel="PREMIERE 1"><title>Invertido</title></programme>
+<programme start="20261101210000 -0300" stop="20261101220000 -0300" channel="PREMIERE 1"><title></title></programme>
+</tv>

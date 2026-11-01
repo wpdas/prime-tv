@@ -18,6 +18,6 @@ import javax.inject.Inject
 class MainViewModel @Inject constructor(playlistRepository: PlaylistRepository) : ViewModel() {
     val startDestination: StateFlow<Any?> = playlistRepository.source
         .take(1)
-        .map<Any?, Any?> { source -> if (source == null) SetupRoute else HomeRoute }
+        .map<Any?, Any?> { source -> if (source == null) SetupRoute else HomeRoute() }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 }

@@ -4,6 +4,39 @@ App Android de IPTV com interface no estilo Netflix, feito para **TV Box com And
 
 > Em desenvolvimento. Veja `docs/roadmap.md` e `docs/prompt-claude-code.md`.
 
+## O que já funciona
+
+- Configuração inicial com detecção automática de lista M3U ou Xtream Codes e importação por seção (Ao vivo libera primeiro; Filmes, Séries e Guia seguem em segundo plano)
+- Início com destaque rotativo, linhas por categoria, "Futebol agora" e abas Filmes, Séries e Futebol
+- Ao vivo com categorias, guia de programação (XMLTV) com programa atual, progresso e "A seguir"
+- Detalhes de filmes e séries, com temporadas e episódios carregados sob demanda
+- Busca com teclado para controle remoto, voz (quando houver) e sugestões instantâneas
+- Tudo navegável só com o D-pad, foco visível e interface escalada para qualquer resolução
+
+Ainda por vir: player, histórico e favoritos, recomendações do TMDB, configurações, atualização automática e releases assinadas.
+
+## Telas
+
+| Configuração inicial | Início |
+|---|---|
+| ![Configuração inicial](docs/screenshots/01-configuracao.jpg) | ![Início](docs/screenshots/02-inicio.jpg) |
+
+| Filmes | Séries |
+|---|---|
+| ![Filmes](docs/screenshots/03-filmes.jpg) | ![Séries](docs/screenshots/04-series.jpg) |
+
+| Detalhes de série | Detalhes de filme |
+|---|---|
+| ![Detalhes de série](docs/screenshots/05-detalhes-serie.jpg) | ![Detalhes de filme](docs/screenshots/09-detalhes-filme.jpg) |
+
+| Ao vivo com guia | Futebol |
+|---|---|
+| ![Ao vivo](docs/screenshots/07-ao-vivo.jpg) | ![Futebol](docs/screenshots/06-futebol.jpg) |
+
+| Busca | Categoria completa |
+|---|---|
+| ![Busca](docs/screenshots/08-busca.jpg) | ![Categoria](docs/screenshots/10-categoria.jpg) |
+
 ## Requisitos para compilar
 
 - JDK 17

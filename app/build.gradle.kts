@@ -23,7 +23,7 @@ val tmdbApiKey: String = localProps.getProperty("TMDB_API_KEY")
     ?: ""
 val hasReleaseKeystore = keystoreProps.getProperty("storeFile") != null
 // URL de uma lista real para testes manuais. Só entra no build debug; nunca no release nem no git.
-val iptvTestUrl: String = localProps.getProperty("IPTV_TEST_URL") ?: System.getenv("IPTV_TEST_URL") ?: ""
+val iptvTestUrl: String = System.getenv("IPTV_TEST_URL") ?: localProps.getProperty("IPTV_TEST_URL") ?: ""
 
 // ---------------------------------------------------------------------------
 // Versão derivada da tag git: vX.Y.Z -> versionName "X.Y.Z", versionCode X*10000+Y*100+Z.
@@ -154,6 +154,7 @@ dependencies {
 
     // Testes unitários
     testImplementation(libs.bundles.unit.test)
+    testImplementation(libs.kxml2) // XmlPullParser na JVM (no Android vem do sistema)
 
     // Testes instrumentados
     androidTestImplementation(libs.androidx.test.junit)

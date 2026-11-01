@@ -1,10 +1,13 @@
 package com.wpdas.primetv.ui.screens.home
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wpdas.primetv.domain.model.HomeTab
 import com.wpdas.primetv.domain.model.MediaItem
 import com.wpdas.primetv.domain.repository.HomeRepository
+import com.wpdas.primetv.ui.navigation.HomeRoute
+import androidx.navigation.toRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
@@ -22,13 +25,17 @@ import javax.inject.Inject
 @OptIn(FlowPreview::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class HomeViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
     private val repository: HomeRepository,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(HomeUiState())
+    private val initialTab: HomeTab = runCatching { savedStateHandle.toRoute<HomeRoute>().tab }
+        .getOrNull()?.let { name -> HomeTab.entries.firstOrNull { it.name == name } } ?: HomeTab.HOME
+
+    private val _state = MutableStateFlow(HomeUiState(selectedTab = initialTab))
     val state: StateFlow<HomeUiState> = _state.asStateFlow()
 
-    private val tab = MutableStateFlow(HomeTab.HOME)
+    private val tab = MutableStateFlow(initialTab)
     private val focusedCard = MutableStateFlow<MediaItem?>(null)
 
     init {

@@ -1,40 +1,49 @@
 package com.wpdas.primetv.ui.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.tv.material3.ClickableSurfaceDefaults
+import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
+import com.wpdas.primetv.ui.theme.PrimeFocus
 import com.wpdas.primetv.ui.theme.PrimeTheme
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
- * Campo de texto de uma linha para TV: 56 de altura, fundo `selected` e anel violeta
- * quando focado. OK no controle abre o teclado do sistema; Done dispara [onDone].
+ * Campo de texto de uma linha para TV, em dois estados:
+ * - navegação: é um botão focável pelo D-pad (anel violeta) que mostra o texto;
+ * - edição: ao apertar OK, vira um campo real com o teclado do sistema aberto.
+ * Done/Voltar fecham o teclado e devolvem o foco ao botão. Assim o teclado nunca
+ * abre só porque o foco passou pelo campo.
  */
 @Composable
 fun PrimeTextField(
@@ -50,44 +59,88 @@ fun PrimeTextField(
     val colors = PrimeTheme.colors
     val shape = PrimeTheme.shapes.card
     val keyboard = LocalSoftwareKeyboardController.current
-    var focused by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf(false) }
+    var fieldHadFocus by remember { mutableStateOf(false) }
+    // Estado com seleção, para o cursor começar no fim do texto ao entrar em edição.
+    var fieldValue by remember { mutableStateOf(TextFieldValue(value, TextRange(value.length))) }
+    val scope = rememberCoroutineScope()
+    val surfaceFocus = remember { FocusRequester() }
+    val fieldFocus = remember { FocusRequester() }
     val textStyle = PrimeTheme.typography.body.copy(fontSize = 17.sp, lineHeight = 22.sp, color = colors.text)
 
-    BasicTextField(
-        value = value,
-        onValueChange = onValueChange,
+    fun stopEditing() {
+        if (!editing) return
+        editing = false
+        fieldHadFocus = false
+        keyboard?.hide()
+        // Depois que o campo de edição sai da composição, o foco volta ao botão.
+        scope.launch {
+            delay(80)
+            runCatching { surfaceFocus.requestFocus() }
+        }
+    }
+
+    LaunchedEffect(editing) {
+        if (editing) {
+            fieldValue = TextFieldValue(value, TextRange(value.length))
+            runCatching { fieldFocus.requestFocus() }
+            keyboard?.show()
+        }
+    }
+    BackHandler(enabled = editing) { stopEditing() }
+
+    Surface(
+        onClick = { if (enabled) editing = true },
         enabled = enabled,
-        singleLine = true,
-        textStyle = textStyle,
-        cursorBrush = SolidColor(colors.accent),
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = imeAction, autoCorrectEnabled = false),
-        keyboardActions = KeyboardActions(onDone = { keyboard?.hide(); onDone?.invoke() }, onGo = { keyboard?.hide(); onDone?.invoke() }),
-        modifier = modifier
-            .height(56.dp)
-            .onFocusChanged { focused = it.isFocused }
-            .onPreviewKeyEvent { event ->
-                val isSelect = event.key == Key.DirectionCenter || event.key == Key.Enter || event.key == Key.NumPadEnter
-                if (isSelect && event.type == KeyEventType.KeyUp && focused) {
-                    keyboard?.show()
-                    true
-                } else {
-                    false
-                }
-            },
-        decorationBox = { inner ->
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(if (focused) colors.selected else colors.surface2, shape)
-                    .then(if (focused) Modifier.border(3.dp, colors.accent, shape) else Modifier)
-                    .padding(horizontal = 18.dp),
-                contentAlignment = Alignment.CenterStart,
-            ) {
-                if (value.isEmpty() && placeholder != null) {
-                    Text(placeholder, style = textStyle, color = colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-                inner()
+        modifier = modifier.height(56.dp).focusRequester(surfaceFocus),
+        shape = PrimeFocus.shape(shape),
+        colors = ClickableSurfaceDefaults.colors(
+            containerColor = if (editing) colors.selected else colors.surface2,
+            contentColor = colors.text,
+            focusedContainerColor = colors.selected,
+            focusedContentColor = colors.text,
+            pressedContainerColor = colors.selected,
+            pressedContentColor = colors.text,
+            disabledContainerColor = colors.surface2,
+            disabledContentColor = colors.textBody,
+        ),
+        scale = PrimeFocus.noScale(),
+        border = PrimeFocus.border(shape),
+    ) {
+        Box(Modifier.fillMaxSize().padding(horizontal = 18.dp), contentAlignment = Alignment.CenterStart) {
+            if (editing) {
+                BasicTextField(
+                    value = fieldValue,
+                    onValueChange = { new ->
+                        fieldValue = new
+                        if (new.text != value) onValueChange(new.text)
+                    },
+                    singleLine = true,
+                    textStyle = textStyle,
+                    cursorBrush = SolidColor(colors.accent),
+                    keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = imeAction, autoCorrectEnabled = false),
+                    keyboardActions = KeyboardActions(
+                        onDone = { stopEditing(); onDone?.invoke() },
+                        onGo = { stopEditing(); onDone?.invoke() },
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(fieldFocus)
+                        .onFocusChanged { state ->
+                            // onFocusChanged dispara ao anexar (sem foco); só encerra se já teve foco antes.
+                            if (state.isFocused) fieldHadFocus = true
+                            else if (fieldHadFocus && editing) stopEditing()
+                        },
+                )
+            } else {
+                Text(
+                    text = value.ifEmpty { placeholder.orEmpty() },
+                    style = textStyle,
+                    color = if (value.isEmpty()) colors.textSecondary else colors.text,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
-        },
-    )
+        }
+    }
 }

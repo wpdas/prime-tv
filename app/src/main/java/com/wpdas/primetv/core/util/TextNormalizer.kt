@@ -15,6 +15,8 @@ object TextNormalizer {
     private val YEAR = Regex("""(?<!\d)(19|20)\d{2}(?!\d)""")
     private val NON_ALNUM = Regex("""[^a-z0-9 ]""")
     private val SPACES = Regex("""\s+""")
+    /** " - 2026", " (2023)", ": 2019" no fim. Exige separador: "Blade Runner 2049" fica inteiro. */
+    private val TRAILING_YEAR = Regex("""(?:\s*[\-–—|:]\s*[\(\[]?|\s*[\(\[])(19|20)\d{2}[\)\]]?\s*$""")
 
     fun stripAccents(text: String): String =
         Normalizer.normalize(text, Normalizer.Form.NFD).replace(DIACRITICS, "")
@@ -36,7 +38,15 @@ object TextNormalizer {
     /** Ano no título, se houver (ex.: "Rota 116 (2023)" -> 2023). */
     fun extractYear(text: String): Int? = YEAR.find(text)?.value?.toIntOrNull()
 
-    /** Remove tags de qualidade e colchetes, mas preserva o resto para exibição. */
+    /** Título para exibição: sem tags de qualidade, colchetes e ano no fim ("Rota 116 - 2023 (L)" -> "Rota 116"). */
     fun displayTitle(text: String): String =
-        text.replace(BRACKETS, " ").replace(QUALITY, " ").replace(SPACES, " ").trim().trimEnd('-', '·', '|').trim()
+        text.replace(BRACKETS, " ")
+            .replace(QUALITY, " ")
+            .replace(SPACES, " ")
+            .trim()
+            .replace(TRAILING_YEAR, "")
+            .trim()
+            .trimEnd('-', '·', '|', ':', '–')
+            .trim()
+            .ifEmpty { text.trim() }
 }

@@ -17,6 +17,7 @@ import com.wpdas.primetv.data.remote.xtream.toDoubleLenient
 import com.wpdas.primetv.data.remote.xtream.toIntLenient
 import com.wpdas.primetv.data.remote.xtream.toLongLenient
 import com.wpdas.primetv.data.remote.xtream.yearLenient
+import com.wpdas.primetv.domain.football.FootballClassifier
 import com.wpdas.primetv.domain.model.ContentSection
 import com.wpdas.primetv.domain.model.PlaylistSource
 import kotlinx.serialization.json.JsonArray
@@ -31,6 +32,8 @@ import javax.inject.Inject
 class XtreamImporter @Inject constructor(
     private val db: PrimeDatabase,
     private val client: XtreamClient,
+    private val epgImporter: EpgImporter,
+    private val football: FootballClassifier,
 ) : PlaylistImporter {
 
     private val dao get() = db.catalogDao()
@@ -41,7 +44,7 @@ class XtreamImporter @Inject constructor(
             ContentSection.LIVE -> ImportResult.Imported(importLive(src, onProgress))
             ContentSection.MOVIES -> ImportResult.Imported(importMovies(src, onProgress))
             ContentSection.SERIES -> ImportResult.Imported(importSeries(src, onProgress))
-            ContentSection.EPG -> ImportResult.Skipped("sync.skipped_epg_pending")
+            ContentSection.EPG -> epgImporter.import(src, onProgress)
         }
     }
 
@@ -75,7 +78,9 @@ class XtreamImporter @Inject constructor(
                             categoryName = catId?.let(names::get),
                             streamUrl = XtreamClient.liveStreamUrl(src, id),
                             epgChannelId = dto.epgChannelId.blankToNull(),
+                            epgKey = dto.epgChannelId.blankToNull(),
                             isAdult = dto.isAdult.toBoolLenient(),
+                            isFootball = football.matches(name, catId?.let(names::get)),
                             searchKey = TextNormalizer.searchKey(name),
                         ),
                     )
@@ -120,6 +125,7 @@ class XtreamImporter @Inject constructor(
                             tmdbId = dto.tmdbId.toIntLenient()?.takeIf { it > 0 },
                             addedAt = dto.added.toLongLenient(),
                             isAdult = dto.isAdult.toBoolLenient(),
+                            isFootball = football.matches(name, catId?.let(names::get)),
                             normalizedTitle = TextNormalizer.normalize(name),
                         ),
                     )
@@ -170,6 +176,7 @@ class XtreamImporter @Inject constructor(
                             rating = dto.rating.toDoubleLenient()?.takeIf { it > 0 },
                             tmdbId = dto.tmdb.toIntLenient()?.takeIf { it > 0 },
                             episodesLoaded = false,
+                            isFootball = football.matches(name, catId?.let(names::get)),
                             normalizedTitle = TextNormalizer.normalize(name),
                         ),
                     )

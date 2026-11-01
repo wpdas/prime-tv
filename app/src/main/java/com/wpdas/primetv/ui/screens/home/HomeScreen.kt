@@ -30,11 +30,14 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.Text
 import com.wpdas.primetv.core.i18n.t
+import com.wpdas.primetv.domain.model.CategoryRow
 import com.wpdas.primetv.domain.model.ContinueWatchingItem
 import com.wpdas.primetv.domain.model.HomeTab
 import com.wpdas.primetv.domain.model.MediaItem
+import com.wpdas.primetv.domain.model.MediaType
 import com.wpdas.primetv.ui.components.FootballCard
 import com.wpdas.primetv.ui.components.PosterCard
+import com.wpdas.primetv.ui.components.SeeAllCard
 import com.wpdas.primetv.ui.components.StatusToast
 import com.wpdas.primetv.ui.components.TopBar
 import com.wpdas.primetv.ui.components.WideCard
@@ -49,6 +52,7 @@ fun HomeScreen(
     onPlay: (String, String?) -> Unit,
     onOpenAppMenu: () -> Unit,
     onOpenSettings: () -> Unit,
+    onSeeAll: (CategoryRow) -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -59,7 +63,8 @@ fun HomeScreen(
         onCardFocused = viewModel::onCardFocused,
         onWatch = { onPlay(it.id, null) },
         onContinue = { onPlay(it.item.id, it.episodeLabel) },
-        onMoreInfo = { onOpenDetails(it.id) },
+        onMoreInfo = { if (it.type == MediaType.CHANNEL) onPlay(it.id, null) else onOpenDetails(it.id) },
+        onSeeAll = onSeeAll,
         onToggleMyList = viewModel::toggleMyList,
         onOpenSearch = onOpenSearch,
         onOpenAppMenu = onOpenAppMenu,
@@ -82,6 +87,7 @@ fun HomeContent(
     onOpenAppMenu: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenLive: () -> Unit,
+    onSeeAll: (CategoryRow) -> Unit = {},
 ) {
     val colors = PrimeTheme.colors
     val watchFocus = remember { FocusRequester() }
@@ -161,6 +167,9 @@ fun HomeContent(
                     HomeRow(title = row.title) {
                         items(row.items, key = { it.id }) { item ->
                             PosterCard(item = item, onClick = { onMoreInfo(item) }, onFocused = onCardFocused)
+                        }
+                        if (row.section != null) {
+                            item(key = "see-all-${row.id}") { SeeAllCard(label = t("home.see_all"), onClick = { onSeeAll(row) }) }
                         }
                     }
                 }

@@ -17,6 +17,7 @@ import com.wpdas.primetv.data.remote.m3u.M3uItem
 import com.wpdas.primetv.data.remote.m3u.M3uKind
 import com.wpdas.primetv.data.remote.m3u.M3uParser
 import com.wpdas.primetv.data.remote.m3u.SeriesPattern
+import com.wpdas.primetv.domain.football.FootballClassifier
 import com.wpdas.primetv.domain.model.ContentSection
 import com.wpdas.primetv.domain.model.PlaylistError
 import com.wpdas.primetv.domain.model.PlaylistException
@@ -39,15 +40,15 @@ class M3uImporter @Inject constructor(
     @ApplicationContext private val context: Context,
     private val db: PrimeDatabase,
     private val http: OkHttpClient,
+    private val epgImporter: EpgImporter,
+    private val football: FootballClassifier,
 ) : PlaylistImporter {
 
     private val dao get() = db.catalogDao()
 
     override suspend fun import(source: PlaylistSource, section: ContentSection, onProgress: (Int) -> Unit): ImportResult {
         val src = source as PlaylistSource.M3u
-        if (section == ContentSection.EPG) {
-            return ImportResult.Skipped(if (src.epgUrl == null) "sync.skipped_no_epg" else "sync.skipped_epg_pending")
-        }
+        if (section == ContentSection.EPG) return epgImporter.import(src, onProgress)
         val file = ensureDownloaded(src)
         return ImportResult.Imported(
             when (section) {
@@ -121,7 +122,9 @@ class M3uImporter @Inject constructor(
                         categoryName = cat?.name,
                         streamUrl = entry.url,
                         epgChannelId = entry.tvgId,
+                        epgKey = entry.tvgId,
                         isAdult = false,
+                        isFootball = football.matches(entry.name, cat?.name),
                         searchKey = TextNormalizer.searchKey(entry.name),
                     ),
                 )
@@ -163,6 +166,7 @@ class M3uImporter @Inject constructor(
                         tmdbId = null,
                         addedAt = null,
                         isAdult = false,
+                        isFootball = football.matches(entry.name, cat?.name),
                         normalizedTitle = TextNormalizer.normalize(entry.name),
                     ),
                 )
@@ -203,6 +207,7 @@ class M3uImporter @Inject constructor(
                         rating = null,
                         tmdbId = null,
                         episodesLoaded = true,
+                        isFootball = football.matches(seriesTitle, cat?.name),
                         normalizedTitle = TextNormalizer.normalize(seriesTitle),
                     ).also { onProgress(seriesById.size + 1) }
                 }

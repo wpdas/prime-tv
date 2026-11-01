@@ -15,7 +15,7 @@ data class CategoryEntity(
     val sortOrder: Int,
 )
 
-@Entity(tableName = "channels", indices = [Index("categoryId"), Index("number")])
+@Entity(tableName = "channels", indices = [Index("categoryId"), Index("number"), Index("epgKey"), Index("isFootball")])
 data class ChannelEntity(
     @PrimaryKey val id: String,
     val name: String,
@@ -25,11 +25,13 @@ data class ChannelEntity(
     val categoryName: String?,
     val streamUrl: String,
     val epgChannelId: String?,
+    val epgKey: String?,
     val isAdult: Boolean,
+    val isFootball: Boolean,
     val searchKey: String,
 )
 
-@Entity(tableName = "movies", indices = [Index("categoryId"), Index("normalizedTitle")])
+@Entity(tableName = "movies", indices = [Index("categoryId"), Index("normalizedTitle"), Index("addedAt"), Index("isFootball")])
 data class MovieEntity(
     @PrimaryKey val id: String,
     val title: String,
@@ -43,10 +45,11 @@ data class MovieEntity(
     val tmdbId: Int?,
     val addedAt: Long?,
     val isAdult: Boolean,
+    val isFootball: Boolean,
     val normalizedTitle: String,
 )
 
-@Entity(tableName = "series", indices = [Index("categoryId"), Index("normalizedTitle")])
+@Entity(tableName = "series", indices = [Index("categoryId"), Index("normalizedTitle"), Index("isFootball")])
 data class SeriesEntity(
     @PrimaryKey val id: String,
     val title: String,
@@ -60,6 +63,7 @@ data class SeriesEntity(
     val rating: Double?,
     val tmdbId: Int?,
     val episodesLoaded: Boolean,
+    val isFootball: Boolean,
     val normalizedTitle: String,
 )
 
@@ -95,4 +99,23 @@ data class SyncStateEntity(
     val count: Int,
     val finishedAt: Long,
     val detail: String?,
+)
+
+/** Programa do guia (XMLTV). [channelKey] é o id do canal no XMLTV. */
+@Entity(tableName = "epg_programs", indices = [Index("channelKey", "start"), Index("end")])
+data class EpgProgramEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val channelKey: String,
+    val start: Long,
+    val end: Long,
+    val title: String,
+    val description: String?,
+)
+
+/** Canais declarados no XMLTV, para casar por nome quando a lista não traz tvg-id. */
+@Entity(tableName = "epg_channels", indices = [Index("displayKey")])
+data class EpgChannelEntity(
+    @PrimaryKey val xmltvId: String,
+    val displayKey: String,
+    val iconUrl: String?,
 )

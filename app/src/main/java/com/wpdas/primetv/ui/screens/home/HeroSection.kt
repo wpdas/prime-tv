@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
 import com.wpdas.primetv.core.i18n.t
 import com.wpdas.primetv.domain.model.MediaItem
@@ -71,21 +72,32 @@ fun HeroSection(
             Modifier
                 .width(520.dp)
                 .fillMaxHeight()
-                .padding(horizontal = 40.dp, vertical = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
+                .padding(horizontal = 40.dp, vertical = 26.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 item.badgeKey?.let { TagChip(t(it)) }
                 Text(t("home.available_in_list"), style = typography.caption, color = colors.textSecondary)
             }
-            AnimatedContent(targetState = item, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "heroText") { current ->
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(current.title, style = typography.heroTitle, color = colors.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Text(heroMeta(current), style = typography.body, color = colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(current.synopsis.orEmpty(), style = typography.body, color = colors.textBody, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            // Os textos ocupam o espaço que sobra; os botões nunca encolhem.
+            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
+                AnimatedContent(targetState = item, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "heroText") { current ->
+                    val longTitle = current.title.length > 24
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            current.title,
+                            style = if (longTitle) typography.heroTitle.copy(fontSize = 30.sp, lineHeight = 33.sp, letterSpacing = (-0.5).sp) else typography.heroTitle,
+                            color = colors.text,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(heroMeta(current), style = typography.body, color = colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        current.synopsis?.takeIf { it.isNotBlank() }?.let {
+                            Text(it, style = typography.body, color = colors.textBody, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(top = 2.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(top = 10.dp)) {
                 val watchLabel = if (item.type == MediaType.SERIES) t("common.watch_episode", "episode" to "T1:E1") else t("common.watch")
                 PrimeButton(
                     text = watchLabel,
@@ -138,6 +150,7 @@ private fun heroMeta(item: MediaItem): String {
         MediaType.SERIES -> t("meta.series")
         MediaType.CHANNEL -> t("meta.channel")
     }
+    item.year?.let { parts += it.toString() }
     if (item.genres.isNotEmpty()) parts += item.genres.joinToString(", ")
     item.seasons?.let { parts += if (it == 1) t("meta.season_one") else t("meta.seasons", "n" to it) }
     item.episodes?.let { parts += if (it == 1) t("meta.episode_one") else t("meta.episodes", "n" to it) }

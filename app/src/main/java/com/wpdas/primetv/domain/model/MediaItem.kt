@@ -38,9 +38,12 @@ data class FootballEvent(
     val isLive: Boolean = true,
 )
 
-/** Linha de categoria na tela de Início. */
+/** Linha de categoria na tela de Início. [section]/[categoryId] habilitam o card "Ver todos". */
 data class CategoryRow(
     val id: String,
     val title: String,
     val items: List<MediaItem>,
+    val section: ContentSection? = null,
+    val categoryId: String? = null,
+    val total: Int? = null,
 )

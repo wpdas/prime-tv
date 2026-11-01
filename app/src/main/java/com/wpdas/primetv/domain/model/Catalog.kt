@@ -24,7 +24,10 @@ data class Channel(
     val categoryName: String?,
     val streamUrl: String,
     val epgChannelId: String?,
+    /** Chave usada no guia: o epgChannelId ou, na falta dele, o id do XMLTV casado pelo nome. */
+    val epgKey: String?,
     val isAdult: Boolean = false,
+    val isFootball: Boolean = false,
 )
 
 data class Movie(
@@ -40,6 +43,7 @@ data class Movie(
     val tmdbId: Int?,
     val addedAt: Long?,
     val isAdult: Boolean = false,
+    val isFootball: Boolean = false,
 )
 
 data class Series(
@@ -56,6 +60,7 @@ data class Series(
     val tmdbId: Int?,
     /** false quando os episódios ainda precisam ser buscados (Xtream carrega sob demanda). */
     val episodesLoaded: Boolean,
+    val isFootball: Boolean = false,
 )
 
 data class Episode(
