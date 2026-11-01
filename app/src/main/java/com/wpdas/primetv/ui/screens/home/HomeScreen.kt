@@ -186,7 +186,9 @@ fun HomeContent(
             }
         }
         StatusToast(
-            text = state.updatingSectionKey?.let { t("home.updating_section", "section" to t(it)) },
+            text = state.updatingSectionKey?.let { t("home.updating_section", "section" to t(it)) }
+                ?: state.updateVersion?.let { t("home.update_available", "version" to it) },
+            showSpinner = state.updatingSectionKey != null,
             modifier = Modifier.align(Alignment.BottomEnd).padding(end = PrimeDimens.screenMargin, bottom = 20.dp),
         )
     }

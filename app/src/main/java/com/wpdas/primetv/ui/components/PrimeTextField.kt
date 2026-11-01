@@ -21,7 +21,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
@@ -59,6 +66,7 @@ fun PrimeTextField(
     val colors = PrimeTheme.colors
     val shape = PrimeTheme.shapes.card
     val keyboard = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
     var editing by remember { mutableStateOf(false) }
     var fieldHadFocus by remember { mutableStateOf(false) }
     // Estado com seleção, para o cursor começar no fim do texto ao entrar em edição.
@@ -126,6 +134,28 @@ fun PrimeTextField(
                     modifier = Modifier
                         .fillMaxWidth()
                         .focusRequester(fieldFocus)
+                        // Na TV o teclado some com Voltar mas o campo continuaria em edição; aqui
+                        // Voltar encerra a edição e cima/baixo saem do campo na direção da tecla.
+                        .onPreviewKeyEvent { event ->
+                            if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                            when (event.key) {
+                                Key.Back, Key.Escape -> { stopEditing(); true }
+                                Key.DirectionDown, Key.DirectionUp -> {
+                                    val direction = if (event.key == Key.DirectionDown) FocusDirection.Down else FocusDirection.Up
+                                    editing = false
+                                    fieldHadFocus = false
+                                    keyboard?.hide()
+                                    scope.launch {
+                                        delay(80)
+                                        runCatching { surfaceFocus.requestFocus() }
+                                        delay(40)
+                                        focusManager.moveFocus(direction)
+                                    }
+                                    true
+                                }
+                                else -> false
+                            }
+                        }
                         .onFocusChanged { state ->
                             // onFocusChanged dispara ao anexar (sem foco); só encerra se já teve foco antes.
                             if (state.isFocused) fieldHadFocus = true

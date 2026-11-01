@@ -13,6 +13,7 @@ import com.wpdas.primetv.domain.repository.ChannelFilter
 import com.wpdas.primetv.domain.repository.HomeRepository
 import com.wpdas.primetv.domain.repository.LibraryRepository
 import com.wpdas.primetv.domain.repository.RecommendationRepository
+import com.wpdas.primetv.domain.update.UpdateRepository
 import kotlinx.coroutines.flow.onStart
 import com.wpdas.primetv.domain.sync.CatalogSync
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -35,6 +36,7 @@ class HomeRepositoryImpl @Inject constructor(
     private val catalogSync: CatalogSync,
     private val library: LibraryRepository,
     private val recommendations: RecommendationRepository,
+    private val updates: UpdateRepository,
 ) : HomeRepository {
 
     private val myList: Flow<Set<String>> get() = library.favoriteIds()
@@ -119,6 +121,8 @@ class HomeRepositoryImpl @Inject constructor(
             ).filter { it.items.isNotEmpty() }
         }
     }
+
+    override fun pendingUpdateVersion(): Flow<String?> = updates.pending.map { it?.versionName }
 
     override suspend fun toggleMyList(itemId: String) {
         val type = when {

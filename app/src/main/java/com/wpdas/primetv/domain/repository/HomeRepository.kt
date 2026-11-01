@@ -16,4 +16,6 @@ interface HomeRepository {
     /** Nome da seção sendo atualizada em segundo plano, ou null. */
     fun backgroundUpdate(): Flow<String?>
     suspend fun toggleMyList(itemId: String)
+    /** Versão nova encontrada pela checagem diária, ou null. */
+    fun pendingUpdateVersion(): Flow<String?>
 }

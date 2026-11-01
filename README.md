@@ -20,8 +20,10 @@ App Android de IPTV com interface no estilo Netflix, feito para **TV Box com And
 - Configurações: lista, intervalo de atualização por seção, palavras-chave de futebol, decodificador e buffer do player, idioma
 - Atualização automática em segundo plano (WorkManager), com verificação ao abrir o app
 - "Receber link pelo celular": código, QR e espera pelo link (o site que entrega o link é a próxima etapa do roadmap)
+- Atualização do próprio app pelo GitHub Releases: checagem diária silenciosa, aviso na Início, download com progresso e instalação pelo sistema
+- CI em cada PR e release assinada automaticamente a cada tag `v*`
 
-Ainda por vir: atualização do app pelo GitHub Releases, assinatura e CI.
+Próximo: polimento (desempenho em box fraca, estados de erro e vazio, revisão de foco).
 
 ## Telas
 
@@ -57,6 +59,10 @@ Ainda por vir: atualização do app pelo GitHub Releases, assinatura e CI.
 |---|---|
 | ![Receber link](docs/screenshots/16-receber-link.jpg) | ![Sobre](docs/screenshots/13-sobre.jpg) |
 
+| Verificar atualização | |
+|---|---|
+| ![Atualização](docs/screenshots/17-atualizacao.jpg) | |
+
 ## Requisitos para compilar
 
 - JDK 17
@@ -86,29 +92,58 @@ Depois da primeira instalação, o próprio app avisa quando há versão nova e 
 
 ## Assinatura (release)
 
-O APK release é assinado com um keystore próprio, fora do repositório. **Todas as versões precisam da mesma chave**, senão o Android recusa a atualização por cima da anterior.
+O APK release é assinado com um keystore próprio, fora do repositório. **Todas as versões precisam da mesma chave**: se a chave mudar, o Android recusa a atualização por cima da anterior e o usuário tem de desinstalar e instalar de novo. Perder o keystore significa perder a capacidade de atualizar quem já instalou.
 
-Gerar o keystore uma única vez:
+### 1. Gerar o keystore (uma única vez)
 
 ```bash
 keytool -genkeypair -v -keystore primetv.jks -alias primetv \
   -keyalg RSA -keysize 2048 -validity 10000
 ```
 
-Criar `keystore.properties` na raiz (já ignorado pelo git):
+Guarde a senha do keystore e a senha da chave (podem ser iguais).
+
+### 2. Guardar o keystore com segurança
+
+O arquivo `primetv.jks` e as senhas ficam **fora do git** (`*.jks` e `keystore.properties` já estão no `.gitignore`). Hoje a cópia de segurança fica no **Google Drive** do mantenedor, na pasta privada **Prime TV - App › keystore**, junto com um arquivo de texto com alias e senhas. O arquivo original fica na raiz do clone local (`primetv.jks`), ignorado pelo git. Recomendações:
+
+- Não compartilhe a pasta; se precisar dar acesso a outra pessoa, compartilhe só com a conta dela.
+- Mantenha uma segunda cópia (gerenciador de senhas ou outro armazenamento) para não depender de um único lugar.
+- Se o keystore vazar, não há como revogar: será preciso publicar o app com outra chave e os usuários terão de reinstalar.
+
+### 3. Assinar localmente (opcional)
+
+Crie `keystore.properties` na raiz do projeto:
 
 ```properties
-storeFile=../primetv.jks
+storeFile=/caminho/para/primetv.jks
 storePassword=...
 keyAlias=primetv
 keyPassword=...
 ```
 
-No CI, o keystore entra em base64 por secret (detalhes em `.github/workflows/release.yml`, fase 7).
+`make release` gera `app/build/outputs/apk/release/app-release.apk` assinado. Sem esse arquivo, o build release é assinado com a chave de debug, só para testar o APK minificado no emulador; não distribua esse APK.
 
-## Versionamento
+### 4. Secrets no GitHub (para a release automática)
 
-`versionName` e `versionCode` são derivados da tag git `vX.Y.Z`. Criar a tag e dar push dispara a release com o APK.
+Em **Settings › Secrets and variables › Actions**, crie:
+
+| Secret | Conteúdo |
+|---|---|
+| `KEYSTORE_BASE64` | o `primetv.jks` em base64: `make keystore-base64 KS=/caminho/primetv.jks` |
+| `KEYSTORE_PASSWORD` | senha do keystore |
+| `KEY_ALIAS` | `primetv` (ou o alias que usou) |
+| `KEY_PASSWORD` | senha da chave |
+| `TMDB_API_KEY` | chave da API do TMDB |
+
+## Publicar uma versão
+
+1. Garanta que `main` está verde no CI.
+2. Crie a tag: `make tag V=1.0.0` (ou `git tag -a v1.0.0 -m "PrimeTV v1.0.0" && git push origin v1.0.0`).
+3. O workflow **Release** compila, assina, gera `primetv-v1.0.0.apk` com o `.sha256` e publica a release com as notas geradas a partir dos PRs/commits. Edite o texto da release se quiser; é ele que aparece no app como changelog.
+4. Quem já tem o app recebe o aviso na Início em até um dia, ou pode usar **menu do logo › Verificar atualização**. O app baixa o APK e o Android pede a confirmação da instalação (na primeira vez, pede também a permissão "instalar apps desconhecidos" para o PrimeTV).
+
+`versionName` e `versionCode` vêm da tag (`v1.2.3` → `1.2.3` e `10203`). Commits depois da tag viram `1.2.3-dev.N` nos builds locais.
 
 ## Créditos
 

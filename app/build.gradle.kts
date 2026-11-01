@@ -81,7 +81,9 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            if (hasReleaseKeystore) signingConfig = signingConfigs.getByName("release")
+            // Sem keystore.properties (máquina de dev), assina com a chave de debug só para testar o
+            // build minificado no emulador. Releases publicadas sempre vêm do CI com a chave oficial.
+            signingConfig = if (hasReleaseKeystore) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
         }
         debug {
             isMinifyEnabled = false

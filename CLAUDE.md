@@ -90,6 +90,12 @@ Telas (pacotes em `ui/screens/`): `setup`, `receivelink`, `home`, `details`, `li
 - Testes unitários obrigatórios para: parser M3U, cliente Xtream, classificação de futebol, matching TMDB ↔ lista, comparação de versões, i18n.
 - Commits pequenos e descritivos (`feat:`, `fix:`, `chore:`, `docs:`, `test:`), em português.
 
+## Release
+
+- Tag `vX.Y.Z` em `main` dispara `.github/workflows/release.yml`: build assinado com o keystore dos secrets, APK `primetv-vX.Y.Z.apk` e release com notas geradas. `make tag V=X.Y.Z`.
+- Keystore e senhas: nunca no repositório. Cópia de segurança no Google Drive do mantenedor, pasta "Prime TV - App › keystore" (ver README); o original é `primetv.jks` na raiz do clone, ignorado pelo git. Sem `keystore.properties`, `assembleRelease` assina com debug só para testes locais.
+- O app compara a tag mais recente com `BuildConfig.VERSION_NAME` (`core/util/SemVer`); releases marcadas como pre-release ou draft são ignoradas.
+
 ## Fases
 
 0 Plano/estrutura · 1 Projeto base (tema, escala, i18n, navegação, componentes, Início fake) · 2 Dados (M3U/Xtream, Room, Setup) · 3 Telas · 4 Player/histórico/favoritos · 5 TMDB · 6 Configurações/atualização em 2º plano/parental/Receber link · 7 GitHub Releases/assinatura/CI · 8 Polimento.

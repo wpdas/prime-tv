@@ -14,9 +14,9 @@ import com.wpdas.primetv.ui.screens.category.CategoryScreen
 import com.wpdas.primetv.ui.screens.details.DetailsScreen
 import com.wpdas.primetv.ui.screens.home.HomeScreen
 import com.wpdas.primetv.ui.screens.live.LiveScreen
-import com.wpdas.primetv.ui.screens.placeholder.PlaceholderScreen
 import com.wpdas.primetv.ui.screens.receivelink.ReceiveLinkScreen
 import com.wpdas.primetv.ui.screens.settings.SettingsScreen
+import com.wpdas.primetv.ui.screens.update.UpdateScreen
 import com.wpdas.primetv.ui.screens.player.PlayerScreen
 import com.wpdas.primetv.ui.screens.search.SearchScreen
 import com.wpdas.primetv.ui.screens.setup.SetupScreen
@@ -81,7 +81,7 @@ fun PrimeNavHost(
             )
         }
         composable<AboutRoute> { AboutScreen(onBack = navController::popBackStack) }
-        composable<UpdateRoute> { PlaceholderScreen("screen.update", phase = 7, onBack = navController::popBackStack) }
+        composable<UpdateRoute> { UpdateScreen(onClose = navController::popBackStack) }
         composable<SettingsRoute> {
             SettingsScreen(
                 onBack = navController::popBackStack,

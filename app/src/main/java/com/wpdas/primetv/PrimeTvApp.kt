@@ -5,6 +5,7 @@ import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.wpdas.primetv.core.i18n.I18n
 import com.wpdas.primetv.data.sync.SyncScheduler
+import com.wpdas.primetv.data.update.UpdateCheckWorker
 import com.wpdas.primetv.domain.repository.SettingsRepository
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
@@ -25,5 +26,6 @@ class PrimeTvApp : Application(), Configuration.Provider {
         // Arquivo pequeno; carregar antes da primeira tela evita mostrar chaves cruas.
         i18n.loadBlocking(settings.settings.value.language)
         syncScheduler.start()
+        UpdateCheckWorker.schedule(this)
     }
 }

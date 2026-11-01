@@ -12,7 +12,7 @@ AVD       ?= $(shell emulator -list-avds 2>/dev/null | head -1)
 DEBUG_APK := app/build/outputs/apk/debug/app-debug.apk
 
 .DEFAULT_GOAL := help
-.PHONY: help build release test lint check clean install run uninstall emulator devices logcat avds
+.PHONY: help build release install-release test lint check clean install run uninstall emulator devices logcat avds tag keystore-base64
 
 help: ## Lista os alvos
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
@@ -20,8 +20,19 @@ help: ## Lista os alvos
 build: ## Compila o APK debug
 	$(GRADLEW) assembleDebug
 
-release: ## Compila o APK release (assina se houver keystore.properties)
+release: ## Compila o APK release minificado (assina com keystore.properties; sem ele, chave de debug para teste)
 	$(GRADLEW) assembleRelease
+
+install-release: release ## Instala o APK release no aparelho conectado
+	$(ADB) install -r app/build/outputs/apk/release/app-release.apk
+
+tag: ## Cria e envia a tag de release: make tag V=1.0.0
+	@test -n "$(V)" || (echo "Uso: make tag V=1.0.0"; exit 1)
+	git tag -a v$(V) -m "PrimeTV v$(V)" && git push origin v$(V)
+
+keystore-base64: ## Imprime o keystore em base64 para o secret KEYSTORE_BASE64: make keystore-base64 KS=caminho/primetv.jks
+	@test -n "$(KS)" || (echo "Uso: make keystore-base64 KS=caminho/primetv.jks"; exit 1)
+	@base64 -i $(KS) | tr -d '\n'; echo
 
 test: ## Roda os testes unitários
 	$(GRADLEW) testDebugUnitTest

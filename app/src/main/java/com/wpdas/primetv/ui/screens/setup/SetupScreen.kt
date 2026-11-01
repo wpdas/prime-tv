@@ -23,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.KeyboardType
@@ -104,7 +105,8 @@ fun SetupContent(
                 keyboardType = KeyboardType.Uri,
                 onDone = onConnect,
                 enabled = !state.connected,
-                modifier = Modifier.fillMaxWidth().focusRequester(fieldFocus),
+                // Para baixo do campo largo, o foco vai sempre para "Conectar" (e não para o botão mais próximo geometricamente).
+                modifier = Modifier.fillMaxWidth().focusRequester(fieldFocus).focusProperties { down = connectFocus },
             )
             Row(
                 Modifier.fillMaxWidth().background(colors.surface, PrimeTheme.shapes.card).padding(horizontal = 16.dp, vertical = 14.dp),

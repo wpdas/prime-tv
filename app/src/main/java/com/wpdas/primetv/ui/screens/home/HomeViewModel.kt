@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -48,6 +49,13 @@ class HomeViewModel @Inject constructor(
             .onEach { rows -> _state.update { it.copy(rows = rows) } }
             .launchIn(viewModelScope)
         repository.backgroundUpdate().onEach { key -> _state.update { it.copy(updatingSectionKey = key) } }.launchIn(viewModelScope)
+        // Aviso de versão nova por alguns segundos, uma vez por abertura da Início.
+        viewModelScope.launch {
+            val version = repository.pendingUpdateVersion().firstOrNull() ?: return@launch
+            _state.update { it.copy(updateVersion = version) }
+            delay(UPDATE_TOAST_MS)
+            _state.update { it.copy(updateVersion = null) }
+        }
 
         // Ao focar um card, o destaque troca para ele com debounce de ~400 ms.
         focusedCard.debounce(HERO_FOCUS_DEBOUNCE_MS)
@@ -90,5 +98,6 @@ class HomeViewModel @Inject constructor(
     private companion object {
         const val HERO_FOCUS_DEBOUNCE_MS = 400L
         const val HERO_ROTATION_MS = 8_000L
+        const val UPDATE_TOAST_MS = 8_000L
     }
 }

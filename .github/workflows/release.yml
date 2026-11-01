@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: APK assinado + GitHub Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Restaurar keystore e segredos
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+        run: |
+          test -n "$KEYSTORE_BASE64" || { echo "Secret KEYSTORE_BASE64 ausente"; exit 1; }
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/primetv.jks"
+          cat > keystore.properties <<PROPS
+          storeFile=$RUNNER_TEMP/primetv.jks
+          storePassword=$KEYSTORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          PROPS
+          echo "TMDB_API_KEY=$TMDB_API_KEY" > local.properties
+
+      - name: Testes unitários
+        run: ./gradlew testDebugUnitTest --no-daemon
+
+      - name: Build release
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Renomear APK
+        id: apk
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          OUT="primetv-${VERSION}.apk"
+          cp app/build/outputs/apk/release/app-release.apk "$OUT"
+          echo "file=$OUT" >> "$GITHUB_OUTPUT"
+          sha256sum "$OUT" > "$OUT.sha256"
+
+      - name: Publicar release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: PrimeTV ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            ${{ steps.apk.outputs.file }}
+            ${{ steps.apk.outputs.file }}.sha256

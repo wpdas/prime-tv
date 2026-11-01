@@ -17,6 +17,8 @@ data class HomeUiState(
     val rows: List<CategoryRow> = emptyList(),
     /** Chave i18n da seção em atualização (ex.: "section.movies"), ou null. */
     val updatingSectionKey: String? = null,
+    /** Versão nova do app para o aviso discreto, ou null. */
+    val updateVersion: String? = null,
 ) {
     val hero: MediaItem? get() = pinnedHero ?: featured.getOrNull(featuredIndex)
     val showDots: Boolean get() = pinnedHero == null && featured.size > 1
