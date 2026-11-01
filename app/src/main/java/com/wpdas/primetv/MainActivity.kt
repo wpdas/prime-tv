@@ -3,30 +3,41 @@ package com.wpdas.primetv
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import com.wpdas.primetv.core.i18n.I18n
+import com.wpdas.primetv.ui.navigation.PrimeNavHost
+import com.wpdas.primetv.ui.theme.PrimeTheme
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
-/**
- * Single activity do app. Nesta fase só valida o build; o tema, a escala 1280
- * e a navegação entram na fase 1.
- */
+/** Single activity. Tela cheia, sempre horizontal (ver manifest), UI escalada para a base 1280. */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject lateinit var i18n: I18n
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enterFullscreen()
         setContent {
-            Box(
-                modifier = Modifier.fillMaxSize().background(Color(0xFF0B0B0F)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(text = "PrimeTV", color = Color(0xFFF2F2F2))
+            PrimeTheme(i18n = i18n) {
+                PrimeNavHost()
             }
+        }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) enterFullscreen()
+    }
+
+    private fun enterFullscreen() {
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowInsetsControllerCompat(window, window.decorView).apply {
+            hide(WindowInsetsCompat.Type.systemBars())
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
     }
 }

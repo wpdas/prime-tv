@@ -36,9 +36,7 @@ prime-tv/
 │   └── src/
 │       ├── main/
 │       │   ├── AndroidManifest.xml
-│       │   ├── assets/
-│       │   │   ├── fonts/          # Inter 400/500/600/700
-│       │   │   └── i18n/           # pt-BR.json, en.json... (textos da UI)
+│       │   ├── assets/i18n/        # pt-BR.json, en.json... (textos da UI)
 │       │   ├── java/com/wpdas/primetv/
 │       │   │   ├── PrimeTvApp.kt   # @HiltAndroidApp
 │       │   │   ├── MainActivity.kt # single activity
@@ -46,7 +44,7 @@ prime-tv/
 │       │   │   ├── data/           # implementação: local (Room, DataStore), remote (Xtream, M3U, TMDB, GitHub), repository, worker
 │       │   │   ├── domain/         # modelos, interfaces de repositório, casos de uso (puro Kotlin)
 │       │   │   └── ui/             # theme, components, navigation, screens/<tela>/ (Screen + ViewModel + UiState)
-│       │   └── res/                # só o indispensável: tema da janela, ícone, banner, xml de rede
+│       │   └── res/                # só o indispensável: font/ (Inter), ícone, banner, tema da janela, xml de rede
 │       ├── test/                   # unitários (JUnit4, MockK, Turbine, MockWebServer)
 │       │   ├── kotlin/com/wpdas/primetv/
 │       │   └── resources/          # fixtures M3U e JSON Xtream (dados inventados)

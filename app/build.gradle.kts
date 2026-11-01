@@ -86,6 +86,8 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // java.time e afins em API 24/25.
+        isCoreLibraryDesugaringEnabled = true
     }
 
     buildFeatures {
@@ -108,6 +110,8 @@ ksp {
 }
 
 dependencies {
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
+
     // AndroidX base
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

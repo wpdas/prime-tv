@@ -9,10 +9,12 @@
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
     <uses-feature android:name="android.software.leanback" android:required="false" />
 
-    <!-- TODO(fase 1): android:icon, android:banner e tema definitivo do PrimeTheme. -->
     <application
         android:name=".PrimeTvApp"
         android:label="PrimeTV"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:banner="@drawable/banner"
         android:allowBackup="false"
         android:supportsRtl="false"
         android:networkSecurityConfig="@xml/network_security_config"
