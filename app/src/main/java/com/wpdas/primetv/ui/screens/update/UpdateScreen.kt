@@ -156,6 +156,9 @@ fun UpdateScreen(onClose: () -> Unit, viewModel: UpdateViewModel = hiltViewModel
                     Text(t(s.messageKey, "detail" to (s.detail ?: "")), style = typography.body, color = colors.textBody)
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         PrimeButton(text = t("common.retry"), onClick = viewModel::check, modifier = Modifier.focusRequester(primaryFocus))
+                        if (s.messageKey == "update.error_ssl") {
+                            PrimeButton(text = t("update.open_date_settings"), onClick = viewModel::openDateSettings, style = PrimeButtonStyle.Secondary, horizontalPadding = 18.dp, textStyle = typography.buttonSmall)
+                        }
                         PrimeButton(text = t("common.close"), onClick = onClose, style = PrimeButtonStyle.Secondary, horizontalPadding = 18.dp, textStyle = typography.buttonSmall)
                     }
                 }

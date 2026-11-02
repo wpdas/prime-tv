@@ -1,9 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Muitas listas IPTV e streams usam http. -->
+<!--
+  Muitas listas IPTV e streams usam http, por isso texto claro é permitido.
+  Além das autoridades do sistema, o app carrega as raízes públicas dos serviços que usa
+  (GitHub/USERTrust, assets do GitHub e TMDB imagens/Let's Encrypt, TMDB API/Amazon, escudos/Google
+  Trust Services e GlobalSign, DigiCert). Boxes com Android "11" de ROM antiga têm a lista de
+  autoridades desatualizada e falhavam com SSLHandshakeException no download da atualização.
+  Certificados instalados pelo usuário continuam fora, como manda o padrão do Android 7+.
+-->
 <network-security-config>
     <base-config cleartextTrafficPermitted="true">
         <trust-anchors>
             <certificates src="system" />
+            <certificates src="@raw/ca_isrg_root_x1" />
+            <certificates src="@raw/ca_isrg_root_x2" />
+            <certificates src="@raw/ca_usertrust_ecc" />
+            <certificates src="@raw/ca_usertrust_rsa" />
+            <certificates src="@raw/ca_amazon_root_ca_1" />
+            <certificates src="@raw/ca_starfield_services_g2" />
+            <certificates src="@raw/ca_gts_root_r1" />
+            <certificates src="@raw/ca_gts_root_r4" />
+            <certificates src="@raw/ca_globalsign_root_ca" />
+            <certificates src="@raw/ca_digicert_global_root_g2" />
         </trust-anchors>
     </base-config>
 </network-security-config>

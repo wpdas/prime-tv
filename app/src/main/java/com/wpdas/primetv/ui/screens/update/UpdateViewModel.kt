@@ -68,6 +68,7 @@ class UpdateViewModel @Inject constructor(private val updates: UpdateRepository)
     }
 
     fun openPermission() = updates.openInstallPermission()
+    fun openDateSettings() = updates.openDateSettings()
 
     /** Ao voltar da tela de permissão: se liberou, segue para o download. */
     fun onResumed() {

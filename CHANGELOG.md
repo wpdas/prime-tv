@@ -4,6 +4,12 @@ Formato: uma seção por versão, com **Novidades** e **Correções**. A seção
 
 ## [Não lançado]
 
+## [0.0.8] - 2026-11-02
+
+### Correções
+- Download da atualização falhava com SSLHandshakeException em TV Box com lista de certificados antiga: o app passa a carregar as raízes públicas dos serviços que usa (GitHub, Let's Encrypt, Amazon, Google Trust Services, GlobalSign, DigiCert) junto com as do sistema
+- Falha de conexão segura mostra a causa em português (data do aparelho atrasada/adiantada, autoridade desconhecida) e um botão "Data e hora" para corrigir o relógio da box
+
 ## [0.0.7] - 2026-11-02
 
 ### Novidades

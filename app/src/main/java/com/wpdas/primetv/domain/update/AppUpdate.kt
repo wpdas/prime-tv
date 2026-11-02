@@ -39,5 +39,7 @@ interface UpdateRepository {
     /** O Android permite instalar APKs vindos deste app? Falso leva à tela de permissão. */
     fun canInstall(): Boolean
     fun openInstallPermission()
+    /** Tela de data e hora do sistema: relógio errado derruba a conexão segura do download. */
+    fun openDateSettings()
     fun install(file: File)
 }

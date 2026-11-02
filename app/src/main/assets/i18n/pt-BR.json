@@ -240,6 +240,8 @@
   "update.error_offline": "Sem internet. Verifique a conexão da TV Box.",
   "update.error_server": "O GitHub não respondeu ({detail}). Tente de novo em instantes.",
   "update.error_download": "O download falhou ({detail}). Tente de novo.",
+  "update.error_ssl": "A conexão segura falhou ({detail}). Confira a data e a hora da TV Box em Configurações › Data e hora e tente de novo.",
+  "update.open_date_settings": "Data e hora",
   "time.today_plain": "hoje",
   "time.yesterday_plain": "ontem",
   "time.days_ago": "há {n} dias",

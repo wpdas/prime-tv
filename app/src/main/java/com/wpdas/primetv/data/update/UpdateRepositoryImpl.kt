@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.wpdas.primetv.BuildConfig
 import com.wpdas.primetv.core.di.IoDispatcher
 import com.wpdas.primetv.core.util.SemVer
+import com.wpdas.primetv.core.util.SslErrors
 import com.wpdas.primetv.data.local.prefs.appDataStore
 import com.wpdas.primetv.data.remote.github.GitHubApi
 import com.wpdas.primetv.domain.update.AppUpdate
@@ -78,6 +79,8 @@ class UpdateRepositoryImpl @Inject constructor(
             api.latestRelease(owner, repo)
         } catch (e: UnknownHostException) {
             return@withContext UpdateCheck.Failed("update.error_offline")
+        } catch (e: javax.net.ssl.SSLException) {
+            return@withContext UpdateCheck.Failed("update.error_ssl", SslErrors.describe(e))
         } catch (e: retrofit2.HttpException) {
             return@withContext if (e.code() == 404) UpdateCheck.UpToDate else UpdateCheck.Failed("update.error_server", "HTTP ${e.code()}")
         } catch (e: IOException) {
@@ -145,7 +148,9 @@ class UpdateRepositoryImpl @Inject constructor(
             emit(DownloadProgress.Failed("update.error_offline"))
         } catch (e: IOException) {
             tmp.delete()
-            emit(DownloadProgress.Failed("update.error_download", e.javaClass.simpleName))
+            // Falha de TLS (relógio errado ou autoridade desconhecida na box) ganha mensagem própria.
+            if (SslErrors.isTls(e)) emit(DownloadProgress.Failed("update.error_ssl", SslErrors.describe(e)))
+            else emit(DownloadProgress.Failed("update.error_download", e.javaClass.simpleName))
         }
     }.flowOn(io)
 
@@ -156,6 +161,11 @@ class UpdateRepositoryImpl @Inject constructor(
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${context.packageName}"))
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        runCatching { context.startActivity(intent) }
+    }
+
+    override fun openDateSettings() {
+        val intent = Intent(Settings.ACTION_DATE_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         runCatching { context.startActivity(intent) }
     }
 
