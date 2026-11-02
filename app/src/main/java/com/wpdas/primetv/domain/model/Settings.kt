@@ -21,9 +21,9 @@ enum class SyncInterval(val hours: Int, val labelKey: String) {
 
 /** Tamanho do buffer do player. */
 enum class BufferProfile(val labelKey: String, val minBufferMs: Int, val maxBufferMs: Int, val playbackMs: Int, val rebufferMs: Int) {
-    LOW("buffer.low", 8_000, 30_000, 1_000, 2_000),
-    NORMAL("buffer.normal", 15_000, 50_000, 1_500, 3_000),
-    HIGH("buffer.high", 30_000, 90_000, 3_000, 5_000);
+    LOW("buffer.low", 8_000, 30_000, 1_000, 3_000),
+    NORMAL("buffer.normal", 20_000, 60_000, 1_500, 5_000),
+    HIGH("buffer.high", 40_000, 120_000, 3_000, 10_000);
 
     fun next(): BufferProfile = entries[(ordinal + 1) % entries.size]
 }

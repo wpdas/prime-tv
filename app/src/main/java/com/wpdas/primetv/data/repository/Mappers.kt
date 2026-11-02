@@ -33,7 +33,7 @@ internal fun ChannelEntity.toDomain() = Channel(
 internal fun MovieEntity.toDomain() = Movie(
     id = id, title = title, posterUrl = posterUrl, categoryId = categoryId, categoryName = categoryName,
     streamUrl = streamUrl, containerExt = containerExt, year = year, rating = rating, tmdbId = tmdbId,
-    addedAt = addedAt, isAdult = isAdult, isFootball = isFootball,
+    addedAt = addedAt, isAdult = isAdult, isFootball = isFootball, qualityRank = qualityRank,
 )
 
 internal fun SeriesEntity.toDomain() = Series(

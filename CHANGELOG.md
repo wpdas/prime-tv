@@ -9,6 +9,7 @@ Formato: uma seção por versão, com **Novidades** e **Correções**. A seção
 - Ao voltar do player para a tela Ao vivo, o foco fica no canal que estava em tela cheia
 - Ao vivo reabre na última categoria e canal visitados, já com a prévia
 - Abas do topo e seções das Configurações mudam ao receber o foco, sem precisar de OK
+- Conexão lenta: se o vídeo travar 3 vezes em 1,5 min, o player troca sozinho para a qualidade abaixo do mesmo filme/canal (mantendo a posição) ou libera o ajuste automático em streams adaptativos; buffers Normal e Alto ficaram mais tolerantes a oscilação
 - Configurações › Player: margem de segurança (overscan) e som na prévia
 
 ### Correções

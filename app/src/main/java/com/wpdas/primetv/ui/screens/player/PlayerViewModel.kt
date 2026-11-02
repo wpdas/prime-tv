@@ -56,7 +56,8 @@ class PlayerViewModel @Inject constructor(
     val state: StateFlow<PlayerUiState> = _state.asStateFlow()
 
     private sealed interface Content {
-        data class Movie(val movie: com.wpdas.primetv.domain.model.Movie) : Content
+        /** [movie] é o título aberto (histórico usa o id dele); [playing] é a variante em reprodução. */
+        data class Movie(val movie: com.wpdas.primetv.domain.model.Movie, val playing: com.wpdas.primetv.domain.model.Movie = movie) : Content
         data class SeriesEpisode(val seriesId: String, val episodes: List<Episode>, val episode: Episode) : Content
         data class Live(val channel: Channel, val zapList: List<Channel>, val variants: List<Channel> = emptyList()) : Content
     }
@@ -66,13 +67,25 @@ class PlayerViewModel @Inject constructor(
     private var lastSaveMs = 0L
     private var wasPlayingBeforeBackground = false
     private var retriedLive = false
+    private val stalls = com.wpdas.primetv.core.util.StallDetector(STALL_LIMIT, STALL_WINDOW_MS)
+    private var wasReady = false
+    private var seekPending = false
+    private var slowToastShown = false
     private val trackGroups = HashMap<String, Pair<TrackGroup, Int>>()
 
     private val listener = object : Player.Listener {
         override fun onPlaybackStateChanged(playbackState: Int) {
             when (playbackState) {
-                Player.STATE_BUFFERING -> _state.update { it.copy(isBuffering = true) }
-                Player.STATE_READY -> _state.update { it.copy(isBuffering = false, errorKey = null, errorDetail = null, durationMs = player.duration.coerceAtLeast(0)) }
+                Player.STATE_BUFFERING -> {
+                    _state.update { it.copy(isBuffering = true) }
+                    // Rebuffer no meio da reprodução (não é carga inicial nem seek): conta para baixar a qualidade.
+                    if (wasReady && !seekPending && stalls.onStall(System.currentTimeMillis())) viewModelScope.launch { onSlowConnection() }
+                }
+                Player.STATE_READY -> {
+                    wasReady = true
+                    seekPending = false
+                    _state.update { it.copy(isBuffering = false, errorKey = null, errorDetail = null, durationMs = player.duration.coerceAtLeast(0)) }
+                }
                 Player.STATE_ENDED -> onEnded()
                 Player.STATE_IDLE -> Unit
             }
@@ -144,7 +157,7 @@ class PlayerViewModel @Inject constructor(
         val movie = catalog.movieOnce(id) ?: return notFound()
         content = Content.Movie(movie)
         val start = library.progress(movie.id)?.takeUnless { it.finished }?.positionMs ?: 0L
-        _state.update { it.copy(loaded = true, title = TextNormalizer.displayTitle(movie.title), subtitle = movie.year?.toString()) }
+        _state.update { it.copy(loaded = true, title = TextNormalizer.displayTitle(movie.title), subtitle = movie.year?.toString(), qualityLabel = movie.qualityLabel) }
         start(movie.streamUrl, start)
     }
 
@@ -214,6 +227,47 @@ class PlayerViewModel @Inject constructor(
         start(channel.streamUrl, 0L)
     }
 
+    /**
+     * Travou várias vezes em pouco tempo. Em ordem: deixa um stream adaptativo escolher a taxa
+     * sozinho; troca para a variante de qualidade abaixo do mesmo filme/canal (mantendo a
+     * posição); por fim só avisa e sugere aumentar o buffer.
+     */
+    private suspend fun onSlowConnection() {
+        val params = player.trackSelectionParameters
+        val adaptive = player.currentTracks.groups.any { it.type == C.TRACK_TYPE_VIDEO && it.length > 1 }
+        if (adaptive && params.forceHighestSupportedBitrate) {
+            player.trackSelectionParameters = params.buildUpon().setForceHighestSupportedBitrate(false).build()
+            showToast("player.slow_adaptive")
+            return
+        }
+        when (val c = content) {
+            is Content.Movie -> {
+                val next = catalog.movieVariants(c.movie.id).firstOrNull { it.qualityRank > c.playing.qualityRank }
+                if (next != null) {
+                    val position = player.currentPosition
+                    content = c.copy(playing = next)
+                    _state.update { it.copy(qualityLabel = next.qualityLabel) }
+                    showToast("player.slow_switching", next.qualityLabel ?: "")
+                    start(next.streamUrl, position)
+                    return
+                }
+            }
+            is Content.Live -> {
+                val next = c.variants.firstOrNull { it.qualityRank > c.channel.qualityRank }
+                if (next != null) {
+                    showToast("player.slow_switching", next.qualityLabel ?: "")
+                    tuneChannel(next, keepVariants = true)
+                    return
+                }
+            }
+            else -> Unit
+        }
+        if (!slowToastShown) {
+            slowToastShown = true
+            showToast("player.slow_connection")
+        }
+    }
+
     private fun showToast(key: String, arg: String? = null) {
         _state.update { it.copy(toastKey = key, toastArg = arg) }
         viewModelScope.launch {
@@ -264,6 +318,9 @@ class PlayerViewModel @Inject constructor(
 
     private fun start(url: String, positionMs: Long) {
         trackGroups.clear()
+        wasReady = false
+        seekPending = false
+        stalls.reset()
         player.setMediaItem(MediaItem.fromUri(url), positionMs.coerceAtLeast(0))
         player.prepare()
         player.playWhenReady = true
@@ -362,6 +419,7 @@ class PlayerViewModel @Inject constructor(
     fun seekBy(deltaMs: Long) {
         if (_state.value.isLive) return
         val target = (player.currentPosition + deltaMs).coerceIn(0, player.duration.takeIf { it != C.TIME_UNSET } ?: Long.MAX_VALUE)
+        seekPending = true
         player.seekTo(target)
         _state.update { it.copy(positionMs = target) }
         showControls()
@@ -505,5 +563,7 @@ class PlayerViewModel @Inject constructor(
         const val LIVE_RETRY_DELAY_MS = 1_500L
         const val DIGIT_COMMIT_MS = 1_500L
         const val TOAST_MS = 2_500L
+        const val STALL_LIMIT = 3
+        const val STALL_WINDOW_MS = 90_000L
     }
 }

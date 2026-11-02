@@ -51,7 +51,10 @@ data class Movie(
     val addedAt: Long?,
     val isAdult: Boolean = false,
     val isFootball: Boolean = false,
-)
+    val qualityRank: Int = 4,
+) {
+    val qualityLabel: String? get() = com.wpdas.primetv.core.util.Quality.label(qualityRank)
+}
 
 data class Series(
     val id: String,

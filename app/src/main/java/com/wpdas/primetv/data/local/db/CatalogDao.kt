@@ -58,6 +58,7 @@ interface CatalogDao {
     @Query("SELECT * FROM movies m WHERE m.isFootball = 1 AND (m.id IN (SELECT m2.id FROM movies m2 WHERE m2.normalizedTitle = m.normalizedTitle AND IFNULL(m2.year, 0) = IFNULL(m.year, 0) AND m2.isFootball = 1 ORDER BY m2.qualityRank, m2.addedAt DESC LIMIT 1) OR NOT EXISTS (SELECT 1 FROM movies m3 WHERE m3.normalizedTitle = m.normalizedTitle AND IFNULL(m3.year, 0) = IFNULL(m.year, 0) AND m3.isFootball = 1 AND m3.qualityRank < 4)) ORDER BY addedAt DESC LIMIT :limit") fun observeFootballMovies(limit: Int): Flow<List<MovieEntity>>
     @Query("SELECT * FROM movies WHERE id = :id") fun observeMovie(id: String): Flow<MovieEntity?>
     @Query("SELECT * FROM movies WHERE id = :id") suspend fun movieById(id: String): MovieEntity?
+    @Query("SELECT * FROM movies WHERE normalizedTitle = :normalizedTitle AND IFNULL(year, 0) = IFNULL(:year, 0) ORDER BY qualityRank, addedAt DESC") suspend fun movieVariants(normalizedTitle: String, year: Int?): List<MovieEntity>
     @Query("SELECT * FROM movies WHERE id IN (:ids)") suspend fun moviesByIds(ids: List<String>): List<MovieEntity>
     @Query("SELECT * FROM movies WHERE normalizedTitle IN (:keys) LIMIT 10") suspend fun moviesByNormalizedTitles(keys: List<String>): List<MovieEntity>
     @Query("SELECT * FROM movies WHERE id IN (:ids)") fun observeMoviesByIds(ids: List<String>): Flow<List<MovieEntity>>

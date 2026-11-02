@@ -61,6 +61,8 @@ interface CatalogRepository {
     fun seriesByIds(ids: List<String>): Flow<List<Series>>
     fun channelsByIds(ids: List<String>): Flow<List<Channel>>
     suspend fun movieOnce(id: String): Movie?
+    /** Mesmo filme em outras qualidades (4K/FHD/HD/SD), da melhor para a pior. */
+    suspend fun movieVariants(movieId: String): List<Movie>
     suspend fun seriesOnce(id: String): Series?
     suspend fun channelOnce(id: String): Channel?
     suspend fun episodesOnce(seriesId: String): List<Episode>
