@@ -173,6 +173,7 @@ class M3uImporter @Inject constructor(
                         isFootball = football.matches(entry.name, cat?.name),
                         normalizedTitle = TextNormalizer.normalize(entry.name),
                         qualityRank = Quality.rank(entry.name),
+                        groupKey = Quality.groupKey(entry.name),
                     ),
                 )
             }

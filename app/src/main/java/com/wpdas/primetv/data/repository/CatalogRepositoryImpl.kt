@@ -140,7 +140,7 @@ class CatalogRepositoryImpl @Inject constructor(
     override suspend fun movieOnce(id: String): Movie? = withContext(io) { dao.movieById(id)?.toDomain() }
     override suspend fun movieVariants(movieId: String): List<Movie> = withContext(io) {
         val m = dao.movieById(movieId) ?: return@withContext emptyList()
-        dao.movieVariants(m.normalizedTitle, m.year).map { it.toDomain() }
+        dao.movieVariants(m.groupKey).map { it.toDomain() }
     }
     override suspend fun seriesOnce(id: String): Series? = withContext(io) { dao.seriesById(id)?.toDomain() }
     override suspend fun channelOnce(id: String): Channel? = withContext(io) { dao.channelById(id)?.toDomain() }

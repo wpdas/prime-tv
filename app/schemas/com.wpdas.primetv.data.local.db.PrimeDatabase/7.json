@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 7,
-    "identityHash": "d3ca8f7a482652b7a0de78996e55368d",
+    "identityHash": "125001486d283d6ab571195dca05fa2a",
     "entities": [
       {
         "tableName": "categories",
@@ -191,7 +191,7 @@
       },
       {
         "tableName": "movies",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `posterUrl` TEXT, `categoryId` TEXT, `categoryName` TEXT, `streamUrl` TEXT NOT NULL, `containerExt` TEXT, `year` INTEGER, `rating` REAL, `tmdbId` INTEGER, `addedAt` INTEGER, `isAdult` INTEGER NOT NULL, `isFootball` INTEGER NOT NULL, `normalizedTitle` TEXT NOT NULL, `qualityRank` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `posterUrl` TEXT, `categoryId` TEXT, `categoryName` TEXT, `streamUrl` TEXT NOT NULL, `containerExt` TEXT, `year` INTEGER, `rating` REAL, `tmdbId` INTEGER, `addedAt` INTEGER, `isAdult` INTEGER NOT NULL, `isFootball` INTEGER NOT NULL, `normalizedTitle` TEXT NOT NULL, `qualityRank` INTEGER NOT NULL, `groupKey` TEXT NOT NULL DEFAULT '', PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -274,6 +274,13 @@
             "columnName": "qualityRank",
             "affinity": "INTEGER",
             "notNull": true
+          },
+          {
+            "fieldPath": "groupKey",
+            "columnName": "groupKey",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
           }
         ],
         "primaryKey": {
@@ -318,6 +325,15 @@
             ],
             "orders": [],
             "createSql": "CREATE INDEX IF NOT EXISTS `index_movies_isFootball` ON `${TABLE_NAME}` (`isFootball`)"
+          },
+          {
+            "name": "index_movies_groupKey",
+            "unique": false,
+            "columnNames": [
+              "groupKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_movies_groupKey` ON `${TABLE_NAME}` (`groupKey`)"
           }
         ]
       },
@@ -1014,7 +1030,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd3ca8f7a482652b7a0de78996e55368d')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '125001486d283d6ab571195dca05fa2a')"
     ]
   }
 }

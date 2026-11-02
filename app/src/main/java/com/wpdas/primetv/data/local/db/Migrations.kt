@@ -21,9 +21,11 @@ object Migrations {
         }
     }
 
-    /** 0.0.2 -> 0.0.3: groupKey passou a distinguir "HBO+" de "HBO"; recalcula reimportando. */
+    /** 0.0.2 -> 0.0.3: agrupamento estrito (HBO+ ≠ HBO) e groupKey também em filmes; recalcula reimportando. */
     val MIGRATION_6_7 = object : Migration(6, 7) {
         override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE movies ADD COLUMN groupKey TEXT NOT NULL DEFAULT ''")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_movies_groupKey ON movies (groupKey)")
             db.execSQL("DELETE FROM sync_state")
         }
     }

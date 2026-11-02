@@ -1,17 +1,22 @@
 package com.wpdas.primetv.core.util
 
-/** Versão semântica simples: "v1.2.3", "1.2.3-dev.4", "1.2". Pré-release conta como menor que a final. */
+/**
+ * Versão semântica simples: "v1.2.3", "1.2.3-dev.4", "1.2". Pré-release conta como menor que a
+ * final, exceto "dev.N", que o build gera para N commits DEPOIS da tag e portanto é mais nova.
+ */
 data class SemVer(val major: Int, val minor: Int, val patch: Int, val preRelease: String? = null) : Comparable<SemVer> {
 
     override fun compareTo(other: SemVer): Int {
         compareValuesBy(this, other, { it.major }, { it.minor }, { it.patch }).let { if (it != 0) return it }
         return when {
             preRelease == null && other.preRelease == null -> 0
-            preRelease == null -> 1
-            other.preRelease == null -> -1
+            preRelease == null -> if (other.isDev) -1 else 1
+            other.preRelease == null -> if (isDev) 1 else -1
             else -> preRelease.compareTo(other.preRelease)
         }
     }
+
+    private val isDev: Boolean get() = preRelease?.startsWith("dev") == true
 
     override fun toString(): String = "$major.$minor.$patch" + (preRelease?.let { "-$it" } ?: "")
 

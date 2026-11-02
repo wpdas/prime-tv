@@ -35,13 +35,21 @@ object Quality {
         else -> null
     }
 
+    /** Marcador de servidor repetido que alguns provedores põem no fim ("HBO FHD²"). */
+    private val DUP_MARK = Regex("""[²³⁴]""")
+    private val SPACES = Regex("""\s+""")
+
     /**
-     * Chave de agrupamento: nome sem tags de qualidade, ano, colchetes e acentos. O "+" é
-     * preservado como palavra ("HBO+" e "HBO" são canais diferentes), e marcadores de
-     * servidor repetido ("²") caem junto com a pontuação.
+     * Chave de agrupamento estrita: dois nomes só caem no mesmo grupo se forem iguais tirando
+     * a tag de qualidade e o marcador de servidor repetido. Caixa, acentos e espaços extras não
+     * contam; todo o resto conta ("HBO+", "HBO Legendado", "Ben 10 2006" são grupos próprios).
+     * Em dúvida, mostrar dois itens é melhor do que esconder um canal.
      */
-    fun groupKey(name: String): String {
-        val plusAware = name.replace("+", " plus ")
-        return TextNormalizer.normalize(plusAware).ifEmpty { TextNormalizer.searchKey(plusAware) }
-    }
+    fun groupKey(name: String): String =
+        TextNormalizer.stripAccents(name.lowercase())
+            .replace(TAG, " ")
+            .replace(DUP_MARK, " ")
+            .replace(SPACES, " ")
+            .trim()
+            .ifEmpty { TextNormalizer.searchKey(name) }
 }

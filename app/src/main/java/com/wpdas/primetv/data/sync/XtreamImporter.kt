@@ -132,6 +132,7 @@ class XtreamImporter @Inject constructor(
                             isFootball = football.matches(name, catId?.let(names::get)),
                             normalizedTitle = TextNormalizer.normalize(name),
                             qualityRank = Quality.rank(name),
+                            groupKey = Quality.groupKey(name),
                         ),
                     )
                 }

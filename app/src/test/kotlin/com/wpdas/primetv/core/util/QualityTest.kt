@@ -25,9 +25,13 @@ class QualityTest {
     }
 
     @Test
-    fun `mais nao e descartado no agrupamento`() {
-        assert(Quality.groupKey("HBO+ FHD") != Quality.groupKey("HBO FHD"))
+    fun `agrupamento e estrito - so a tag de qualidade e o marcador de servidor sao ignorados`() {
         assertEquals(Quality.groupKey("HBO+ FHD"), Quality.groupKey("HBO+ HD²"))
+        assertEquals(Quality.groupKey("Globo São Paulo FHD"), Quality.groupKey("globo sao paulo  HD"))
+        assert(Quality.groupKey("HBO+ FHD") != Quality.groupKey("HBO FHD"))
         assert(Quality.groupKey("SPORT TV+") != Quality.groupKey("SPORT TV"))
+        assert(Quality.groupKey("HBO FHD Legendado") != Quality.groupKey("HBO FHD"))
+        assert(Quality.groupKey("Ben 10 2006 - 2008") != Quality.groupKey("Ben 10"))
+        assert(Quality.groupKey("Filme - 2024 (L)") != Quality.groupKey("Filme - 2024"))
     }
 }

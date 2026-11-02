@@ -35,7 +35,7 @@ data class ChannelEntity(
     val qualityRank: Int,
 )
 
-@Entity(tableName = "movies", indices = [Index("categoryId"), Index("normalizedTitle"), Index("addedAt"), Index("isFootball")])
+@Entity(tableName = "movies", indices = [Index("categoryId"), Index("normalizedTitle"), Index("addedAt"), Index("isFootball"), Index("groupKey")])
 data class MovieEntity(
     @PrimaryKey val id: String,
     val title: String,
@@ -52,6 +52,8 @@ data class MovieEntity(
     val isFootball: Boolean,
     val normalizedTitle: String,
     val qualityRank: Int,
+    /** Chave estrita de variantes de qualidade (ver [com.wpdas.primetv.core.util.Quality.groupKey]). */
+    @ColumnInfo(defaultValue = "") val groupKey: String = "",
 )
 
 @Entity(tableName = "series", indices = [Index("categoryId"), Index("normalizedTitle"), Index("isFootball")])

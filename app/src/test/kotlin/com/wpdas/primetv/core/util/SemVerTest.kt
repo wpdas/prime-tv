@@ -29,4 +29,11 @@ class SemVerTest {
         assertTrue(SemVer.isNewer("v0.1.0", "0.0.0-dev"))
         assertFalse(SemVer.isNewer("lixo", "1.0.0"))
     }
+
+    @Test
+    fun `build de desenvolvimento depois da tag nao e tratado como desatualizado`() {
+        assertFalse(SemVer.isNewer("v0.0.2", "0.0.2-dev.4"))
+        assertTrue(SemVer.isNewer("v0.0.3", "0.0.2-dev.4"))
+        assertTrue(SemVer.isNewer("v0.0.2", "0.0.2-rc.1"))
+    }
 }
