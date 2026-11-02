@@ -52,6 +52,9 @@ object DatabaseModule {
     fun provideDatabase(@ApplicationContext context: Context): PrimeDatabase =
         Room.databaseBuilder(context, PrimeDatabase::class.java, PrimeDatabase.NAME)
             .addMigrations(*com.wpdas.primetv.data.local.db.Migrations.ALL)
+            // WAL explícito: no modo automático, aparelhos marcados como "low RAM" (boxes baratas) caem
+            // em TRUNCATE, e aí toda leitura da UI espera a transação de importação terminar.
+            .setJournalMode(androidx.room.RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
             // Só bancos de builds de desenvolvimento anteriores à primeira release (v5) são descartados.
             .fallbackToDestructiveMigrationFrom(dropAllTables = true, 1, 2, 3, 4)
             .build()

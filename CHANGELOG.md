@@ -4,6 +4,15 @@ Formato: uma seção por versão, com **Novidades** e **Correções**. A seção
 
 ## [Não lançado]
 
+### Novidades
+- Na Início, Voltar mostra "Aperte Voltar de novo para sair" e o segundo toque fecha o app de verdade
+- Segurar ↑/↓/←/→ no controle anda no ritmo da tela: repetições que chegam antes de a rolagem terminar são ignoradas, e o foco não some mais da área visível em boxes mais lentas
+
+### Correções
+- Logo após atualizar o app, Início, Filmes e Séries ficavam vazias até a reimportação terminar (minutos numa internet lenta). Causa: os itens ainda sem chave de agrupamento eram tratados como um grupo só e sumiam atrás de um único título. Agora cada um deles conta como item próprio e tudo continua visível enquanto a lista é atualizada por trás
+- Importação lê a lista inteira da rede antes de gravar, numa transação curta: a tela nunca vê a tabela vazia, uma queda de rede não toca no banco e favoritos/histórico não ficam presos esperando o download; o guia de programação é baixado para o cache antes de entrar no banco
+- Banco sempre em modo WAL: em aparelhos marcados como "low RAM", o modo automático deixava toda leitura da interface esperando a importação terminar
+
 ## [0.0.3] - 2026-11-02
 
 ### Novidades

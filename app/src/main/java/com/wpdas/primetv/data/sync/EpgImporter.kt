@@ -1,6 +1,9 @@
 package com.wpdas.primetv.data.sync
 
+import android.content.Context
 import androidx.room.withTransaction
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
 import com.wpdas.primetv.core.util.TextNormalizer
 import com.wpdas.primetv.data.local.db.EpgChannelEntity
 import com.wpdas.primetv.data.local.db.EpgProgramEntity
@@ -23,11 +26,14 @@ import java.util.zip.GZIPInputStream
 import javax.inject.Inject
 
 /**
- * Importa o guia XMLTV (Xtream: `xmltv.php`; M3U: `url-tvg`). Guarda só a janela útil
- * (poucas horas para trás, alguns dias para a frente) e, no fim, resolve a chave de guia
- * dos canais sem `tvg-id` casando o nome com os `display-name` do XMLTV.
+ * Importa o guia XMLTV (Xtream: `xmltv.php`; M3U: `url-tvg`). O arquivo (que pode ter
+ * centenas de MB) é baixado inteiro para o cache antes de abrir a transação, para o banco
+ * não ficar travado pela velocidade da rede. Guarda só a janela útil (poucas horas para trás,
+ * alguns dias para a frente) e, no fim, resolve a chave de guia dos canais sem `tvg-id`
+ * casando o nome com os `display-name` do XMLTV.
  */
 class EpgImporter @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val db: PrimeDatabase,
     private val http: OkHttpClient,
 ) {
@@ -43,7 +49,9 @@ class EpgImporter @Inject constructor(
         val epgDao = db.epgDao()
         val catalog = db.catalogDao()
 
-        openStream(url).use { input ->
+        val file = download(url)
+        try {
+            maybeGunzip(file.inputStream()).use { input ->
             db.withTransaction {
                 epgDao.deletePrograms()
                 epgDao.deleteChannels()
@@ -73,6 +81,9 @@ class EpgImporter @Inject constructor(
                 programs.flush()
                 resolveChannelKeys()
             }
+            }
+        } finally {
+            file.delete()
         }
         return ImportResult.Imported(count)
     }
@@ -93,21 +104,30 @@ class EpgImporter @Inject constructor(
         }
     }
 
-    private fun openStream(url: String): InputStream {
-        val response = try {
-            http.newCall(Request.Builder().url(url).get().build()).execute()
+    /** Baixa o XMLTV para um arquivo temporário no cache; erros de rede viram [PlaylistException]. */
+    private fun download(url: String): File {
+        val file = File(context.cacheDir, CACHE_FILE)
+        try {
+            http.newCall(Request.Builder().url(url).get().build()).execute().use { response ->
+                if (!response.isSuccessful) {
+                    throw PlaylistException(if (response.code == 401 || response.code == 403) PlaylistError.InvalidCredentials else PlaylistError.ServerUnreachable)
+                }
+                response.body.byteStream().use { input -> file.outputStream().use { out -> input.copyTo(out, 64 * 1024) } }
+            }
         } catch (e: UnknownHostException) {
+            file.delete()
             throw PlaylistException(PlaylistError.NoInternet, e)
         } catch (e: SocketTimeoutException) {
+            file.delete()
             throw PlaylistException(PlaylistError.ServerUnreachable, e)
         } catch (e: IOException) {
+            file.delete()
             throw PlaylistException(PlaylistError.ServerUnreachable, e)
+        } catch (e: Exception) {
+            file.delete()
+            throw e
         }
-        if (!response.isSuccessful) {
-            response.close()
-            throw PlaylistException(if (response.code == 401 || response.code == 403) PlaylistError.InvalidCredentials else PlaylistError.ServerUnreachable)
-        }
-        return maybeGunzip(response.body.byteStream())
+        return file
     }
 
     /** Alguns servidores entregam `.xml.gz` sem Content-Encoding; detecta pelo cabeçalho mágico. */
@@ -121,6 +141,7 @@ class EpgImporter @Inject constructor(
     }
 
     private companion object {
+        const val CACHE_FILE = "epg.xmltv.part"
         const val PAST_WINDOW_MS = 6 * 60 * 60 * 1000L
         const val FUTURE_WINDOW_MS = 3 * 24 * 60 * 60 * 1000L
     }

@@ -45,6 +45,7 @@ import com.wpdas.primetv.domain.model.EpgProgram
 import com.wpdas.primetv.domain.model.HomeTab
 import com.wpdas.primetv.ui.components.Artwork
 import com.wpdas.primetv.ui.components.CategoryRail
+import com.wpdas.primetv.ui.components.throttleHeldDpad
 import com.wpdas.primetv.ui.components.ChannelRow
 import com.wpdas.primetv.ui.components.LiveBadge
 import com.wpdas.primetv.ui.components.LoadingSpinner
@@ -141,7 +142,8 @@ fun LiveScreen(
                     channels == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { LoadingSpinner(size = 32.dp) }
                     channels.isEmpty() -> Text(t("live.empty"), style = PrimeTheme.typography.bodyLarge, color = colors.textSecondary, modifier = Modifier.padding(12.dp))
                     else -> LazyColumn(
-                        Modifier.fillMaxSize().focusRestorer().focusGroup(),
+                        Modifier.fillMaxSize().focusRestorer().focusGroup()
+                            .throttleHeldDpad(vertical = true) { listState.isScrollInProgress },
                         state = listState,
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                         contentPadding = PaddingValues(vertical = 8.dp, horizontal = 6.dp),

@@ -36,8 +36,10 @@ fun CategoryRail(
 ) {
     val colors = PrimeTheme.colors
     val shape = PrimeTheme.shapes.card
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     LazyColumn(
-        modifier = modifier.width(width).focusRestorer().focusGroup(),
+        state = listState,
+        modifier = modifier.width(width).focusRestorer().focusGroup().throttleHeldDpad(vertical = true) { listState.isScrollInProgress },
         verticalArrangement = Arrangement.spacedBy(4.dp),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 8.dp, horizontal = 6.dp),
     ) {

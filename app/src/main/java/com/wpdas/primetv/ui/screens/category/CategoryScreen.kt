@@ -1,5 +1,6 @@
 package com.wpdas.primetv.ui.screens.category
 
+import com.wpdas.primetv.ui.components.throttleHeldDpad
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
@@ -112,6 +113,7 @@ fun CategoryScreen(
                 state = gridState,
                 modifier = Modifier
                     .fillMaxSize()
+                    .throttleHeldDpad(vertical = true) { gridState.isScrollInProgress }
                     .onFocusChanged { focus ->
                         // Ao voltar para a primeira linha, ela fica alinhada ao topo (sem cortar o anel de foco).
                         if (focus.hasFocus && gridState.firstVisibleItemIndex == 0 && gridState.firstVisibleItemScrollOffset > 0) {

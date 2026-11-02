@@ -1,5 +1,7 @@
 package com.wpdas.primetv.ui.screens.home
 
+import androidx.compose.runtime.mutableStateOf
+import com.wpdas.primetv.ui.components.throttleHeldDpad
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
@@ -133,8 +135,20 @@ fun HomeContent(
         return m
     }
 
-    // Voltar numa aba que não é Início leva para Início; em Início, sai do app (padrão).
+    // Voltar numa aba que não é Início leva para Início. Em Início: avisa e, no segundo toque, fecha o app.
     BackHandler(enabled = state.selectedTab != HomeTab.HOME) { onTabSelected(HomeTab.HOME) }
+    val activity = androidx.activity.compose.LocalActivity.current
+    var exitArmed by remember { mutableStateOf(false) }
+    var exitJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+    BackHandler(enabled = state.selectedTab == HomeTab.HOME) {
+        if (exitArmed) {
+            activity?.finishAndRemoveTask()
+        } else {
+            exitArmed = true
+            exitJob?.cancel()
+            exitJob = scope.launch { kotlinx.coroutines.delay(EXIT_CONFIRM_MS); exitArmed = false }
+        }
+    }
 
     // Primeira abertura: foco no "Assistir" do destaque. Ao voltar de outra tela: a linha onde o usuário estava.
     LaunchedEffect(state.hero != null) {
@@ -193,7 +207,7 @@ fun HomeContent(
             )
             LazyColumn(
                 state = listState,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().throttleHeldDpad(vertical = true) { listState.isScrollInProgress },
                 contentPadding = PaddingValues(bottom = 48.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
@@ -260,7 +274,11 @@ fun HomeContent(
             }
         }
         StatusToast(
-            text = state.updatingSectionKey?.let { t("home.updating_section", "section" to t(it)) },
+            text = when {
+                exitArmed -> t("home.press_back_again")
+                else -> state.updatingSectionKey?.let { t("home.updating_section", "section" to t(it)) }
+            },
+            showSpinner = !exitArmed,
             modifier = Modifier.align(Alignment.BottomEnd).padding(end = PrimeDimens.screenMargin, bottom = 20.dp),
         )
     }
@@ -291,6 +309,7 @@ private fun HomeRow(
             state = rowState,
             modifier = Modifier
                 .fillMaxWidth()
+                .throttleHeldDpad(vertical = false) { rowState.isScrollInProgress }
                 .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
                 .onFocusChanged { focus ->
                     if (!focus.hasFocus) return@onFocusChanged
@@ -322,4 +341,5 @@ private fun continueMeta(cw: ContinueWatchingItem): String {
 }
 
 private const val TAB_FOCUS_DELAY_MS = 350L
+private const val EXIT_CONFIRM_MS = 2_500L
 private const val LIVE_TAB_FOCUS_DELAY_MS = 700L

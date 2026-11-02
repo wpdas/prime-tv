@@ -26,9 +26,10 @@ import kotlinx.serialization.json.JsonPrimitive
 import javax.inject.Inject
 
 /**
- * Importa do Xtream. Cada seção roda numa única transação: apaga a anterior e insere em
- * lotes enquanto o JSON é lido em streaming. Se falhar no meio, o rollback preserva os
- * dados antigos. Episódios de série são buscados sob demanda na tela de Detalhes.
+ * Importa do Xtream. Cada seção lê o JSON inteiro da rede primeiro (fora de transação) e só
+ * então grava numa transação curta: apaga a anterior e insere em lotes. Assim a UI nunca vê a
+ * tabela vazia, uma falha de rede não toca no banco e gravações do usuário (favoritos,
+ * histórico) não ficam presas atrás do download. Episódios de série são buscados sob demanda.
  */
 class XtreamImporter @Inject constructor(
     private val db: PrimeDatabase,
@@ -53,144 +54,135 @@ class XtreamImporter @Inject constructor(
     private suspend fun importLive(src: PlaylistSource.Xtream, onProgress: (Int) -> Unit): Int {
         val categories = client.liveCategories(src).toEntities(ContentSection.LIVE)
         val names = categories.associate { it.id to it.name }
-        var count = 0
+        val collected = Collector<ChannelEntity>(onProgress)
+        client.liveStreams(src) { seq ->
+            seq.forEachIndexed { index, dto ->
+                val id = dto.streamId.blankToNull() ?: return@forEachIndexed
+                val name = dto.name.blankToNull() ?: return@forEachIndexed
+                val catId = dto.categoryId.blankToNull()?.let { categoryId(ContentSection.LIVE, it) }
+                collected.add(
+                    ChannelEntity(
+                        id = "xl-$id",
+                        name = name.trim(),
+                        number = dto.num.toIntLenient() ?: (index + 1),
+                        logoUrl = dto.streamIcon.blankToNull(),
+                        categoryId = catId,
+                        categoryName = catId?.let(names::get),
+                        streamUrl = XtreamClient.liveStreamUrl(src, id),
+                        epgChannelId = dto.epgChannelId.blankToNull(),
+                        epgKey = dto.epgChannelId.blankToNull(),
+                        isAdult = dto.isAdult.toBoolLenient(),
+                        isFootball = football.matches(name, catId?.let(names::get)),
+                        searchKey = TextNormalizer.searchKey(name),
+                        groupKey = Quality.groupKey(name),
+                        qualityRank = Quality.rank(name),
+                    ),
+                )
+            }
+        }
         db.withTransaction {
             dao.deleteCategories(ContentSection.LIVE.name)
             dao.deleteChannels()
             dao.deleteSearch(SearchType.CHANNEL)
             dao.insertCategories(categories)
-            val batch = Batch<ChannelEntity>(PrimeDatabase.BATCH_SIZE) { items ->
+            collected.items.chunked(PrimeDatabase.BATCH_SIZE).forEach { items ->
                 dao.insertChannels(items)
                 dao.insertSearch(items.map { SearchIndexEntity(title = it.searchKey, type = SearchType.CHANNEL, refId = it.id) })
-                count += items.size
-                onProgress(count)
             }
-            client.liveStreams(src) { seq ->
-                seq.forEachIndexed { index, dto ->
-                    val id = dto.streamId.blankToNull() ?: return@forEachIndexed
-                    val name = dto.name.blankToNull() ?: return@forEachIndexed
-                    val catId = dto.categoryId.blankToNull()?.let { categoryId(ContentSection.LIVE, it) }
-                    batch.add(
-                        ChannelEntity(
-                            id = "xl-$id",
-                            name = name.trim(),
-                            number = dto.num.toIntLenient() ?: (index + 1),
-                            logoUrl = dto.streamIcon.blankToNull(),
-                            categoryId = catId,
-                            categoryName = catId?.let(names::get),
-                            streamUrl = XtreamClient.liveStreamUrl(src, id),
-                            epgChannelId = dto.epgChannelId.blankToNull(),
-                            epgKey = dto.epgChannelId.blankToNull(),
-                            isAdult = dto.isAdult.toBoolLenient(),
-                            isFootball = football.matches(name, catId?.let(names::get)),
-                            searchKey = TextNormalizer.searchKey(name),
-                            groupKey = Quality.groupKey(name),
-                            qualityRank = Quality.rank(name),
-                        ),
-                    )
-                }
-            }
-            batch.flush()
         }
-        return count
+        return collected.items.size
     }
 
     private suspend fun importMovies(src: PlaylistSource.Xtream, onProgress: (Int) -> Unit): Int {
         val categories = client.vodCategories(src).toEntities(ContentSection.MOVIES)
         val names = categories.associate { it.id to it.name }
-        var count = 0
+        val collected = Collector<MovieEntity>(onProgress)
+        client.vodStreams(src) { seq ->
+            seq.forEach { dto ->
+                val id = dto.streamId.blankToNull() ?: return@forEach
+                val name = dto.name.blankToNull() ?: return@forEach
+                val catId = dto.categoryId.blankToNull()?.let { categoryId(ContentSection.MOVIES, it) }
+                collected.add(
+                    MovieEntity(
+                        id = "xm-$id",
+                        title = name.trim(),
+                        posterUrl = dto.streamIcon.blankToNull(),
+                        categoryId = catId,
+                        categoryName = catId?.let(names::get),
+                        streamUrl = XtreamClient.movieStreamUrl(src, id, dto.containerExtension.blankToNull()),
+                        containerExt = dto.containerExtension.blankToNull(),
+                        year = dto.year.yearLenient() ?: TextNormalizer.extractYear(name),
+                        rating = dto.rating.toDoubleLenient()?.takeIf { it > 0 },
+                        tmdbId = dto.tmdbId.toIntLenient()?.takeIf { it > 0 },
+                        addedAt = dto.added.toLongLenient(),
+                        isAdult = dto.isAdult.toBoolLenient(),
+                        isFootball = football.matches(name, catId?.let(names::get)),
+                        normalizedTitle = TextNormalizer.normalize(name),
+                        qualityRank = Quality.rank(name),
+                        groupKey = Quality.groupKey(name),
+                    ),
+                )
+            }
+        }
         db.withTransaction {
             dao.deleteCategories(ContentSection.MOVIES.name)
             dao.deleteMovies()
             dao.deleteSearch(SearchType.MOVIE)
             dao.insertCategories(categories)
-            val batch = Batch<MovieEntity>(PrimeDatabase.BATCH_SIZE) { items ->
+            collected.items.chunked(PrimeDatabase.BATCH_SIZE).forEach { items ->
                 dao.insertMovies(items)
                 dao.insertSearch(items.map { SearchIndexEntity(title = TextNormalizer.searchKey(it.title), type = SearchType.MOVIE, refId = it.id) })
-                count += items.size
-                onProgress(count)
             }
-            client.vodStreams(src) { seq ->
-                seq.forEach { dto ->
-                    val id = dto.streamId.blankToNull() ?: return@forEach
-                    val name = dto.name.blankToNull() ?: return@forEach
-                    val catId = dto.categoryId.blankToNull()?.let { categoryId(ContentSection.MOVIES, it) }
-                    batch.add(
-                        MovieEntity(
-                            id = "xm-$id",
-                            title = name.trim(),
-                            posterUrl = dto.streamIcon.blankToNull(),
-                            categoryId = catId,
-                            categoryName = catId?.let(names::get),
-                            streamUrl = XtreamClient.movieStreamUrl(src, id, dto.containerExtension.blankToNull()),
-                            containerExt = dto.containerExtension.blankToNull(),
-                            year = dto.year.yearLenient() ?: TextNormalizer.extractYear(name),
-                            rating = dto.rating.toDoubleLenient()?.takeIf { it > 0 },
-                            tmdbId = dto.tmdbId.toIntLenient()?.takeIf { it > 0 },
-                            addedAt = dto.added.toLongLenient(),
-                            isAdult = dto.isAdult.toBoolLenient(),
-                            isFootball = football.matches(name, catId?.let(names::get)),
-                            normalizedTitle = TextNormalizer.normalize(name),
-                            qualityRank = Quality.rank(name),
-                            groupKey = Quality.groupKey(name),
-                        ),
-                    )
-                }
-            }
-            batch.flush()
         }
-        return count
+        return collected.items.size
     }
 
     private suspend fun importSeries(src: PlaylistSource.Xtream, onProgress: (Int) -> Unit): Int {
         val categories = client.seriesCategories(src).toEntities(ContentSection.SERIES)
         val names = categories.associate { it.id to it.name }
-        var count = 0
+        val collected = Collector<SeriesEntity>(onProgress)
+        client.series(src) { seq ->
+            seq.forEach { dto ->
+                val id = dto.seriesId.blankToNull() ?: return@forEach
+                val name = dto.name.blankToNull() ?: return@forEach
+                val catId = dto.categoryId.blankToNull()?.let { categoryId(ContentSection.SERIES, it) }
+                val backdrop = when (val b = dto.backdropPath) {
+                    is JsonArray -> (b.firstOrNull() as? JsonPrimitive).contentOrNull()
+                    is JsonPrimitive -> b.contentOrNull()
+                    else -> null
+                }
+                collected.add(
+                    SeriesEntity(
+                        id = "xs-$id",
+                        title = name.trim(),
+                        posterUrl = dto.cover.blankToNull(),
+                        backdropUrl = backdrop.blankToNull(),
+                        categoryId = catId,
+                        categoryName = catId?.let(names::get),
+                        plot = dto.plot.blankToNull(),
+                        genre = dto.genre.blankToNull(),
+                        year = dto.releaseDate.yearLenient() ?: TextNormalizer.extractYear(name),
+                        rating = dto.rating.toDoubleLenient()?.takeIf { it > 0 },
+                        tmdbId = dto.tmdb.toIntLenient()?.takeIf { it > 0 },
+                        episodesLoaded = false,
+                        isFootball = football.matches(name, catId?.let(names::get)),
+                        normalizedTitle = TextNormalizer.normalize(name),
+                    ),
+                )
+            }
+        }
         db.withTransaction {
             dao.deleteCategories(ContentSection.SERIES.name)
             dao.deleteSeries()
             dao.deleteEpisodes()
             dao.deleteSearch(SearchType.SERIES)
             dao.insertCategories(categories)
-            val batch = Batch<SeriesEntity>(PrimeDatabase.BATCH_SIZE) { items ->
+            collected.items.chunked(PrimeDatabase.BATCH_SIZE).forEach { items ->
                 dao.insertSeries(items)
                 dao.insertSearch(items.map { SearchIndexEntity(title = TextNormalizer.searchKey(it.title), type = SearchType.SERIES, refId = it.id) })
-                count += items.size
-                onProgress(count)
             }
-            client.series(src) { seq ->
-                seq.forEach { dto ->
-                    val id = dto.seriesId.blankToNull() ?: return@forEach
-                    val name = dto.name.blankToNull() ?: return@forEach
-                    val catId = dto.categoryId.blankToNull()?.let { categoryId(ContentSection.SERIES, it) }
-                    val backdrop = when (val b = dto.backdropPath) {
-                        is JsonArray -> (b.firstOrNull() as? JsonPrimitive).contentOrNull()
-                        is JsonPrimitive -> b.contentOrNull()
-                        else -> null
-                    }
-                    batch.add(
-                        SeriesEntity(
-                            id = "xs-$id",
-                            title = name.trim(),
-                            posterUrl = dto.cover.blankToNull(),
-                            backdropUrl = backdrop.blankToNull(),
-                            categoryId = catId,
-                            categoryName = catId?.let(names::get),
-                            plot = dto.plot.blankToNull(),
-                            genre = dto.genre.blankToNull(),
-                            year = dto.releaseDate.yearLenient() ?: TextNormalizer.extractYear(name),
-                            rating = dto.rating.toDoubleLenient()?.takeIf { it > 0 },
-                            tmdbId = dto.tmdb.toIntLenient()?.takeIf { it > 0 },
-                            episodesLoaded = false,
-                            isFootball = football.matches(name, catId?.let(names::get)),
-                            normalizedTitle = TextNormalizer.normalize(name),
-                        ),
-                    )
-                }
-            }
-            batch.flush()
         }
-        return count
+        return collected.items.size
     }
 
     private fun List<XtreamCategoryDto>.toEntities(section: ContentSection): List<CategoryEntity> =
@@ -221,5 +213,19 @@ internal class Batch<T>(private val size: Int, private val sink: suspend (List<T
         val chunk = ArrayList(items)
         items.clear()
         sink(chunk)
+    }
+}
+
+/** Acumula o que foi lido da rede e avisa o progresso a cada [PROGRESS_EVERY] itens; a gravação vem depois. */
+internal class Collector<T>(private val onProgress: (Int) -> Unit) {
+    val items = ArrayList<T>()
+
+    fun add(item: T) {
+        items += item
+        if (items.size % PROGRESS_EVERY == 0) onProgress(items.size)
+    }
+
+    private companion object {
+        const val PROGRESS_EVERY = 500
     }
 }

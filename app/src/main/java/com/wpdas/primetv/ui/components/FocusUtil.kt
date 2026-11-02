@@ -13,6 +13,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.onSizeChanged
@@ -62,4 +68,32 @@ fun Modifier.bringIntoViewOnFocus(padding: Dp = 24.dp): Modifier {
                 scope.launch { requester.bringIntoView(Rect(-pad, -pad, size.width + pad, size.height + pad)) }
             }
         }
+}
+
+/**
+ * Tecla direcional segurada no controle: o Android repete o evento a cada ~50 ms, mais rápido do
+ * que uma box fraca consegue rolar e animar. Enquanto a lista ainda estiver rolando (ou antes de
+ * [minIntervalMs] desde o último passo) as repetições são engolidas; o foco anda no ritmo da tela
+ * e o anel nunca sai da área visível. O primeiro toque nunca é atrasado.
+ *
+ * @param vertical eixo em que a lista rola; só as setas desse eixo são freadas.
+ * @param isScrolling normalmente `{ listState.isScrollInProgress }`.
+ */
+@Composable
+fun Modifier.throttleHeldDpad(vertical: Boolean, minIntervalMs: Long = 80L, isScrolling: () -> Boolean): Modifier {
+    var lastStepMs by remember { mutableLongStateOf(0L) }
+    return onPreviewKeyEvent { event ->
+        if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+        val onAxis = if (vertical) event.key == Key.DirectionDown || event.key == Key.DirectionUp
+        else event.key == Key.DirectionLeft || event.key == Key.DirectionRight
+        if (!onAxis) return@onPreviewKeyEvent false
+        val now = android.os.SystemClock.uptimeMillis()
+        if (event.nativeKeyEvent.repeatCount == 0) {
+            lastStepMs = now
+            return@onPreviewKeyEvent false
+        }
+        if (isScrolling() || now - lastStepMs < minIntervalMs) return@onPreviewKeyEvent true
+        lastStepMs = now
+        false
+    }
 }
