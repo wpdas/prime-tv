@@ -247,7 +247,8 @@ fun PlayerScreen(
  * Teclas no player.
  * - Ao vivo: cima/baixo sempre trocam de canal, OK pausa/retoma e mostra a barra, números
  *   escolhem o canal, esquerda/direita abrem a linha de opções (Áudio/Legendas).
- * - Filmes/séries com controles escondidos: OK mostra, esquerda/direita pulam 10 s (segurar acelera).
+ * - Filmes/séries com controles escondidos: qualquer tecla mostra os controles; esquerda/direita só
+ *   avançam na barra de progresso (segurar acelera), nunca com a barra escondida.
  */
 private fun handleKey(event: androidx.compose.ui.input.key.KeyEvent, state: PlayerUiState, vm: PlayerViewModel): Boolean {
     val key = event.key
@@ -296,11 +297,9 @@ private fun handleKey(event: androidx.compose.ui.input.key.KeyEvent, state: Play
         vm.showControls()
         return false
     }
+    // Controles escondidos: qualquer tecla só os mostra. Avançar/voltar fica na barra de progresso,
+    // para um toque acidental no controle não pular o filme.
     return when (key) {
-        Key.DirectionCenter, Key.Enter, Key.NumPadEnter -> { vm.showControls(); true }
-        Key.DirectionLeft -> { vm.seekBy(-vm.seekStep(repeat)); true }
-        Key.DirectionRight -> { vm.seekBy(vm.seekStep(repeat)); true }
-        Key.DirectionUp, Key.DirectionDown -> { vm.showControls(); true }
         Key.Back, Key.Escape -> false
         else -> { vm.showControls(); true }
     }
@@ -602,16 +601,23 @@ private fun QualityPanel(options: List<QualityOption>, onSelect: (QualityOption)
         if (tracks.isNotEmpty()) {
             Text(t("player.quality_tracks"), style = PrimeTheme.typography.captionStrong, color = colors.textSecondary, modifier = Modifier.padding(top = 4.dp, bottom = 2.dp))
             tracks.forEachIndexed { index, option ->
-                PanelRow(label = option.label, selected = option.selected, onClick = { onSelect(option) }, modifier = if (index == 0) Modifier.focusRequester(first) else Modifier)
+                PanelRow(label = qualityLabel(option), selected = option.selected, onClick = { onSelect(option) }, modifier = if (index == 0) Modifier.focusRequester(first) else Modifier)
             }
         }
         if (sources.isNotEmpty()) {
             Text(t("player.quality_sources"), style = PrimeTheme.typography.captionStrong, color = colors.textSecondary, modifier = Modifier.padding(top = 10.dp, bottom = 2.dp))
             sources.forEachIndexed { index, option ->
-                PanelRow(label = option.label, selected = option.selected, onClick = { onSelect(option) }, modifier = if (tracks.isEmpty() && index == 0) Modifier.focusRequester(first) else Modifier)
+                PanelRow(label = qualityLabel(option), selected = option.selected, onClick = { onSelect(option) }, modifier = if (tracks.isEmpty() && index == 0) Modifier.focusRequester(first) else Modifier)
             }
         }
     }
+}
+
+/** "FHD", "Padrão" ou "Padrão · 1080p" (variante sem tag na lista, com a resolução real quando conhecida). */
+@Composable
+private fun qualityLabel(option: QualityOption): String {
+    val key = option.labelKey ?: return option.label
+    return if (option.label.isBlank()) t(key) else "${t(key)} · ${option.label}"
 }
 
 @Composable

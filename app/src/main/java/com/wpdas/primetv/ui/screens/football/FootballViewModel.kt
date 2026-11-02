@@ -59,7 +59,6 @@ class FootballViewModel @Inject constructor(
             .launchIn(viewModelScope)
 
         home.availableTabs().onEach { tabs -> _state.update { it.copy(tabs = tabs) } }.launchIn(viewModelScope)
-        home.categoryRows(HomeTab.FOOTBALL).onEach { rows -> _state.update { it.copy(videos = rows) } }.launchIn(viewModelScope)
 
         sync.status.onEach { status ->
             _state.update { it.copy(refreshing = status[ContentSection.LIVE] is SyncState.Running || status[ContentSection.EPG] is SyncState.Running) }
@@ -77,7 +76,6 @@ class FootballViewModel @Inject constructor(
             RailCategory(FootballUiState.RAIL_TODAY, "Jogos", events.size),
             RailCategory(FootballUiState.RAIL_LIVE, "Ao vivo agora", live),
             RailCategory(FootballUiState.RAIL_CHANNELS, "Canais", s.channels?.size),
-            RailCategory(FootballUiState.RAIL_VIDEOS, "Vídeos", s.videos.sumOf { it.items.size }.takeIf { it > 0 }),
         )
         return if (rail == s.rail) s.rail else rail
     }

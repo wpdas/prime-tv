@@ -18,6 +18,25 @@ interface TmdbApi {
     @GET("tv/popular")
     suspend fun popularTv(@Query("language") language: String = LANG): TmdbPage
 
+    /** Populares por gênero/país (abas Kids e Anime). Gêneros: "16" animação, "10762" kids, "10751" família; "|" = ou. */
+    @GET("discover/tv")
+    suspend fun discoverTv(
+        @Query("with_genres") genres: String,
+        @Query("with_origin_country") country: String? = null,
+        @Query("sort_by") sort: String = "popularity.desc",
+        @Query("vote_count.gte") minVotes: Int = 50,
+        @Query("language") language: String = LANG,
+    ): TmdbPage
+
+    @GET("discover/movie")
+    suspend fun discoverMovie(
+        @Query("with_genres") genres: String,
+        @Query("with_origin_country") country: String? = null,
+        @Query("sort_by") sort: String = "popularity.desc",
+        @Query("vote_count.gte") minVotes: Int = 50,
+        @Query("language") language: String = LANG,
+    ): TmdbPage
+
     @GET("search/movie")
     suspend fun searchMovie(@Query("query") query: String, @Query("year") year: Int? = null, @Query("language") language: String = LANG): TmdbPage
 

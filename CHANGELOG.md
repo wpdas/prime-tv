@@ -4,6 +4,15 @@ Formato: uma seção por versão, com **Novidades** e **Correções**. A seção
 
 ## [Não lançado]
 
+### Novidades
+- Destaque do topo nas abas Kids e Anime passa a ser do próprio contexto: em Anime, Dragon Ball e Naruto/Boruto mais recentes que a lista tiver, One Piece, os animes populares do TMDB presentes na lista e títulos das categorias de anime sorteados por dia; em Kids, os desenhos populares do TMDB presentes na lista e títulos das categorias infantis sorteados por dia
+- Menu Qualidade: a versão sem tag no nome da lista aparece como "Padrão", com a resolução real quando está tocando ("Padrão · 1080p"), em vez de "—"
+
+### Correções
+- Aviso automático de versão nova: a checagem silenciosa ao abrir o app passa de 6 h para 30 min de intervalo mínimo, então uma release publicada aparece na próxima abertura
+- Com os controles do player escondidos, ← e → só mostram os controles; o avanço de 10 s fica na barra de progresso, acabando com o pulo acidental ao pegar o controle
+- Trilho "Vídeos" removido da tela de Futebol: puxava filmes sem relação com esporte
+
 ## [0.0.5] - 2026-11-02
 
 ### Novidades

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -34,14 +33,11 @@ import androidx.tv.material3.Text
 import com.wpdas.primetv.core.i18n.t
 import com.wpdas.primetv.domain.football.MatchEvent
 import com.wpdas.primetv.domain.football.MatchStatus
-import com.wpdas.primetv.domain.model.CategoryRow
 import com.wpdas.primetv.domain.model.HomeTab
-import com.wpdas.primetv.domain.model.MediaItem
 import com.wpdas.primetv.ui.components.CategoryRail
 import com.wpdas.primetv.ui.components.ChannelRow
 import com.wpdas.primetv.ui.components.LoadingSpinner
 import com.wpdas.primetv.ui.components.MatchRow
-import com.wpdas.primetv.ui.components.PosterCard
 import com.wpdas.primetv.ui.components.PrimeButton
 import com.wpdas.primetv.ui.components.PrimeButtonStyle
 import com.wpdas.primetv.ui.components.StatusToast
@@ -63,7 +59,7 @@ private val DAY_MONTH: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM")
 private val LONG_DAY: DateTimeFormatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM", Locale("pt", "BR"))
 private val HOUR_MINUTE: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
-/** Guia de jogos: trilho (Jogos · Ao vivo agora · Canais · Vídeos) e lista de partidas com horário, escudos e canal. */
+/** Guia de jogos: trilho (Jogos · Ao vivo agora · Canais) e lista de partidas com horário, escudos e canal. */
 @Composable
 fun FootballScreen(
     onTabSelected: (HomeTab) -> Unit,
@@ -71,7 +67,6 @@ fun FootballScreen(
     onOpenAppMenu: () -> Unit,
     onOpenSettings: () -> Unit,
     onPlayChannel: (String) -> Unit,
-    onOpenItem: (MediaItem) -> Unit,
     viewModel: FootballViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -127,7 +122,6 @@ fun FootballScreen(
             Box(Modifier.weight(1f).fillMaxHeight()) {
                 when (state.selectedRailId) {
                     FootballUiState.RAIL_CHANNELS -> ChannelList(state, onPlayChannel)
-                    FootballUiState.RAIL_VIDEOS -> VideoRows(state.videos, onOpenItem)
                     else -> MatchList(
                         events = visible,
                         now = state.now,
@@ -265,31 +259,6 @@ private fun ChannelList(state: FootballUiState, onPlayChannel: (String) -> Unit)
                     qualityLabel = channel.qualityLabel,
                     modifier = if (channel.id == channels.first().id) Modifier.focusRequester(first) else Modifier,
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun VideoRows(rows: List<CategoryRow>, onOpenItem: (MediaItem) -> Unit) {
-    val colors = PrimeTheme.colors
-    if (rows.isEmpty()) {
-        Text(t("football.no_videos"), style = PrimeTheme.typography.bodyLarge, color = colors.textSecondary, modifier = Modifier.padding(12.dp))
-        return
-    }
-    LazyColumn(Modifier.fillMaxSize().focusRestorer().focusGroup(), verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(vertical = 8.dp)) {
-        items(rows, key = { it.id }) { row ->
-            Column {
-                Text(row.title, style = PrimeTheme.typography.sectionTitle, color = colors.text, modifier = Modifier.padding(start = 6.dp, bottom = 6.dp))
-                val rowState = rememberLazyListState()
-                LazyRow(
-                    state = rowState,
-                    modifier = Modifier.fillMaxWidth().focusRestorer().focusGroup().throttleHeldDpad(vertical = false) { rowState.isScrollInProgress },
-                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 14.dp),
-                    horizontalArrangement = Arrangement.spacedBy(PrimeDimens.rowGap),
-                ) {
-                    items(row.items, key = { it.id }) { item -> PosterCard(item = item, onClick = { onOpenItem(item) }) }
-                }
             }
         }
     }

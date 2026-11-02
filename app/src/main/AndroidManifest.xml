@@ -26,6 +26,7 @@
     </queries>
 
     <application
+        android:hardwareAccelerated="true"
         android:name=".PrimeTvApp"
         android:label="PrimeTV"
         android:icon="@mipmap/ic_launcher"

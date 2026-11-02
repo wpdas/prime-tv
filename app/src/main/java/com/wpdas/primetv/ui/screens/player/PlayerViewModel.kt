@@ -80,6 +80,8 @@ class PlayerViewModel @Inject constructor(
     private var videoTracks: List<VideoTrack> = emptyList()
     /** Faixa de vídeo escolhida à mão, ou null (Auto). */
     private var manualTrackId: String? = null
+    /** Altura do vídeo em reprodução (0 = desconhecida). */
+    private var currentVideoHeight = 0
     /** O usuário escolheu a qualidade: a troca automática por conexão lenta fica desligada. */
     private var qualityManual = false
     private val speedMeter = playerFactory.speedMeter
@@ -330,14 +332,17 @@ class PlayerViewModel @Inject constructor(
                 }
             }
         }
-        showToast("player.quality_set", option.label)
+        showToast("player.quality_set", option.label.ifBlank { option.labelKey?.let { "Padrão" } ?: "" })
         closePanel()
     }
 
     private fun refreshQualityOptions() {
+        // Variante sem tag no nome vira "Padrão"; na que está tocando, mostra a resolução real.
+        val height = currentVideoHeight.takeIf { it > 0 }?.let { "${it}p" }
+        fun variant(id: String, label: String?, playing: Boolean) = SourceVariant(id, label, if (playing) height else null)
         val (sources, playing) = when (val c = content) {
-            is Content.Movie -> c.variants.map { SourceVariant(it.id, it.qualityLabel ?: "—") } to c.playing.id
-            is Content.Live -> c.variants.map { SourceVariant(it.id, it.qualityLabel ?: "—") } to c.channel.id
+            is Content.Movie -> c.variants.map { variant(it.id, it.qualityLabel, it.id == c.playing.id) } to c.playing.id
+            is Content.Live -> c.variants.map { variant(it.id, it.qualityLabel, it.id == c.channel.id) } to c.channel.id
             else -> emptyList<SourceVariant>() to null
         }
         val options = QualityOptions.build(videoTracks, manualTrackId, sources, playing)
@@ -396,6 +401,7 @@ class PlayerViewModel @Inject constructor(
         trackGroups.clear()
         videoTracks = emptyList()
         manualTrackId = null
+        currentVideoHeight = 0
         wasReady = false
         seekPending = false
         stalls.reset()
@@ -610,6 +616,7 @@ class PlayerViewModel @Inject constructor(
         }
         val badge = listOfNotNull(videoHeight.takeIf { it > 0 }?.let { "${it}p" }, selectedAudioLang).joinToString(" · ").ifEmpty { null }
         videoTracks = video
+        currentVideoHeight = videoHeight
         _state.update { it.copy(audioTracks = audio, subtitleTracks = text, subtitlesOff = text.none { t -> t.selected }, badge = badge) }
         refreshQualityOptions()
     }

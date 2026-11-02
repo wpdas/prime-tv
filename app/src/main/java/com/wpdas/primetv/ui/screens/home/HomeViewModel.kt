@@ -39,7 +39,7 @@ class HomeViewModel @Inject constructor(
     private val focusedCard = MutableStateFlow<MediaItem?>(null)
 
     init {
-        repository.featured().onEach { list ->
+        tab.flatMapLatest { repository.featured(it) }.onEach { list ->
             _state.update { it.copy(featured = list, featuredIndex = it.featuredIndex.coerceIn(0, (list.size - 1).coerceAtLeast(0))) }
         }.launchIn(viewModelScope)
         repository.availableTabs().onEach { tabs -> _state.update { it.copy(tabs = tabs) } }.launchIn(viewModelScope)
@@ -73,7 +73,7 @@ class HomeViewModel @Inject constructor(
     fun onTabSelected(newTab: HomeTab) {
         tab.value = newTab
         focusedCard.value = null
-        _state.update { it.copy(selectedTab = newTab, pinnedHero = null) }
+        _state.update { it.copy(selectedTab = newTab, pinnedHero = null, featuredIndex = 0) }
     }
 
     /** Chamado pelos cards quando ganham foco. */

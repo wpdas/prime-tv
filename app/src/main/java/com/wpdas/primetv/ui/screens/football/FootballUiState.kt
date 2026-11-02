@@ -1,7 +1,6 @@
 package com.wpdas.primetv.ui.screens.football
 
 import com.wpdas.primetv.domain.football.MatchEvent
-import com.wpdas.primetv.domain.model.CategoryRow
 import com.wpdas.primetv.domain.model.Channel
 import com.wpdas.primetv.domain.model.EpgProgram
 import com.wpdas.primetv.domain.model.HomeTab
@@ -16,8 +15,6 @@ data class FootballUiState(
     /** Canais de futebol (trilho Canais). */
     val channels: List<Channel>? = null,
     val nowPlaying: Map<String, EpgProgram> = emptyMap(),
-    /** Linhas de filmes e séries de futebol (trilho Vídeos). */
-    val videos: List<CategoryRow> = emptyList(),
     /** A lista está sendo atualizada em segundo plano. */
     val refreshing: Boolean = false,
     /** Jogo a focar ao voltar do player; a tela consome e zera. */
@@ -29,6 +26,5 @@ data class FootballUiState(
         const val RAIL_TODAY = "today"
         const val RAIL_LIVE = "live"
         const val RAIL_CHANNELS = "channels"
-        const val RAIL_VIDEOS = "videos"
     }
 }

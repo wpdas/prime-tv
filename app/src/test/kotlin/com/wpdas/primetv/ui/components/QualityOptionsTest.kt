@@ -32,4 +32,11 @@ class QualityOptionsTest {
         assertTrue(options.all { it.kind == QualityKind.SOURCE })
         assertTrue(QualityOptions.build(emptyList(), null, listOf(sources[0]), "c-fhd").isEmpty())
     }
+
+    @Test fun `variante sem tag na lista vira Padrao, com a resolucao real quando esta tocando`() {
+        val options = QualityOptions.build(emptyList(), null, listOf(SourceVariant("m-4k", "4K"), SourceVariant("m-std", null, "1080p")), "m-std")
+        assertEquals(listOf("4K", "1080p"), options.map { it.label })
+        assertEquals(listOf(null, QualityOptions.DEFAULT_LABEL_KEY), options.map { it.labelKey })
+        assertTrue(options[1].selected)
+    }
 }

@@ -9,7 +9,8 @@ import kotlinx.coroutines.flow.Flow
 
 /** Dados da tela de Início. A implementação real (Room + TMDB) chega nas fases 3 e 5. */
 interface HomeRepository {
-    fun featured(): Flow<List<MediaItem>>
+    /** Destaques do topo para a aba: geral, ou no contexto de Kids/Anime. */
+    fun featured(tab: HomeTab): Flow<List<MediaItem>>
     fun continueWatching(): Flow<List<ContinueWatchingItem>>
     fun footballNow(): Flow<List<FootballEvent>>
     fun categoryRows(tab: HomeTab): Flow<List<CategoryRow>>

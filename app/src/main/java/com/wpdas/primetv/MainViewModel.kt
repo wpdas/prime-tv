@@ -24,7 +24,7 @@ class MainViewModel @Inject constructor(
     updates: com.wpdas.primetv.domain.update.UpdateRepository,
 ) : ViewModel() {
     init {
-        // Checagem silenciosa de versão nova ao abrir (no máximo a cada 6 h); a Início abre o diálogo se houver.
+        // Checagem silenciosa de versão nova ao abrir (no máximo a cada 30 min); a Início abre o diálogo se houver.
         viewModelScope.launch { updates.checkIfDue() }
     }
 

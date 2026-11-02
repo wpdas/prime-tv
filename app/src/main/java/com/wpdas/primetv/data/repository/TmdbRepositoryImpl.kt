@@ -16,6 +16,7 @@ import com.wpdas.primetv.data.remote.tmdb.TmdbPage
 import com.wpdas.primetv.domain.model.MediaItem
 import com.wpdas.primetv.domain.model.MediaType
 import com.wpdas.primetv.domain.model.TmdbInfo
+import com.wpdas.primetv.domain.repository.FeaturedKind
 import com.wpdas.primetv.domain.repository.RecommendationRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -48,17 +49,21 @@ class TmdbRepositoryImpl @Inject constructor(
 
     override val isAvailable: Boolean get() = apiKey.isNotBlank()
 
-    override fun featured(limit: Int): Flow<List<MediaItem>> = flow {
+    override fun featured(limit: Int, kind: FeaturedKind): Flow<List<MediaItem>> = flow {
         if (!isAvailable) {
             emit(emptyList())
             return@flow
         }
-        val sources = listOf(
-            "trending" to "home.badge_trending",
-            "popular_movies" to "home.badge_popular",
-            "now_playing" to "home.badge_now_playing",
-            "popular_tv" to "home.badge_popular",
-        )
+        val sources = when (kind) {
+            FeaturedKind.GENERAL -> listOf(
+                "trending" to "home.badge_trending",
+                "popular_movies" to "home.badge_popular",
+                "now_playing" to "home.badge_now_playing",
+                "popular_tv" to "home.badge_popular",
+            )
+            FeaturedKind.KIDS -> listOf("kids_tv" to "home.badge_kids", "kids_movies" to "home.badge_kids")
+            FeaturedKind.ANIME -> listOf("anime_tv" to "home.badge_anime", "anime_movies" to "home.badge_anime")
+        }
         val genres = genres()
         val out = ArrayList<MediaItem>()
         val seen = HashSet<String>()
@@ -66,7 +71,7 @@ class TmdbRepositoryImpl @Inject constructor(
             val page = cachedPage(key) ?: continue
             for (remote in page.results) {
                 if (out.size >= limit) break
-                val type = when (remote.mediaType ?: if (key == "popular_tv") "tv" else "movie") {
+                val type = when (remote.mediaType ?: if (key.endsWith("_tv")) "tv" else "movie") {
                     "movie" -> MediaType.MOVIE
                     "tv" -> MediaType.SERIES
                     else -> continue
@@ -179,6 +184,10 @@ class TmdbRepositoryImpl @Inject constructor(
                 "trending" -> api.trending()
                 "popular_movies" -> api.popularMovies()
                 "now_playing" -> api.nowPlaying()
+                "kids_tv" -> api.discoverTv(genres = "10762")
+                "kids_movies" -> api.discoverMovie(genres = "16|10751")
+                "anime_tv" -> api.discoverTv(genres = "16", country = "JP")
+                "anime_movies" -> api.discoverMovie(genres = "16", country = "JP")
                 else -> api.popularTv()
             }
         }.getOrNull()

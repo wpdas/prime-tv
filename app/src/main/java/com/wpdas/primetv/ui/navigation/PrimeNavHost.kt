@@ -76,7 +76,6 @@ fun PrimeNavHost(
                 onOpenAppMenu = { navController.navigate(AppMenuRoute) },
                 onOpenSettings = { navController.navigate(SettingsRoute) },
                 onPlayChannel = { id -> navController.navigate(PlayerRoute(id)) },
-                onOpenItem = ::openItem,
             )
         }
         composable<CategoryRoute> {
