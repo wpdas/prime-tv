@@ -57,11 +57,28 @@ jobs:
           echo "file=$OUT" >> "$GITHUB_OUTPUT"
           sha256sum "$OUT" > "$OUT.sha256"
 
+      - name: Notas da release a partir do CHANGELOG.md
+        id: notes
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          # Copia a seção "## [X.Y.Z]" (até a próxima seção "## ") para o corpo da release.
+          awk -v v="$VERSION" '
+            /^## \[/ { if (found) exit; found = index($0, "[" v "]") > 0; next }
+            found { print }
+          ' CHANGELOG.md | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}' > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "Sem seção [$VERSION] no CHANGELOG.md; usando notas geradas pelo GitHub." >&2
+            echo "generated=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "generated=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publicar release
         uses: softprops/action-gh-release@v2
         with:
           name: PrimeTV ${{ github.ref_name }}
-          generate_release_notes: true
+          body_path: ${{ steps.notes.outputs.generated == 'false' && 'release-notes.md' || '' }}
+          generate_release_notes: ${{ steps.notes.outputs.generated == 'true' }}
           files: |
             ${{ steps.apk.outputs.file }}
             ${{ steps.apk.outputs.file }}.sha256

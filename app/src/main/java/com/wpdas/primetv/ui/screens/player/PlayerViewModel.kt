@@ -189,7 +189,11 @@ class PlayerViewModel @Inject constructor(
     private suspend fun tuneChannel(channel: Channel, keepVariants: Boolean = false) {
         val live = content as? Content.Live ?: return
         val variants = if (keepVariants) live.variants else runCatching { catalog.channelVariants(channel.groupKey) }.getOrDefault(emptyList())
-        content = live.copy(channel = channel, variants = variants)
+        // Canal fora da lista de zapping atual (ex.: número digitado): a lista passa a ser "Todos",
+        // para cima/baixo continuarem a partir dele e não voltarem ao primeiro.
+        val zap = if (live.zapList.any { it.id == channel.id }) live.zapList
+        else runCatching { catalog.channelsOnce(ChannelFilter.All) }.getOrDefault(live.zapList)
+        content = live.copy(channel = channel, variants = variants, zapList = zap)
         retriedLive = false
         library.recordChannel(channel.id)
         val now = runCatching { catalog.nowPlaying(ChannelFilter.Category(channel.categoryId ?: ""), System.currentTimeMillis()) }.getOrDefault(emptyMap())

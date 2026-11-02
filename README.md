@@ -140,9 +140,9 @@ Em **Settings › Secrets and variables › Actions**, crie:
 
 ## Publicar uma versão
 
-1. Garanta que `main` está verde no CI.
+1. Garanta que `main` está verde no CI e mova a seção `[Não lançado]` do `CHANGELOG.md` para `[X.Y.Z] - data`.
 2. Crie a tag: `make tag V=1.0.0` (ou `git tag -a v1.0.0 -m "PrimeTV v1.0.0" && git push origin v1.0.0`).
-3. O workflow **Release** compila, assina, gera `primetv-v1.0.0.apk` com o `.sha256` e publica a release com as notas geradas a partir dos PRs/commits. Edite o texto da release se quiser; é ele que aparece no app como changelog.
+3. O workflow **Release** compila, assina, gera `primetv-v1.0.0.apk` com o `.sha256` e publica a release com a seção correspondente do `CHANGELOG.md` como descrição. É esse texto que aparece no app em "Verificar atualização".
 4. Quem já tem o app recebe o aviso na Início em até um dia, ou pode usar **menu do logo › Verificar atualização**. O app baixa o APK e o Android pede a confirmação da instalação (na primeira vez, pede também a permissão "instalar apps desconhecidos" para o PrimeTV).
 
 `versionName` e `versionCode` vêm da tag (`v1.2.3` → `1.2.3` e `10203`). Commits depois da tag viram `1.2.3-dev.N` nos builds locais.

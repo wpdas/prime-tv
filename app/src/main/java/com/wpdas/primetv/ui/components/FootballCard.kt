@@ -31,7 +31,7 @@ fun FootballCard(
     val shape = PrimeTheme.shapes.card
     Surface(
         onClick = onClick,
-        modifier = modifier.size(260.dp, 92.dp),
+        modifier = modifier.size(260.dp, 92.dp).bringIntoViewOnFocus(),
         shape = PrimeFocus.shape(shape),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = colors.surface,

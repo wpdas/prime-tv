@@ -35,7 +35,9 @@ val gitDescribe: String = providers.exec {
 }.standardOutput.asText.get().trim()
 
 val describeRegex = Regex("""^v(\d+)\.(\d+)\.(\d+)-(\d+)-g[0-9a-f]+$""")
-val (appVersionName, appVersionCode) = describeRegex.find(gitDescribe)?.let { m ->
+// Para testar o fluxo de atualização: ./gradlew assembleDebug -PversionNameOverride=0.0.1
+val versionNameOverride: String? = (project.findProperty("versionNameOverride") as String?)?.takeIf { it.isNotBlank() }
+val (appVersionName, appVersionCode) = versionNameOverride?.let { it to 1 } ?: describeRegex.find(gitDescribe)?.let { m ->
     val (major, minor, patch, ahead) = m.destructured
     val base = "$major.$minor.$patch"
     val name = if (ahead == "0") base else "$base-dev.$ahead"

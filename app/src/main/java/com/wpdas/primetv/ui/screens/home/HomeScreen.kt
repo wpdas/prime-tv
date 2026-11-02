@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -58,9 +59,17 @@ fun HomeScreen(
     onOpenAppMenu: () -> Unit,
     onOpenSettings: () -> Unit,
     onSeeAll: (CategoryRow) -> Unit,
+    onOpenUpdate: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    // Versão nova detectada: abre o diálogo de atualização uma vez por sessão.
+    LaunchedEffect(state.updateVersion) {
+        if (state.updateVersion != null && !viewModel.updatePromptShown) {
+            viewModel.updatePromptShown = true
+            onOpenUpdate()
+        }
+    }
     HomeContent(
         state = state,
         viewModel = viewModel,
@@ -161,9 +170,16 @@ fun HomeContent(
 
     Box(Modifier.fillMaxSize().background(colors.background)) {
         Column(Modifier.fillMaxSize()) {
+            // Aba muda ao ficar em foco por um instante (passar por ela a caminho de outra não dispara).
+            var tabFocusJob by remember { androidx.compose.runtime.mutableStateOf<kotlinx.coroutines.Job?>(null) }
             TopBar(
                 selectedTab = state.selectedTab,
                 onTabSelected = onTabSelected,
+                onTabFocused = { tab ->
+                    tabFocusJob?.cancel()
+                    // Ao vivo troca de tela, então espera mais para não disparar a caminho de Filmes/Séries.
+                    if (tab != state.selectedTab) tabFocusJob = scope.launch { kotlinx.coroutines.delay(if (tab == HomeTab.LIVE) LIVE_TAB_FOCUS_DELAY_MS else TAB_FOCUS_DELAY_MS); onTabSelected(tab) }
+                },
                 onLogoClick = onOpenAppMenu,
                 onSearchClick = onOpenSearch,
                 onSettingsClick = onOpenSettings,
@@ -178,7 +194,7 @@ fun HomeContent(
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 32.dp),
+                contentPadding = PaddingValues(bottom = 48.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 state.hero?.let { hero ->
@@ -244,9 +260,7 @@ fun HomeContent(
             }
         }
         StatusToast(
-            text = state.updatingSectionKey?.let { t("home.updating_section", "section" to t(it)) }
-                ?: state.updateVersion?.let { t("home.update_available", "version" to it) },
-            showSpinner = state.updatingSectionKey != null,
+            text = state.updatingSectionKey?.let { t("home.updating_section", "section" to t(it)) },
             modifier = Modifier.align(Alignment.BottomEnd).padding(end = PrimeDimens.screenMargin, bottom = 20.dp),
         )
     }
@@ -306,3 +320,6 @@ private fun continueMeta(cw: ContinueWatchingItem): String {
     val prefix = cw.episodeLabel ?: t("meta.movie")
     return "$prefix · ${t("meta.remaining", "time" to time)}"
 }
+
+private const val TAB_FOCUS_DELAY_MS = 350L
+private const val LIVE_TAB_FOCUS_DELAY_MS = 700L

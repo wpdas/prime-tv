@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -77,12 +78,14 @@ fun SettingsScreen(
                     label = t(section.labelKey),
                     selected = section == state.section,
                     onClick = { if (section == SettingsSection.ABOUT) onAbout() else viewModel.select(section) },
-                    modifier = if (index == 0) Modifier.focusRequester(firstFocus) else Modifier,
+                    // Focar já abre a seção (Sobre é outra tela: continua exigindo OK).
+                    modifier = (if (index == 0) Modifier.focusRequester(firstFocus) else Modifier)
+                        .onFocusChanged { if (it.isFocused && section != SettingsSection.ABOUT) viewModel.select(section) },
                 )
             }
         }
         Column(
-            Modifier.weight(1f).fillMaxHeight().padding(top = 88.dp).verticalScroll(rememberScrollState()).focusGroup(),
+            Modifier.weight(1f).fillMaxHeight().padding(top = 82.dp).verticalScroll(rememberScrollState()).padding(6.dp).focusGroup(),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             when (state.section) {

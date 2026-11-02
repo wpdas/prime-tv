@@ -26,7 +26,7 @@ fun SeeAllCard(label: String, onClick: () -> Unit, modifier: Modifier = Modifier
     val shape = PrimeTheme.shapes.card
     Surface(
         onClick = onClick,
-        modifier = modifier.size(150.dp, 220.dp),
+        modifier = modifier.size(150.dp, 220.dp).bringIntoViewOnFocus(),
         shape = PrimeFocus.shape(shape),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = colors.surface,

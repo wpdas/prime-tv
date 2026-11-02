@@ -43,6 +43,7 @@ fun PrimeNavHost(
                 onSeeAll = { row ->
                     row.section?.let { navController.navigate(CategoryRoute(it.name, row.categoryId, row.title)) }
                 },
+                onOpenUpdate = { navController.navigate(UpdateRoute) },
             )
         }
         composable<LiveRoute> {

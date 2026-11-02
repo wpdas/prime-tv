@@ -62,12 +62,12 @@ fun CategoryScreen(
     LaunchedEffect(items?.isNotEmpty()) { if (items?.isNotEmpty() == true) runCatching { firstFocus.requestFocus() } }
 
     Row(
-        Modifier.fillMaxSize().background(colors.background).padding(start = PrimeDimens.screenMargin, end = PrimeDimens.screenMargin, top = 28.dp),
+        Modifier.fillMaxSize().background(colors.background).padding(start = PrimeDimens.screenMargin - 6.dp, end = PrimeDimens.screenMargin, top = 20.dp),
         horizontalArrangement = Arrangement.spacedBy(28.dp),
     ) {
         // ---------------- trilho: voltar, título, busca, ordenação, gêneros ----------------
         Column(
-            Modifier.width(260.dp).fillMaxHeight().verticalScroll(rememberScrollState()).focusGroup().padding(bottom = 24.dp),
+            Modifier.width(272.dp).fillMaxHeight().verticalScroll(rememberScrollState()).padding(start = 6.dp, end = 6.dp, top = 8.dp, bottom = 24.dp).focusGroup(),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             BackLink(onClick = onBack)

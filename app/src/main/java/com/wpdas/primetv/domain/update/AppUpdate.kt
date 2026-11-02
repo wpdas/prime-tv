@@ -32,6 +32,8 @@ interface UpdateRepository {
     val pending: Flow<AppUpdate?>
 
     suspend fun check(): UpdateCheck
+    /** Checagem silenciosa ao abrir o app, no máximo uma a cada [minIntervalMs]. */
+    suspend fun checkIfDue(minIntervalMs: Long = 6 * 60 * 60 * 1000L)
     fun download(update: AppUpdate): Flow<DownloadProgress>
 
     /** O Android permite instalar APKs vindos deste app? Falso leva à tela de permissão. */

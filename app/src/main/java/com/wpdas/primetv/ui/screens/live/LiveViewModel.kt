@@ -22,10 +22,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
@@ -68,8 +70,12 @@ class LiveViewModel @Inject constructor(
     private val catalog: CatalogRepository,
     private val library: LibraryRepository,
     private val settings: com.wpdas.primetv.domain.repository.SettingsRepository,
+    private val liveState: com.wpdas.primetv.data.local.prefs.LiveStateStore,
     val playerFactory: PlayerFactory,
 ) : ViewModel() {
+
+    /** Posição lembrada da última visita (categoria + canal), aplicada quando a lista carregar. */
+    private var restoreChannelId: String? = null
 
     private var digitJob: kotlinx.coroutines.Job? = null
 
@@ -88,6 +94,19 @@ class LiveViewModel @Inject constructor(
     }
 
     init {
+        viewModelScope.launch {
+            val saved = liveState.read()
+            if (saved != null) {
+                restoreChannelId = saved.channelId
+                selectRail(saved.railId)
+                if (saved.channelId != null) _state.update { it.copy(jumpToChannelId = saved.channelId) }
+            }
+        }
+        // Lembra categoria e canal em foco (com atraso, para não gravar a cada tecla).
+        combine(selected, focusedChannel.debounce(800)) { rail, ch -> rail to ch?.id }
+            .distinctUntilChanged()
+            .onEach { (rail, ch) -> liveState.save(rail, ch ?: restoreChannelId) }
+            .launchIn(viewModelScope)
         settings.settings.onEach { s -> _state.update { it.copy(previewSound = s.previewSound) } }.launchIn(viewModelScope)
         val favoriteChannels = library.favoriteIds(MediaType.CHANNEL)
         favoriteChannels.onEach { ids -> _state.update { it.copy(favoriteIds = ids.toSet()) } }.launchIn(viewModelScope)
@@ -142,6 +161,7 @@ class LiveViewModel @Inject constructor(
 
     fun onChannelFocused(channel: Channel) {
         focusedChannel.value = channel
+        restoreChannelId = null
     }
 
     /** Segurar OK no canal: entra/sai dos favoritos e mostra um aviso curto. */
@@ -190,6 +210,23 @@ class LiveViewModel @Inject constructor(
     }
 
     fun onJumpConsumed() = _state.update { it.copy(jumpToChannelId = null) }
+
+    private var returnFromPlayer = false
+
+    /** Marca que o próximo retorno à tela vem do player. */
+    fun markReturnFocus() { returnFromPlayer = true }
+
+    /** Ao voltar do player: foca o canal que estava em tela cheia (último do histórico). */
+    fun focusLastPlayed() {
+        if (!returnFromPlayer) return
+        returnFromPlayer = false
+        viewModelScope.launch {
+            val last = library.recentChannels(1).firstOrNull()?.firstOrNull() ?: return@launch
+            val inList = _state.value.channels?.any { it.id == last.id } == true
+            if (!inList) selectRail(RAIL_ALL)
+            _state.update { it.copy(jumpToChannelId = last.id) }
+        }
+    }
 
     /** Libera a prévia ao sair da tela para o player principal (servidores com 1 conexão). */
     fun stopPreview() {

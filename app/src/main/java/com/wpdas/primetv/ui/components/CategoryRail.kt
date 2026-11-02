@@ -39,7 +39,7 @@ fun CategoryRail(
     LazyColumn(
         modifier = modifier.width(width).focusRestorer().focusGroup(),
         verticalArrangement = Arrangement.spacedBy(4.dp),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 4.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 8.dp, horizontal = 6.dp),
     ) {
         items(categories, key = { it.id }) { cat ->
             val selected = cat.id == selectedId

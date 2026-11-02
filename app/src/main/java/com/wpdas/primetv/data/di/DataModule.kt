@@ -51,7 +51,9 @@ object DatabaseModule {
     @Provides @Singleton
     fun provideDatabase(@ApplicationContext context: Context): PrimeDatabase =
         Room.databaseBuilder(context, PrimeDatabase::class.java, PrimeDatabase.NAME)
-            .fallbackToDestructiveMigration(dropAllTables = true)
+            .addMigrations(*com.wpdas.primetv.data.local.db.Migrations.ALL)
+            // Só bancos de builds de desenvolvimento anteriores à primeira release (v5) são descartados.
+            .fallbackToDestructiveMigrationFrom(dropAllTables = true, 1, 2, 3, 4)
             .build()
 
     @Provides fun provideCatalogDao(db: PrimeDatabase): CatalogDao = db.catalogDao()

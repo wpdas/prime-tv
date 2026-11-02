@@ -1,6 +1,20 @@
 package com.wpdas.primetv.ui.screens.update
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalDensity
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -64,12 +78,13 @@ fun UpdateScreen(onClose: () -> Unit, viewModel: UpdateViewModel = hiltViewModel
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    Box(Modifier.fillMaxSize().background(colors.scrim)) {
+    Box(Modifier.fillMaxSize().background(colors.background.copy(alpha = 0.94f))) {
         Logo(modifier = Modifier.padding(start = PrimeDimens.screenMargin, top = 18.dp))
         Column(
             Modifier
                 .align(Alignment.Center)
-                .width(560.dp)
+                .width(640.dp)
+                .heightIn(max = 560.dp)
                 .background(colors.surface, PrimeTheme.shapes.panelLarge)
                 .padding(28.dp)
                 .focusGroup(),
@@ -96,11 +111,7 @@ fun UpdateScreen(onClose: () -> Unit, viewModel: UpdateViewModel = hiltViewModel
                         style = typography.cardBody, color = colors.textSecondary,
                     )
                     if (s.update.changelog.isNotBlank()) {
-                        Column(Modifier.heightIn(max = 220.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            changelogLines(s.update.changelog).forEach { line ->
-                                Text(line, style = typography.body, color = colors.textBody)
-                            }
-                        }
+                        ChangelogBox(s.update.changelog, modifier = Modifier.weight(1f, fill = false))
                     }
                     if (s.needsPermission) {
                         Text(t("update.permission_needed"), style = typography.body, color = colors.accentSoftText)
@@ -153,13 +164,62 @@ fun UpdateScreen(onClose: () -> Unit, viewModel: UpdateViewModel = hiltViewModel
     }
 }
 
-/** Markdown simples da release -> linhas com marcador. */
-private fun changelogLines(body: String): List<String> = body.lines()
+/**
+ * Changelog da release com rolagem pelo D-pad: focável, cima/baixo rolam; os botões
+ * continuam embaixo. Markdown simples: títulos "##" viram seções, "- " vira marcador.
+ */
+@Composable
+private fun ChangelogBox(body: String, modifier: Modifier = Modifier) {
+    val colors = PrimeTheme.colors
+    val typography = PrimeTheme.typography
+    val scroll = rememberScrollState()
+    val scope = rememberCoroutineScope()
+    var focused by remember { mutableStateOf(false) }
+    val step = with(LocalDensity.current) { 72.dp.toPx() }
+    Column(
+        modifier
+            .fillMaxWidth()
+            .background(colors.background.copy(alpha = 0.5f), PrimeTheme.shapes.card)
+            .then(if (focused) Modifier.border(2.dp, colors.accent, PrimeTheme.shapes.card) else Modifier)
+            .onFocusChanged { focused = it.isFocused }
+            .focusable()
+            .onPreviewKeyEvent { event ->
+                if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                when (event.key) {
+                    Key.DirectionDown -> if (scroll.value < scroll.maxValue) { scope.launch { scroll.animateScrollBy(step) }; true } else false
+                    Key.DirectionUp -> if (scroll.value > 0) { scope.launch { scroll.animateScrollBy(-step) }; true } else false
+                    else -> false
+                }
+            }
+            .verticalScroll(scroll)
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        changelogLines(body).forEach { (text, heading) ->
+            Text(
+                text,
+                style = if (heading) typography.bodyStrong else typography.body,
+                color = if (heading) colors.text else colors.textBody,
+                modifier = if (heading) Modifier.padding(top = 6.dp) else Modifier,
+            )
+        }
+    }
+}
+
+/** Markdown simples da release -> (linha, éTítulo). */
+private fun changelogLines(body: String): List<Pair<String, Boolean>> = body.lines()
     .map { it.trim() }
-    .filter { it.isNotEmpty() && !it.startsWith("#") }
-    .map { line -> if (line.startsWith("- ") || line.startsWith("* ")) "• " + line.drop(2) else line }
-    .map { it.replace(Regex("""\*\*(.*?)\*\*"""), "$1").replace(Regex("""`(.*?)`"""), "$1") }
-    .take(12)
+    .filter { it.isNotEmpty() }
+    .map { line ->
+        val heading = line.startsWith("#")
+        val text = when {
+            heading -> line.trimStart('#').trim()
+            line.startsWith("- ") || line.startsWith("* ") -> "• " + line.drop(2)
+            else -> line
+        }
+        text.replace(Regex("""\*\*(.*?)\*\*"""), "$1").replace(Regex("""`(.*?)`"""), "$1") to heading
+    }
+    .take(60)
 
 private fun formatSize(bytes: Long): String = when {
     bytes >= 1_048_576 -> String.format(Locale("pt", "BR"), "%.1f MB", bytes / 1_048_576.0)

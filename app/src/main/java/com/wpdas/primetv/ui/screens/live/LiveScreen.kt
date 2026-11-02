@@ -20,6 +20,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -75,16 +77,20 @@ fun LiveScreen(
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     val channels = state.channels
     LaunchedEffect(channels?.firstOrNull()?.id, state.selectedRailId) {
-        if (!channels.isNullOrEmpty() && state.focused == null) runCatching { firstChannelFocus.requestFocus() }
+        if (!channels.isNullOrEmpty() && state.focused == null && state.jumpToChannelId == null) firstChannelFocus.tryRequestFocus()
     }
+    // Voltando do player: a tela entra de novo na composição; foca o canal que estava tocando.
+    LaunchedEffect(Unit) { viewModel.focusLastPlayed() }
     // Número digitado: rola até o canal e foca.
-    LaunchedEffect(state.jumpToChannelId, channels?.size) {
+    LaunchedEffect(state.jumpToChannelId, channels) {
         val id = state.jumpToChannelId ?: return@LaunchedEffect
         val index = channels?.indexOfFirst { it.id == id } ?: -1
         if (index < 0) return@LaunchedEffect
-        listState.scrollToItem(index)
-        repeat(10) {
-            kotlinx.coroutines.delay(40)
+        // Rola, espera o item entrar na composição e foca; só desiste depois de ~2 s. O pedido
+        // continua pendente se a lista trocar no meio (ex.: restauração da categoria ao abrir).
+        repeat(25) {
+            runCatching { listState.scrollToItem(index) }
+            kotlinx.coroutines.delay(80)
             if (jumpFocus.tryRequestFocus()) {
                 viewModel.onJumpConsumed()
                 return@LaunchedEffect
@@ -107,9 +113,15 @@ fun LiveScreen(
                 }
             },
     ) {
+        val tabScope = androidx.compose.runtime.rememberCoroutineScope()
+        var tabFocusJob by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<kotlinx.coroutines.Job?>(null) }
         TopBar(
             selectedTab = HomeTab.LIVE,
             onTabSelected = onTabSelected,
+            onTabFocused = { tab ->
+                tabFocusJob?.cancel()
+                if (tab != HomeTab.LIVE) tabFocusJob = tabScope.launch { kotlinx.coroutines.delay(700); onTabSelected(tab) }
+            },
             onLogoClick = onOpenAppMenu,
             onSearchClick = onOpenSearch,
             onSettingsClick = onOpenSettings,
@@ -132,7 +144,7 @@ fun LiveScreen(
                         Modifier.fillMaxSize().focusRestorer().focusGroup(),
                         state = listState,
                         verticalArrangement = Arrangement.spacedBy(6.dp),
-                        contentPadding = PaddingValues(vertical = 6.dp),
+                        contentPadding = PaddingValues(vertical = 8.dp, horizontal = 6.dp),
                     ) {
                         items(channels, key = { it.id }) { channel ->
                             val now = channel.epgKey?.let { state.nowPlaying[it] }
@@ -143,7 +155,7 @@ fun LiveScreen(
                                 nowTitle = now?.title,
                                 timeRange = now?.let { timeRange(it) },
                                 progress = now?.progressAt(state.now) ?: 0f,
-                                onClick = { viewModel.stopPreview(); onPlay(channel) },
+                                onClick = { viewModel.stopPreview(); viewModel.markReturnFocus(); onPlay(channel) },
                                 onLongClick = { viewModel.toggleFavorite(channel) },
                                 onFocused = { viewModel.onChannelFocused(channel) },
                                 qualityLabel = channel.qualityLabel,
@@ -159,7 +171,7 @@ fun LiveScreen(
             }
             PreviewPanel(
                 state = state,
-                onPlay = { viewModel.stopPreview(); onPlay(it) },
+                onPlay = { viewModel.stopPreview(); viewModel.markReturnFocus(); onPlay(it) },
                 onToggleFavorite = viewModel::toggleFavorite,
                 playerFactory = viewModel.playerFactory,
                 modifier = Modifier.width(380.dp).fillMaxHeight(),
@@ -169,7 +181,7 @@ fun LiveScreen(
     Box(Modifier.fillMaxSize()) {
         state.channelInput?.let { input ->
             Text(
-                "${'$'}input\u2009_",
+                "$input\u2009_",
                 style = PrimeTheme.typography.heroTitle,
                 color = colors.text,
                 modifier = Modifier.align(Alignment.TopEnd).padding(top = 90.dp, end = PrimeDimens.screenMargin)

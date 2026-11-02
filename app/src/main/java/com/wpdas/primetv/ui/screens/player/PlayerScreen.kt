@@ -182,7 +182,7 @@ fun PlayerScreen(
 
         state.channelInput?.let { input ->
             Text(
-                "${'$'}input\u2009_",
+                "$input\u2009_",
                 style = PrimeTheme.typography.heroTitle,
                 color = colors.text,
                 modifier = Modifier.align(Alignment.TopEnd).padding(top = 90.dp, end = PrimeDimens.screenMargin)
@@ -238,8 +238,18 @@ fun PlayerScreen(
  * - Filmes/séries com controles escondidos: OK mostra, esquerda/direita pulam 10 s (segurar acelera).
  */
 private fun handleKey(event: androidx.compose.ui.input.key.KeyEvent, state: PlayerUiState, vm: PlayerViewModel): Boolean {
-    if (event.type != KeyEventType.KeyDown) return false
     val key = event.key
+    // Voltar com um painel aberto fecha o painel de uma vez (consome down e up, para o
+    // sistema não tratar o segundo evento como outro "voltar").
+    if (key == Key.Back || key == Key.Escape) {
+        val hasOverlay = state.panel != PlayerPanel.NONE || state.liveMenu
+        if (!hasOverlay) return false
+        if (event.type == KeyEventType.KeyUp) {
+            if (state.panel != PlayerPanel.NONE) vm.closePanel() else vm.closeLiveMenu()
+        }
+        return true
+    }
+    if (event.type != KeyEventType.KeyDown) return false
     val repeat = event.nativeKeyEvent.repeatCount
     // Teclas de mídia valem sempre.
     when (key) {

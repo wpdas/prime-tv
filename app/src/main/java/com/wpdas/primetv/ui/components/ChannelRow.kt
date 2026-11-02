@@ -45,7 +45,7 @@ fun ChannelRow(
     Surface(
         onClick = onClick,
         onLongClick = onLongClick,
-        modifier = modifier.fillMaxWidth().onFocusChanged { if (it.isFocused) onFocused?.invoke() },
+        modifier = modifier.fillMaxWidth().bringIntoViewOnFocus(12.dp).onFocusChanged { if (it.isFocused) onFocused?.invoke() },
         shape = PrimeFocus.shape(shape),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = colors.surface,

@@ -43,6 +43,7 @@ fun WideCard(
         onLongClick = onLongClick,
         modifier = modifier
             .width(210.dp)
+            .bringIntoViewOnFocus()
             .onFocusChanged { if (it.isFocused) onFocused?.invoke(item) },
         shape = PrimeFocus.shape(shape),
         colors = ClickableSurfaceDefaults.colors(

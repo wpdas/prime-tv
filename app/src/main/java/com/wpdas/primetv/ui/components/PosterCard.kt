@@ -39,6 +39,7 @@ fun PosterCard(
         onLongClick = onLongClick,
         modifier = modifier
             .size(150.dp, 220.dp)
+            .bringIntoViewOnFocus()
             .onFocusChanged { if (it.isFocused) onFocused?.invoke(item) },
         shape = PrimeFocus.shape(shape),
         colors = ClickableSurfaceDefaults.colors(

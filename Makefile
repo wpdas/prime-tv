@@ -34,6 +34,9 @@ keystore-base64: ## Imprime o keystore em base64 para o secret KEYSTORE_BASE64: 
 	@test -n "$(KS)" || (echo "Uso: make keystore-base64 KS=caminho/primetv.jks"; exit 1)
 	@base64 -i $(KS) | tr -d '\n'; echo
 
+build-old: ## APK debug fingindo ser a versão V (padrão 0.0.1), para testar a atualização: make build-old V=0.0.1
+	$(GRADLEW) assembleDebug -PversionNameOverride=$(or $(V),0.0.1)
+
 test: ## Roda os testes unitários
 	$(GRADLEW) testDebugUnitTest
 

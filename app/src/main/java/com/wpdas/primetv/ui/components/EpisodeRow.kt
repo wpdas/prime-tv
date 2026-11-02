@@ -35,7 +35,7 @@ fun EpisodeRow(
     val shape = PrimeTheme.shapes.card
     Surface(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().bringIntoViewOnFocus(12.dp),
         shape = PrimeFocus.shape(shape),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = colors.surface,

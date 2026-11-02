@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -63,6 +64,13 @@ class UpdateRepositoryImpl @Inject constructor(
     override val pending: Flow<AppUpdate?> = context.appDataStore.data.map { prefs ->
         prefs[KEY_PENDING]?.let { raw -> runCatching { jsonCodec.decodeFromString(PendingUpdate.serializer(), raw).toDomain() }.getOrNull() }
             ?.takeIf { SemVer.isNewer(it.versionName, BuildConfig.VERSION_NAME) }
+    }
+
+    override suspend fun checkIfDue(minIntervalMs: Long) {
+        val last = runCatching { context.appDataStore.data.map { it[KEY_LAST_CHECK] ?: 0L }.first() }.getOrDefault(0L)
+        if (System.currentTimeMillis() - last < minIntervalMs) return
+        context.appDataStore.edit { it[KEY_LAST_CHECK] = System.currentTimeMillis() }
+        runCatching { check() }
     }
 
     override suspend fun check(): UpdateCheck = withContext(io) {
@@ -172,5 +180,6 @@ class UpdateRepositoryImpl @Inject constructor(
 
     private companion object {
         val KEY_PENDING = stringPreferencesKey("pending_update")
+        val KEY_LAST_CHECK = androidx.datastore.preferences.core.longPreferencesKey("update_last_check")
     }
 }

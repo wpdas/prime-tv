@@ -13,11 +13,21 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /** Decide a tela inicial: Configuração inicial sem lista salva, Início com lista. */
 @HiltViewModel
-class MainViewModel @Inject constructor(playlistRepository: PlaylistRepository, catalogSync: CatalogSync) : ViewModel() {
+class MainViewModel @Inject constructor(
+    playlistRepository: PlaylistRepository,
+    catalogSync: CatalogSync,
+    updates: com.wpdas.primetv.domain.update.UpdateRepository,
+) : ViewModel() {
+    init {
+        // Checagem silenciosa de versão nova ao abrir (no máximo a cada 6 h); a Início abre o diálogo se houver.
+        viewModelScope.launch { updates.checkIfDue() }
+    }
+
     val startDestination: StateFlow<Any?> = playlistRepository.source
         .take(1)
         .onEach { source -> if (source != null) catalogSync.syncStale() }

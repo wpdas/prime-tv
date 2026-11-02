@@ -92,6 +92,7 @@ Telas (pacotes em `ui/screens/`): `setup`, `receivelink`, `home`, `details`, `li
 
 ## Release
 
+- Antes de criar a tag, mova a seção `[Não lançado]` do `CHANGELOG.md` para `[X.Y.Z] - data`; o workflow usa essa seção como descrição da release (é o texto que o app mostra). Sem seção, cai nas notas geradas pelo GitHub.
 - Tag `vX.Y.Z` em `main` dispara `.github/workflows/release.yml`: build assinado com o keystore dos secrets, APK `primetv-vX.Y.Z.apk` e release com notas geradas. `make tag V=X.Y.Z`.
 - Keystore e senhas: nunca no repositório. Cópia de segurança no Google Drive do mantenedor, pasta "Prime TV - App › keystore" (ver README); o original é `primetv.jks` na raiz do clone, ignorado pelo git. Sem `keystore.properties`, `assembleRelease` assina com debug só para testes locais.
 - O app compara a tag mais recente com `BuildConfig.VERSION_NAME` (`core/util/SemVer`); releases marcadas como pre-release ou draft são ignoradas.

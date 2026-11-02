@@ -43,6 +43,8 @@ fun TopBar(
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
     onFocused: (() -> Unit)? = null,
+    /** Aba ganhou foco (estilo Netflix: a tela troca sem precisar de OK). */
+    onTabFocused: ((HomeTab) -> Unit)? = null,
 ) {
     Row(
         modifier = modifier
@@ -65,7 +67,12 @@ fun TopBar(
                 size = 44.dp,
             )
             HomeTab.entries.forEach { tab ->
-                TabItem(label = t(tab.labelKey), selected = tab == selectedTab, onClick = { onTabSelected(tab) })
+                TabItem(
+                    label = t(tab.labelKey),
+                    selected = tab == selectedTab,
+                    onClick = { onTabSelected(tab) },
+                    onFocused = onTabFocused?.let { cb -> { cb(tab) } },
+                )
             }
         }
         Spacer(Modifier.weight(1f))
@@ -106,12 +113,12 @@ private fun LogoButton(onClick: () -> Unit, contentDescription: String) {
 
 /** Aba de 44 de altura; a selecionada ganha peso 600 e um traço violeta embaixo. */
 @Composable
-private fun TabItem(label: String, selected: Boolean, onClick: () -> Unit) {
+private fun TabItem(label: String, selected: Boolean, onClick: () -> Unit, onFocused: (() -> Unit)? = null) {
     val colors = PrimeTheme.colors
     val shape = PrimeTheme.shapes.card
     Surface(
         onClick = onClick,
-        modifier = Modifier.height(44.dp),
+        modifier = Modifier.height(44.dp).onFocusChanged { if (it.isFocused) onFocused?.invoke() },
         shape = PrimeFocus.shape(shape),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = Color.Transparent,

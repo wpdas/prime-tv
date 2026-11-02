@@ -54,9 +54,9 @@ class CatalogRepositoryImpl @Inject constructor(
     }.map { list -> list.map { CategoryCount(it.key, it.count) } }
 
     override fun channels(filter: ChannelFilter): Flow<List<Channel>> = when (filter) {
-        ChannelFilter.All -> dao.observeChannels(null).map { list -> list.map { it.toDomain() } }
+        ChannelFilter.All -> dao.observeAllChannels().map { list -> list.map { it.toDomain() } }
         ChannelFilter.Football -> dao.observeFootballChannelsAll().map { list -> list.map { it.toDomain() } }
-        is ChannelFilter.Category -> dao.observeChannels(filter.id).map { list -> list.map { it.toDomain() } }
+        is ChannelFilter.Category -> dao.observeCategoryChannels(filter.id).map { list -> list.map { it.toDomain() } }
         is ChannelFilter.Favorites -> channelsByIds(filter.ids)
     }
 
@@ -65,8 +65,9 @@ class CatalogRepositoryImpl @Inject constructor(
     override fun footballChannelCount(): Flow<Int> = dao.observeFootballChannelCount()
     override fun footballVodCount(): Flow<Int> = dao.observeFootballVodCount()
 
-    override fun movies(categoryId: String?, limit: Int): Flow<List<Movie>> = dao.observeMovies(categoryId, limit).map { l -> l.map { it.toDomain() } }
-    override fun recentMovies(limit: Int): Flow<List<Movie>> = dao.observeMovies(null, limit).map { l -> l.map { it.toDomain() } }
+    override fun movies(categoryId: String?, limit: Int): Flow<List<Movie>> =
+        (if (categoryId == null) dao.observeAllMovies(limit) else dao.observeCategoryMovies(categoryId, limit)).map { l -> l.map { it.toDomain() } }
+    override fun recentMovies(limit: Int): Flow<List<Movie>> = dao.observeAllMovies(limit).map { l -> l.map { it.toDomain() } }
     override fun footballMovies(limit: Int): Flow<List<Movie>> = dao.observeFootballMovies(limit).map { l -> l.map { it.toDomain() } }
     override fun movie(id: String): Flow<Movie?> = dao.observeMovie(id).map { it?.toDomain() }
 
@@ -143,9 +144,9 @@ class CatalogRepositoryImpl @Inject constructor(
     override suspend fun episodeOnce(id: String): Episode? = withContext(io) { dao.episodeById(id)?.toDomain() }
     override suspend fun channelsOnce(filter: ChannelFilter): List<Channel> = withContext(io) {
         when (filter) {
-            ChannelFilter.All -> dao.channelsList(null)
+            ChannelFilter.All -> dao.allChannelsList()
             ChannelFilter.Football -> dao.footballChannelsList()
-            is ChannelFilter.Category -> dao.channelsList(filter.id)
+            is ChannelFilter.Category -> dao.categoryChannelsList(filter.id)
             is ChannelFilter.Favorites -> dao.channelsByIds(filter.ids).sortedBy { filter.ids.indexOf(it.id) }
         }.map { it.toDomain() }
     }
