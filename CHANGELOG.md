@@ -4,13 +4,14 @@ Formato: uma seção por versão, com **Novidades** e **Correções**. A seção
 
 ## [Não lançado]
 
+## [0.0.3] - 2026-11-02
+
 ### Novidades
 - Diálogo de atualização abre sozinho quando há versão nova, com o changelog rolável e os botões sempre visíveis
 - Ao voltar do player para a tela Ao vivo, o foco fica no canal que estava em tela cheia
 - Ao vivo reabre na última categoria e canal visitados, já com a prévia
 - Abas do topo e seções das Configurações mudam ao receber o foco, sem precisar de OK
 - Conexão lenta: se o vídeo travar 3 vezes em 1,5 min, o player troca sozinho para a qualidade abaixo do mesmo filme/canal (mantendo a posição) ou libera o ajuste automático em streams adaptativos; buffers Normal e Alto ficaram mais tolerantes a oscilação
-- Configurações › Player: margem de segurança (overscan) e som na prévia
 
 ### Correções
 - Agrupamento de variantes ficou estrito: só junta nomes iguais tirando a tag de qualidade (4K/FHD/HD/SD) e o marcador de servidor repetido. "HBO+", "HBO Legendado", filmes "(L)" e títulos com ano deixam de ser engolidos por parecidos; a lista é reimportada em segundo plano uma vez após atualizar
