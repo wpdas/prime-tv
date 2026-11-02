@@ -23,4 +23,11 @@ class QualityTest {
         assertEquals("globo sp", key)
         assert(Quality.groupKey("Globo RJ HD") != key)
     }
+
+    @Test
+    fun `mais nao e descartado no agrupamento`() {
+        assert(Quality.groupKey("HBO+ FHD") != Quality.groupKey("HBO FHD"))
+        assertEquals(Quality.groupKey("HBO+ FHD"), Quality.groupKey("HBO+ HD²"))
+        assert(Quality.groupKey("SPORT TV+") != Quality.groupKey("SPORT TV"))
+    }
 }

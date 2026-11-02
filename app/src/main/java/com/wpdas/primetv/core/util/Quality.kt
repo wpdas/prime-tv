@@ -35,6 +35,13 @@ object Quality {
         else -> null
     }
 
-    /** Chave de agrupamento: nome sem tags de qualidade, ano, colchetes e acentos. */
-    fun groupKey(name: String): String = TextNormalizer.normalize(name).ifEmpty { TextNormalizer.searchKey(name) }
+    /**
+     * Chave de agrupamento: nome sem tags de qualidade, ano, colchetes e acentos. O "+" é
+     * preservado como palavra ("HBO+" e "HBO" são canais diferentes), e marcadores de
+     * servidor repetido ("²") caem junto com a pontuação.
+     */
+    fun groupKey(name: String): String {
+        val plusAware = name.replace("+", " plus ")
+        return TextNormalizer.normalize(plusAware).ifEmpty { TextNormalizer.searchKey(plusAware) }
+    }
 }

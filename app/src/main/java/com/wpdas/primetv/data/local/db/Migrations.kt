@@ -21,5 +21,12 @@ object Migrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_5_6)
+    /** 0.0.2 -> 0.0.3: groupKey passou a distinguir "HBO+" de "HBO"; recalcula reimportando. */
+    val MIGRATION_6_7 = object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("DELETE FROM sync_state")
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_5_6, MIGRATION_6_7)
 }
