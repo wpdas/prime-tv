@@ -92,8 +92,15 @@ Telas (pacotes em `ui/screens/`): `setup`, `receivelink`, `home`, `details`, `li
 
 ## Release
 
-- Antes de criar a tag, mova a seção `[Não lançado]` do `CHANGELOG.md` para `[X.Y.Z] - data`; o workflow usa essa seção como descrição da release (é o texto que o app mostra). Sem seção, cai nas notas geradas pelo GitHub.
-- Tag `vX.Y.Z` em `main` dispara `.github/workflows/release.yml`: build assinado com o keystore dos secrets, APK `primetv-vX.Y.Z.apk` e release com notas geradas. `make tag V=X.Y.Z`.
+Releases saem direto da `main`, sem PR, a partir desta sessão. Roteiro obrigatório, nesta ordem:
+
+1. **Notas de release sempre.** Toda mudança que entra na `main` já deve ter sua linha em `[Não lançado]` no `CHANGELOG.md` (Novidades / Correções, em português, do ponto de vista de quem usa a TV, sem nomes de classe). Ao lançar, renomeie a seção para `[X.Y.Z] - AAAA-MM-DD` e abra uma `[Não lançado]` vazia logo acima. O workflow copia essa seção para a descrição da release, e é esse texto que o app mostra em "Verificar atualização"; sem a seção, a release sai com notas geradas pelo GitHub, o que não queremos.
+2. `make test` verde e o grep de vazamento de segredos sem resultado.
+3. Commit `chore: release X.Y.Z (resumo curto)` com o CHANGELOG e push da `main`.
+4. `make tag V=X.Y.Z` (tag anotada `vX.Y.Z` na `main`) dispara `.github/workflows/release.yml`: build assinado com o keystore dos secrets, APK `primetv-vX.Y.Z.apk` + `.sha256` e a release com as notas do CHANGELOG.
+5. Acompanhe o workflow até o fim (`gh run watch`), confira na release o APK, o `.sha256`, o `versionName` e as notas, e informe o link.
+
+Versão: `0.x` enquanto o app estiver em teste na box; `1.0.0` quando for entregue a outros usuários. Sobe o PATCH para correções e MINOR para funcionalidades novas.
 - Keystore e senhas: nunca no repositório. Cópia de segurança no Google Drive do mantenedor, pasta "Prime TV - App › keystore" (ver README); o original é `primetv.jks` na raiz do clone, ignorado pelo git. Sem `keystore.properties`, `assembleRelease` assina com debug só para testes locais.
 - O app compara a tag mais recente com `BuildConfig.VERSION_NAME` (`core/util/SemVer`); releases marcadas como pre-release ou draft são ignoradas.
 

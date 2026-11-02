@@ -4,6 +4,8 @@ Formato: uma seção por versão, com **Novidades** e **Correções**. A seção
 
 ## [Não lançado]
 
+## [0.0.5] - 2026-11-02
+
 ### Novidades
 - Aba Futebol abre o Guia de jogos: partidas do dia com horário, escudos dos times, competição e canal, montadas a partir dos canais de evento da lista ("Time x Time - 16:45") e do guia de programação. Trilho com Jogos, Ao vivo agora, Canais e Vídeos; OK abre o canal. Reprises e anúncios de jogos futuros ficam de fora
 - Competição e escudos vêm da base pública TheSportsDB (o que a lista informa, como "Série B", tem prioridade); são pré-carregados aos poucos ao abrir o app e ficam guardados por 30 dias
