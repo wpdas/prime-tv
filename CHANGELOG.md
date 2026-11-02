@@ -4,6 +4,8 @@ Formato: uma seção por versão, com **Novidades** e **Correções**. A seção
 
 ## [Não lançado]
 
+## [0.0.7] - 2026-11-02
+
 ### Novidades
 - Vinheta de abertura: o "PrimeTV" surge com um leve zoom e um som curto que cresce e termina num "plim"; qualquer tecla pula, e a lista carrega por baixo enquanto ela roda
 - Aba Novelas na barra superior quando a lista tem categorias de novela, com destaque próprio (novelas brasileiras populares no TMDB presentes na lista e títulos sorteados por dia)
