@@ -104,7 +104,7 @@ fun FootballScreen(
             onTabSelected = onTabSelected,
             onTabFocused = { tab ->
                 tabFocusJob?.cancel()
-                if (tab != HomeTab.FOOTBALL) tabFocusJob = scope.launch { delay(TAB_FOCUS_DELAY_MS); onTabSelected(tab) }
+                if (tab != null && tab != HomeTab.FOOTBALL) tabFocusJob = scope.launch { delay(TAB_FOCUS_DELAY_MS); onTabSelected(tab) }
             },
             onSearchClick = onOpenSearch,
             onMenuClick = onOpenAppMenu,

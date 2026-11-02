@@ -207,7 +207,7 @@ fun HomeContent(
                     tabFocusJob?.cancel()
                     // Ao vivo troca de tela, então espera mais para não disparar a caminho de Filmes/Séries.
                     val opensScreen = tab == HomeTab.LIVE || tab == HomeTab.FOOTBALL
-                    if (tab != state.selectedTab) tabFocusJob = scope.launch { kotlinx.coroutines.delay(if (opensScreen) LIVE_TAB_FOCUS_DELAY_MS else TAB_FOCUS_DELAY_MS); onTabSelected(tab) }
+                    if (tab != null && tab != state.selectedTab) tabFocusJob = scope.launch { kotlinx.coroutines.delay(if (opensScreen) LIVE_TAB_FOCUS_DELAY_MS else TAB_FOCUS_DELAY_MS); onTabSelected(tab) }
                 },
                 onSearchClick = onOpenSearch,
                 onMenuClick = onOpenAppMenu,

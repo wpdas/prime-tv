@@ -4,7 +4,7 @@ import com.wpdas.primetv.core.util.TextNormalizer
 import com.wpdas.primetv.domain.model.HomeTab
 
 /**
- * Abas Kids e Anime: decididas só pelo nome da categoria da lista (nunca pelo título do item),
+ * Abas Novelas, Kids e Anime: decididas só pelo nome da categoria da lista (nunca pelo título do item),
  * com limite de palavra e sem acentos. "Animação/Infantil" é Kids por "infantil"; "Animes 24 horas"
  * é Anime; uma categoria "Animação" adulta não entra em nenhuma.
  */
@@ -14,9 +14,11 @@ object TabKeywords {
         "baby", "junior", "gloob", "cartoonito", "nick jr", "discovery kids", "zoomoo",
     )
     val ANIME = listOf("anime", "animes", "crunchyroll", "otaku")
+    val NOVELAS = listOf("novela", "novelas", "telenovela", "telenovelas")
 
     private val kids = KIDS.map(::needle)
     private val anime = ANIME.map(::needle)
+    private val novelas = NOVELAS.map(::needle)
 
     private fun needle(word: String) = Regex("(?<![a-z0-9])" + Regex.escape(TextNormalizer.stripAccents(word.lowercase())) + "(?![a-z0-9])")
 
@@ -26,6 +28,7 @@ object TabKeywords {
         if (c.isEmpty()) return null
         if (anime.any { it.containsMatchIn(c) }) return HomeTab.ANIME
         if (kids.any { it.containsMatchIn(c) }) return HomeTab.KIDS
+        if (novelas.any { it.containsMatchIn(c) }) return HomeTab.NOVELAS
         return null
     }
 

@@ -5,7 +5,7 @@ import com.wpdas.primetv.domain.model.TmdbInfo
 import kotlinx.coroutines.flow.Flow
 
 /** Contexto do destaque: geral (Início), infantil (aba Kids) ou anime (aba Anime). */
-enum class FeaturedKind { GENERAL, KIDS, ANIME }
+enum class FeaturedKind { GENERAL, KIDS, ANIME, NOVELAS }
 
 /** Recomendações e enriquecimento via TMDB, sempre restritos ao que existe na lista do usuário. */
 interface RecommendationRepository {

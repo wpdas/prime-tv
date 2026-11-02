@@ -1,5 +1,7 @@
 package com.wpdas.primetv
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wpdas.primetv.domain.repository.PlaylistRepository
@@ -23,6 +25,9 @@ class MainViewModel @Inject constructor(
     catalogSync: CatalogSync,
     updates: com.wpdas.primetv.domain.update.UpdateRepository,
 ) : ViewModel() {
+    /** Vinheta de abertura: uma vez por processo (não repete ao girar a tela ou voltar do player). */
+    var showIntro by androidx.compose.runtime.mutableStateOf(true)
+
     init {
         // Checagem silenciosa de versão nova ao abrir (no máximo a cada 30 min); a Início abre o diálogo se houver.
         viewModelScope.launch { updates.checkIfDue() }

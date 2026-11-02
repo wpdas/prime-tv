@@ -63,7 +63,9 @@ fun HeroSection(
 ) {
     val colors = PrimeTheme.colors
     val typography = PrimeTheme.typography
-    val fullBleed = item.backdropUrl != null
+    // Backdrop em toda a largura esticava a imagem (w1280 numa área de ~1780 px) e ficava estourada na TV.
+    // Por padrão a arte fica só à direita da área de texto, sem ampliação; FULL_BLEED volta ao modo antigo.
+    val fullBleed = HERO_FULL_BLEED && item.backdropUrl != null
     Box(
         modifier
             .fillMaxWidth()
@@ -77,7 +79,7 @@ fun HeroSection(
                 BackdropArtwork(item, Modifier.fillMaxSize())
             } else {
                 Row(Modifier.fillMaxSize()) {
-                    Spacer(Modifier.width(520.dp))
+                    Spacer(Modifier.width(HERO_ART_START))
                     BackdropArtwork(item, Modifier.weight(1f).fillMaxHeight())
                 }
             }
@@ -90,13 +92,15 @@ fun HeroSection(
             )
             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.6f to Color.Transparent, 1f to colors.surface.copy(alpha = 0.6f))))
         } else {
+            // Fusão suave entre o painel de texto e a arte.
             Box(
                 Modifier
-                    .padding(start = 520.dp)
+                    .padding(start = HERO_ART_START)
                     .fillMaxHeight()
-                    .width(80.dp)
-                    .background(Brush.horizontalGradient(listOf(colors.surface, Color.Transparent))),
+                    .width(HERO_ART_FADE)
+                    .background(Brush.horizontalGradient(listOf(colors.surface, colors.surface.copy(alpha = 0.7f), Color.Transparent))),
             )
+            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.7f to Color.Transparent, 1f to colors.surface.copy(alpha = 0.5f))))
         }
         Column(
             Modifier
@@ -175,3 +179,9 @@ private fun heroMeta(item: MediaItem): String {
     item.rating?.let { parts += String.format(java.util.Locale("pt", "BR"), "%.1f", it) }
     return parts.joinToString(" · ")
 }
+
+/** Modo antigo: backdrop em toda a largura com o texto sobre um degradê. */
+private const val HERO_FULL_BLEED = false
+/** Onde a arte começa (fim da área de texto) e a largura da fusão. */
+private val HERO_ART_START = 500.dp
+private val HERO_ART_FADE = 140.dp

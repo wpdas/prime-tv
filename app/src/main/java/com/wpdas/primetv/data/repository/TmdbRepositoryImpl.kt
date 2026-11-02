@@ -63,6 +63,7 @@ class TmdbRepositoryImpl @Inject constructor(
             )
             FeaturedKind.KIDS -> listOf("kids_tv" to "home.badge_kids", "kids_movies" to "home.badge_kids")
             FeaturedKind.ANIME -> listOf("anime_tv" to "home.badge_anime", "anime_movies" to "home.badge_anime")
+            FeaturedKind.NOVELAS -> listOf("novelas_tv" to "home.badge_novelas")
         }
         val genres = genres()
         val out = ArrayList<MediaItem>()
@@ -188,6 +189,7 @@ class TmdbRepositoryImpl @Inject constructor(
                 "kids_movies" -> api.discoverMovie(genres = "16|10751")
                 "anime_tv" -> api.discoverTv(genres = "16", country = "JP")
                 "anime_movies" -> api.discoverMovie(genres = "16", country = "JP")
+                "novelas_tv" -> api.discoverTv(genres = "10766", country = "BR", minVotes = 5)
                 else -> api.popularTv()
             }
         }.getOrNull()

@@ -4,6 +4,15 @@ Formato: uma seção por versão, com **Novidades** e **Correções**. A seção
 
 ## [Não lançado]
 
+### Novidades
+- Vinheta de abertura: o "PrimeTV" surge com um leve zoom e um som curto que cresce e termina num "plim"; qualquer tecla pula, e a lista carrega por baixo enquanto ela roda
+- Aba Novelas na barra superior quando a lista tem categorias de novela, com destaque próprio (novelas brasileiras populares no TMDB presentes na lista e títulos sorteados por dia)
+- Barra superior sem o quadrado "P": só o nome PrimeTV, para sobrar espaço para as abas
+
+### Correções
+- Destaque do topo: a arte deixa de ocupar toda a largura (ficava ampliada e estourada na TV) e passa a ficar à direita da área de texto, no tamanho natural, com uma fusão suave
+- Passar pelas abas a caminho de Buscar ou do menu ⋯ não troca mais de seção ("Minha lista" era selecionada sem querer)
+
 ## [0.0.6] - 2026-11-02
 
 ### Novidades

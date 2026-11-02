@@ -22,6 +22,7 @@ import com.wpdas.primetv.domain.crests.TeamCrestRepository
 import com.wpdas.primetv.ui.components.LocalCrestResolver
 import androidx.compose.runtime.CompositionLocalProvider
 import com.wpdas.primetv.ui.navigation.PrimeNavHost
+import com.wpdas.primetv.ui.screens.intro.IntroOverlay
 import com.wpdas.primetv.ui.theme.PrimeTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -49,6 +50,8 @@ class MainActivity : ComponentActivity() {
                         val pct = prefs.overscanPercent / 100f
                         Box(Modifier.fillMaxSize().padding(horizontal = maxWidth * pct, vertical = maxHeight * pct)) {
                             start?.let { PrimeNavHost(startDestination = it) }
+                            // Vinheta só na abertura a frio do processo; a tela de baixo carrega enquanto ela roda.
+                            if (mainViewModel.showIntro) IntroOverlay(onFinished = { mainViewModel.showIntro = false })
                         }
                     }
                 }

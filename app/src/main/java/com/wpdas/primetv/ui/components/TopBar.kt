@@ -34,7 +34,7 @@ import com.wpdas.primetv.ui.theme.PrimeFocus
 import com.wpdas.primetv.ui.theme.PrimeTheme
 
 /**
- * Barra superior: logo (só marca), Buscar, abas, relógio e o menu do app (⋯, com Configurações dentro).
+ * Barra superior: wordmark, Buscar, abas, relógio e o menu do app (⋯, com Configurações dentro).
  * Altura 72, margem lateral 48. Ao subir da tela para a barra, o foco cai sempre na aba ativa, para
  * não trocar de seção sem querer.
  */
@@ -46,8 +46,8 @@ fun TopBar(
     onMenuClick: () -> Unit,
     modifier: Modifier = Modifier,
     onFocused: (() -> Unit)? = null,
-    /** Aba ganhou foco (estilo Netflix: a tela troca sem precisar de OK). */
-    onTabFocused: ((HomeTab) -> Unit)? = null,
+    /** Aba ganhou foco (estilo Netflix: a tela troca sem precisar de OK); null = o foco foi para Buscar ou ⋯. */
+    onTabFocused: ((HomeTab?) -> Unit)? = null,
     /** Abas visíveis; Kids e Anime só entram quando a lista tem conteúdo para elas. */
     tabs: List<HomeTab> = HomeTab.entries.filter { it !in HomeTab.OPTIONAL },
 ) {
@@ -64,7 +64,7 @@ fun TopBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(32.dp),
     ) {
-        Logo(Modifier.padding(end = 4.dp))
+        LogoWordmark(Modifier.padding(end = 4.dp))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             PrimeIconButton(
                 icon = Icons.Rounded.Search,
@@ -72,6 +72,7 @@ fun TopBar(
                 onClick = onSearchClick,
                 style = PrimeButtonStyle.Ghost,
                 size = 44.dp,
+                modifier = Modifier.onFocusChanged { if (it.isFocused) onTabFocused?.invoke(null) },
             )
             tabs.forEach { tab ->
                 TabItem(
@@ -92,6 +93,8 @@ fun TopBar(
                 onClick = onMenuClick,
                 style = PrimeButtonStyle.Ghost,
                 size = 44.dp,
+                // Passar pelas abas a caminho do menu não pode trocar de seção.
+                modifier = Modifier.onFocusChanged { if (it.isFocused) onTabFocused?.invoke(null) },
             )
         }
     }

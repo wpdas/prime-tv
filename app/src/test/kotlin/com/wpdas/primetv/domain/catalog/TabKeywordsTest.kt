@@ -22,6 +22,13 @@ class TabKeywordsTest {
         assertEquals(HomeTab.ANIME, TabKeywords.tabOf("Animes Infantis"))
     }
 
+    @Test fun `categorias de novela viram Novelas`() {
+        assertEquals(HomeTab.NOVELAS, TabKeywords.tabOf("NOVELAS"))
+        assertEquals(HomeTab.NOVELAS, TabKeywords.tabOf("Novelas Globo"))
+        assertEquals(HomeTab.NOVELAS, TabKeywords.tabOf("Telenovelas"))
+        assertNull(TabKeywords.tabOf("DORAMA"))
+    }
+
     @Test fun `o resto nao entra em nenhuma`() {
         assertNull(TabKeywords.tabOf("ANIMACAO"))
         assertNull(TabKeywords.tabOf("DORAMA"))

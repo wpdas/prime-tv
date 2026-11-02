@@ -122,7 +122,7 @@ fun LiveScreen(
             onTabSelected = onTabSelected,
             onTabFocused = { tab ->
                 tabFocusJob?.cancel()
-                if (tab != HomeTab.LIVE) tabFocusJob = tabScope.launch { kotlinx.coroutines.delay(700); onTabSelected(tab) }
+                if (tab != null && tab != HomeTab.LIVE) tabFocusJob = tabScope.launch { kotlinx.coroutines.delay(700); onTabSelected(tab) }
             },
             onSearchClick = onOpenSearch,
             onMenuClick = onOpenAppMenu,

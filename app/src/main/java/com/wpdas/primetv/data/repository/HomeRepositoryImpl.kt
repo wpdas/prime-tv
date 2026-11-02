@@ -50,20 +50,24 @@ class HomeRepositoryImpl @Inject constructor(
     private val myList: Flow<Set<String>> get() = library.favoriteIds()
 
     override fun featured(tab: HomeTab): Flow<List<MediaItem>> = when (tab) {
-        HomeTab.KIDS, HomeTab.ANIME -> tabFeatured(tab)
+        HomeTab.KIDS, HomeTab.ANIME, HomeTab.NOVELAS -> tabFeatured(tab)
         else -> generalFeatured()
     }
 
     /**
-     * Destaque de Kids/Anime: em Anime, primeiro os fixos que a lista tiver (Dragon Ball e Naruto/Boruto mais
+     * Destaque de Kids/Anime/Novelas: em Anime, primeiro os fixos que a lista tiver (Dragon Ball e Naruto/Boruto mais
      * recentes, One Piece); depois os populares do TMDB no contexto que existem na lista; o resto são títulos
      * das categorias da aba, sorteados com semente do dia (mudam a cada dia, não a cada abertura).
      */
     private fun tabFeatured(tab: HomeTab): Flow<List<MediaItem>> {
         val anime = tab == HomeTab.ANIME
-        val badge = if (anime) "home.badge_anime" else "home.badge_kids"
+        val (kind, badge) = when (tab) {
+            HomeTab.ANIME -> FeaturedKind.ANIME to "home.badge_anime"
+            HomeTab.NOVELAS -> FeaturedKind.NOVELAS to "home.badge_novelas"
+            else -> FeaturedKind.KIDS to "home.badge_kids"
+        }
         val recommended = if (recommendations.isAvailable) {
-            recommendations.featured(FEATURED_TMDB, if (anime) FeaturedKind.ANIME else FeaturedKind.KIDS).onStart { emit(emptyList()) }
+            recommendations.featured(FEATURED_TMDB, kind).onStart { emit(emptyList()) }
         } else {
             flowOf(emptyList())
         }
@@ -185,6 +189,7 @@ class HomeRepositoryImpl @Inject constructor(
         ) { a, b -> listOf(a, b).filter { it.items.isNotEmpty() } }
         HomeTab.KIDS -> keywordRows(HomeTab.KIDS)
         HomeTab.ANIME -> keywordRows(HomeTab.ANIME)
+        HomeTab.NOVELAS -> keywordRows(HomeTab.NOVELAS)
         HomeTab.MY_LIST -> myListRows()
         HomeTab.LIVE -> flowOf(emptyList())
     }.combine(myList) { rows, ids -> rows.map { row -> row.copy(items = row.items.map { it.copy(inMyList = it.id in ids) }) } }

@@ -6,6 +6,8 @@ enum class HomeTab(val labelKey: String) {
     LIVE("nav.live"),
     MOVIES("nav.movies"),
     SERIES("nav.series"),
+    /** Só aparece quando a lista tem categorias de novelas. */
+    NOVELAS("nav.novelas"),
     FOOTBALL("nav.football"),
     /** Só aparece quando a lista tem categorias infantis (ver TabKeywords). */
     KIDS("nav.kids"),
@@ -16,6 +18,6 @@ enum class HomeTab(val labelKey: String) {
 
     companion object {
         /** Abas que dependem do conteúdo da lista. */
-        val OPTIONAL: Set<HomeTab> = setOf(KIDS, ANIME)
+        val OPTIONAL: Set<HomeTab> = setOf(NOVELAS, KIDS, ANIME)
     }
 }
