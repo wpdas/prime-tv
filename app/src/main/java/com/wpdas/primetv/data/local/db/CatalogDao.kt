@@ -22,18 +22,20 @@ interface CatalogDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertChannels(list: List<ChannelEntity>)
     @Query("DELETE FROM channels") suspend fun deleteChannels()
     @Query("SELECT COUNT(*) FROM channels") fun observeChannelCount(): Flow<Int>
-    @Query("SELECT * FROM channels WHERE (:categoryId IS NULL OR categoryId = :categoryId) ORDER BY number") fun observeChannels(categoryId: String?): Flow<List<ChannelEntity>>
-    @Query("SELECT * FROM channels WHERE isFootball = 1 ORDER BY number") fun observeFootballChannelsAll(): Flow<List<ChannelEntity>>
-    @Query("SELECT * FROM channels WHERE isFootball = 1 ORDER BY number LIMIT :limit") fun observeFootballChannels(limit: Int): Flow<List<ChannelEntity>>
-    @Query("SELECT COUNT(*) FROM channels WHERE isFootball = 1") fun observeFootballChannelCount(): Flow<Int>
+    // "Melhor variante": de cada grupo (mesmo nome sem UHD/FHD/HD/SD) só a de maior qualidade.
+    @Query("SELECT * FROM channels c WHERE (:categoryId IS NULL OR c.categoryId = :categoryId) AND c.id IN (SELECT c2.id FROM channels c2 WHERE c2.groupKey = c.groupKey ORDER BY c2.qualityRank, c2.number LIMIT 1) ORDER BY number") fun observeChannels(categoryId: String?): Flow<List<ChannelEntity>>
+    @Query("SELECT * FROM channels c WHERE c.isFootball = 1 AND c.id IN (SELECT c2.id FROM channels c2 WHERE c2.groupKey = c.groupKey ORDER BY c2.qualityRank, c2.number LIMIT 1) ORDER BY number") fun observeFootballChannelsAll(): Flow<List<ChannelEntity>>
+    @Query("SELECT * FROM channels c WHERE c.isFootball = 1 AND c.id IN (SELECT c2.id FROM channels c2 WHERE c2.groupKey = c.groupKey ORDER BY c2.qualityRank, c2.number LIMIT 1) ORDER BY number LIMIT :limit") fun observeFootballChannels(limit: Int): Flow<List<ChannelEntity>>
+    @Query("SELECT COUNT(DISTINCT groupKey) FROM channels WHERE isFootball = 1") fun observeFootballChannelCount(): Flow<Int>
+    @Query("SELECT * FROM channels WHERE groupKey = :groupKey ORDER BY qualityRank, number") suspend fun channelVariants(groupKey: String): List<ChannelEntity>
     @Query("SELECT (SELECT COUNT(*) FROM movies WHERE isFootball = 1) + (SELECT COUNT(*) FROM series WHERE isFootball = 1)") fun observeFootballVodCount(): Flow<Int>
     @Query("SELECT * FROM channels WHERE id = :id") fun observeChannel(id: String): Flow<ChannelEntity?>
     @Query("SELECT * FROM channels WHERE id = :id") suspend fun channelById(id: String): ChannelEntity?
     @Query("SELECT * FROM channels WHERE id IN (:ids)") suspend fun channelsByIds(ids: List<String>): List<ChannelEntity>
     @Query("SELECT * FROM channels WHERE id IN (:ids)") fun observeChannelsByIds(ids: List<String>): Flow<List<ChannelEntity>>
-    @Query("SELECT * FROM channels WHERE (:categoryId IS NULL OR categoryId = :categoryId) ORDER BY number") suspend fun channelsList(categoryId: String?): List<ChannelEntity>
-    @Query("SELECT * FROM channels WHERE isFootball = 1 ORDER BY number") suspend fun footballChannelsList(): List<ChannelEntity>
-    @Query("SELECT categoryId AS `key`, COUNT(*) AS count FROM channels GROUP BY categoryId") fun observeChannelCounts(): Flow<List<KeyCount>>
+    @Query("SELECT * FROM channels c WHERE (:categoryId IS NULL OR c.categoryId = :categoryId) AND c.id IN (SELECT c2.id FROM channels c2 WHERE c2.groupKey = c.groupKey ORDER BY c2.qualityRank, c2.number LIMIT 1) ORDER BY number") suspend fun channelsList(categoryId: String?): List<ChannelEntity>
+    @Query("SELECT * FROM channels c WHERE c.isFootball = 1 AND c.id IN (SELECT c2.id FROM channels c2 WHERE c2.groupKey = c.groupKey ORDER BY c2.qualityRank, c2.number LIMIT 1) ORDER BY number") suspend fun footballChannelsList(): List<ChannelEntity>
+    @Query("SELECT categoryId AS `key`, COUNT(DISTINCT groupKey) AS count FROM channels GROUP BY categoryId") fun observeChannelCounts(): Flow<List<KeyCount>>
     @Query("SELECT id, name, epgChannelId FROM channels") suspend fun channelEpgRefs(): List<ChannelEpgRef>
     @Query("UPDATE channels SET epgKey = :key WHERE id = :id") suspend fun setEpgKey(id: String, key: String?)
     @Query("SELECT id, name, categoryName FROM channels") suspend fun channelRefs(): List<TitleRef>
@@ -47,8 +49,8 @@ interface CatalogDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertMovies(list: List<MovieEntity>)
     @Query("DELETE FROM movies") suspend fun deleteMovies()
     @Query("SELECT COUNT(*) FROM movies") fun observeMovieCount(): Flow<Int>
-    @Query("SELECT * FROM movies WHERE (:categoryId IS NULL OR categoryId = :categoryId) ORDER BY addedAt DESC, title LIMIT :limit") fun observeMovies(categoryId: String?, limit: Int): Flow<List<MovieEntity>>
-    @Query("SELECT * FROM movies WHERE isFootball = 1 ORDER BY addedAt DESC LIMIT :limit") fun observeFootballMovies(limit: Int): Flow<List<MovieEntity>>
+    @Query("SELECT * FROM movies m WHERE (:categoryId IS NULL OR m.categoryId = :categoryId) AND m.id IN (SELECT m2.id FROM movies m2 WHERE m2.normalizedTitle = m.normalizedTitle AND IFNULL(m2.year, 0) = IFNULL(m.year, 0) ORDER BY m2.qualityRank, m2.addedAt DESC LIMIT 1) ORDER BY addedAt DESC, title LIMIT :limit") fun observeMovies(categoryId: String?, limit: Int): Flow<List<MovieEntity>>
+    @Query("SELECT * FROM movies m WHERE m.isFootball = 1 AND m.id IN (SELECT m2.id FROM movies m2 WHERE m2.normalizedTitle = m.normalizedTitle AND IFNULL(m2.year, 0) = IFNULL(m.year, 0) ORDER BY m2.qualityRank, m2.addedAt DESC LIMIT 1) ORDER BY addedAt DESC LIMIT :limit") fun observeFootballMovies(limit: Int): Flow<List<MovieEntity>>
     @Query("SELECT * FROM movies WHERE id = :id") fun observeMovie(id: String): Flow<MovieEntity?>
     @Query("SELECT * FROM movies WHERE id = :id") suspend fun movieById(id: String): MovieEntity?
     @Query("SELECT * FROM movies WHERE id IN (:ids)") suspend fun moviesByIds(ids: List<String>): List<MovieEntity>

@@ -15,7 +15,7 @@ data class CategoryEntity(
     val sortOrder: Int,
 )
 
-@Entity(tableName = "channels", indices = [Index("categoryId"), Index("number"), Index("epgKey"), Index("isFootball")])
+@Entity(tableName = "channels", indices = [Index("categoryId"), Index("number"), Index("epgKey"), Index("isFootball"), Index("groupKey")])
 data class ChannelEntity(
     @PrimaryKey val id: String,
     val name: String,
@@ -29,6 +29,10 @@ data class ChannelEntity(
     val isAdult: Boolean,
     val isFootball: Boolean,
     val searchKey: String,
+    /** Nome sem tag de qualidade; variantes (UHD/FHD/HD/SD) do mesmo canal compartilham a chave. */
+    val groupKey: String,
+    /** 0 = 4K … 3 = SD, 4 = sem tag. */
+    val qualityRank: Int,
 )
 
 @Entity(tableName = "movies", indices = [Index("categoryId"), Index("normalizedTitle"), Index("addedAt"), Index("isFootball")])
@@ -47,6 +51,7 @@ data class MovieEntity(
     val isAdult: Boolean,
     val isFootball: Boolean,
     val normalizedTitle: String,
+    val qualityRank: Int,
 )
 
 @Entity(tableName = "series", indices = [Index("categoryId"), Index("normalizedTitle"), Index("isFootball")])

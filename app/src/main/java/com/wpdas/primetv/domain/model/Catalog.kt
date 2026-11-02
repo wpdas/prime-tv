@@ -28,7 +28,14 @@ data class Channel(
     val epgKey: String?,
     val isAdult: Boolean = false,
     val isFootball: Boolean = false,
-)
+    /** Chave do grupo de variantes (mesmo canal em UHD/FHD/HD/SD). */
+    val groupKey: String = "",
+    val qualityRank: Int = 4,
+) {
+    /** Nome sem a tag de qualidade ("Globo UHD 4K" -> "Globo"). */
+    val displayName: String get() = com.wpdas.primetv.core.util.TextNormalizer.displayTitle(name)
+    val qualityLabel: String? get() = com.wpdas.primetv.core.util.Quality.label(qualityRank)
+}
 
 data class Movie(
     val id: String,

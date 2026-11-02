@@ -35,7 +35,9 @@ Critérios de aceite:
 
 ## Melhorias planejadas (abrir como issues após o primeiro push)
 
-### Agrupar variantes de resolução do mesmo item
+### Agrupar variantes de resolução do mesmo item ✅ parcial (fase 8)
+Feito: as listas mostram só a melhor variante de cada canal/filme (4K/UHD → FHD → HD → SD), com selo da qualidade; se o canal falhar no player, cai para a variante seguinte. Pendente: troca automática por velocidade da internet durante a reprodução (e/ou diálogo sugerindo qualidade menor).
+
 Listas costumam repetir o mesmo canal/filme em várias qualidades (`<nome> FHD`, `<nome> HD`, `<nome> SD`, `<nome> UHD`, `<nome> 4K`). Exibir só uma entrada, agrupando as variantes pelo nome normalizado. A tag de qualidade pode vir como sufixo ou prefixo (`UHD Globo`, `Globo UHD 4K`) e `UHD` e `4K` são a mesma coisa; a ordem de preferência é 4K/UHD → FHD → HD → SD. O normalizador de títulos (`TextNormalizer`) já remove essas tags e serve de base.
 
 Estratégia de qualidade (a investigar antes de implementar):

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -31,7 +32,7 @@ fun CategoryRail(
     selectedId: String?,
     onSelect: (RailCategory) -> Unit,
     modifier: Modifier = Modifier,
-    width: Dp = 200.dp,
+    width: Dp = 240.dp,
 ) {
     val colors = PrimeTheme.colors
     val shape = PrimeTheme.shapes.card
@@ -44,7 +45,7 @@ fun CategoryRail(
             val selected = cat.id == selectedId
             Surface(
                 onClick = { onSelect(cat) },
-                modifier = Modifier.fillMaxWidth().height(44.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp),
                 shape = PrimeFocus.shape(shape),
                 colors = ClickableSurfaceDefaults.colors(
                     containerColor = if (selected) colors.selected else colors.background,
@@ -58,14 +59,14 @@ fun CategoryRail(
                 border = PrimeFocus.border(shape),
             ) {
                 Row(
-                    Modifier.fillMaxWidth().height(44.dp).padding(horizontal = 14.dp),
+                    Modifier.fillMaxWidth().heightIn(min = 44.dp).padding(horizontal = 14.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
                         cat.label,
                         style = if (selected) PrimeTheme.typography.bodyStrong else PrimeTheme.typography.buttonSmall,
-                        maxLines = 1,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false),
                     )

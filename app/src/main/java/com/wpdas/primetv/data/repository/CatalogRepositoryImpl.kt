@@ -150,6 +150,8 @@ class CatalogRepositoryImpl @Inject constructor(
         }.map { it.toDomain() }
     }
 
+    override suspend fun channelVariants(groupKey: String): List<Channel> = withContext(io) { dao.channelVariants(groupKey).map { it.toDomain() } }
+
     override suspend fun search(query: String, limit: Int): SearchResults = withContext(io) {
         val match = buildMatchQuery(query) ?: return@withContext SearchResults(emptyList(), emptyList(), emptyList())
         val hits = dao.search(match, limit)
@@ -159,8 +161,9 @@ class CatalogRepositoryImpl @Inject constructor(
         val series = byType[SearchType.SERIES]?.let { dao.seriesByIds(it) }.orEmpty().map { it.toDomain() }
         // Mantém a ordem de relevância do FTS (ordem do índice) dentro de cada tipo.
         val order = hits.withIndex().associate { it.value.refId to it.index }
+        val bestChannels = channels.groupBy { it.groupKey.ifEmpty { it.id } }.values.map { group -> group.minByOrNull { it.qualityRank }!! }
         SearchResults(
-            channels = channels.sortedBy { order[it.id] },
+            channels = bestChannels.sortedBy { order[it.id] },
             movies = movies.sortedBy { order[it.id] },
             series = series.sortedBy { order[it.id] },
         )

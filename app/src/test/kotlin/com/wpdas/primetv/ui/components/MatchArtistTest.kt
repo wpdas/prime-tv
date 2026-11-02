@@ -11,6 +11,9 @@ class MatchArtistTest {
         assertEquals(Match("Real Madrid", "Barcelona"), MatchArtist.parse("Real Madrid vs Barcelona - La Liga"))
         assertEquals(Match("Botafogo", "Atlético-MG"), MatchArtist.parse("Dia 04/11 - Botafogo x Atlético-MG (Premiere)"))
         assertEquals(Match("Londrina", "América"), MatchArtist.parse("Londrina x América"))
+        assertEquals(Match("Grêmio", "Internacional"), MatchArtist.parse("VT - Grêmio x Internacional"))
+        assertEquals(Match("Santos", "Bahia"), MatchArtist.parse("AO VIVO: Santos x Bahia"))
+        assertEquals(Match("Cuiabá", "São Bernardo"), MatchArtist.parse("Cuiabá x São Bernardo - 18:30 Série B FHD"))
     }
 
     @Test fun `ignora o que nao e partida`() {

@@ -45,6 +45,11 @@ data class LiveUiState(
     val previewUrl: String? = null,
     /** Chave i18n de um aviso curto (favoritado/removido). */
     val toastKey: String? = null,
+    /** Dígitos digitados para pular ao canal com esse número. */
+    val channelInput: String? = null,
+    /** Canal a focar (número digitado); a tela consome e zera. */
+    val jumpToChannelId: String? = null,
+    val previewSound: Boolean = false,
 ) {
     companion object {
         const val RAIL_ALL = "all"
@@ -62,8 +67,11 @@ private const val RAIL_FAVORITES = LiveUiState.RAIL_FAVORITES
 class LiveViewModel @Inject constructor(
     private val catalog: CatalogRepository,
     private val library: LibraryRepository,
+    private val settings: com.wpdas.primetv.domain.repository.SettingsRepository,
     val playerFactory: PlayerFactory,
 ) : ViewModel() {
+
+    private var digitJob: kotlinx.coroutines.Job? = null
 
     private val _state = MutableStateFlow(LiveUiState())
     val state: StateFlow<LiveUiState> = _state.asStateFlow()
@@ -80,6 +88,7 @@ class LiveViewModel @Inject constructor(
     }
 
     init {
+        settings.settings.onEach { s -> _state.update { it.copy(previewSound = s.previewSound) } }.launchIn(viewModelScope)
         val favoriteChannels = library.favoriteIds(MediaType.CHANNEL)
         favoriteChannels.onEach { ids -> _state.update { it.copy(favoriteIds = ids.toSet()) } }.launchIn(viewModelScope)
 
@@ -145,6 +154,43 @@ class LiveViewModel @Inject constructor(
         }
     }
 
+    /** Dígito do controle: acumula e, após uma pausa, foca o canal com esse número na lista atual. */
+    fun onDigit(digit: Int) {
+        val current = (_state.value.channelInput ?: "").takeIf { it.length < 4 } ?: ""
+        val input = current + digit
+        _state.update { it.copy(channelInput = input) }
+        digitJob?.cancel()
+        digitJob = viewModelScope.launch {
+            delay(DIGIT_COMMIT_MS)
+            commitChannelInput()
+        }
+    }
+
+    fun commitChannelInput() {
+        digitJob?.cancel()
+        val number = _state.value.channelInput?.toIntOrNull() ?: run { _state.update { it.copy(channelInput = null) }; return }
+        val target = _state.value.channels?.firstOrNull { it.number == number }
+        if (target == null) {
+            viewModelScope.launch {
+                // Fora da categoria atual: volta para Todos e procura lá.
+                val all = catalog.channelsOnce(ChannelFilter.All)
+                val found = all.firstOrNull { it.number == number }
+                if (found != null) {
+                    selectRail(RAIL_ALL)
+                    _state.update { it.copy(channelInput = null, jumpToChannelId = found.id) }
+                } else {
+                    _state.update { it.copy(channelInput = null, toastKey = "player.channel_not_found") }
+                    delay(TOAST_MS)
+                    _state.update { if (it.toastKey == "player.channel_not_found") it.copy(toastKey = null) else it }
+                }
+            }
+        } else {
+            _state.update { it.copy(channelInput = null, jumpToChannelId = target.id) }
+        }
+    }
+
+    fun onJumpConsumed() = _state.update { it.copy(jumpToChannelId = null) }
+
     /** Libera a prévia ao sair da tela para o player principal (servidores com 1 conexão). */
     fun stopPreview() {
         focusedChannel.value = null
@@ -160,6 +206,7 @@ class LiveViewModel @Inject constructor(
 
     private companion object {
         const val PREVIEW_DELAY_MS = 1_000L
+        const val DIGIT_COMMIT_MS = 1_500L
         const val TOAST_MS = 2_500L
     }
 }

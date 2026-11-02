@@ -83,12 +83,18 @@ class HomeViewModel @Inject constructor(
     /** Chamado pelos cards quando ganham foco. */
     fun onCardFocused(item: MediaItem) {
         focusedCard.value = item
+        lastFocusedItemId = item.id
     }
 
     /** Chamado quando o foco volta para a barra superior: solta o destaque e retoma a rotação. */
     fun onTopBarFocused() {
         focusedCard.value = null
     }
+
+    /** Linha que estava com foco ao sair da Início (para voltar exatamente lá). */
+    var lastFocusedRow: String? = null
+    var lastFocusedItemId: String? = null
+    var initialFocusDone: Boolean = false
 
     fun toggleMyList(item: MediaItem) {
         viewModelScope.launch { repository.toggleMyList(item.id) }

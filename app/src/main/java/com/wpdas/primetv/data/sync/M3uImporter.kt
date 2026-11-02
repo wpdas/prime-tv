@@ -3,6 +3,7 @@ package com.wpdas.primetv.data.sync
 import android.content.Context
 import androidx.room.withTransaction
 import com.wpdas.primetv.core.util.Hashing
+import com.wpdas.primetv.core.util.Quality
 import com.wpdas.primetv.core.util.TextNormalizer
 import com.wpdas.primetv.data.local.db.CategoryEntity
 import com.wpdas.primetv.data.local.db.ChannelEntity
@@ -127,6 +128,8 @@ class M3uImporter @Inject constructor(
                         isAdult = false,
                         isFootball = football.matches(entry.name, cat?.name),
                         searchKey = TextNormalizer.searchKey(entry.name),
+                        groupKey = Quality.groupKey(entry.name),
+                        qualityRank = Quality.rank(entry.name),
                     ),
                 )
             }
@@ -169,6 +172,7 @@ class M3uImporter @Inject constructor(
                         isAdult = false,
                         isFootball = football.matches(entry.name, cat?.name),
                         normalizedTitle = TextNormalizer.normalize(entry.name),
+                        qualityRank = Quality.rank(entry.name),
                     ),
                 )
             }

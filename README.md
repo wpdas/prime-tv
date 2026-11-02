@@ -15,6 +15,8 @@ App Android de IPTV com interface no estilo Netflix, feito para **TV Box com And
 - Histórico com "Continuar assistindo" e favoritos (Minha lista, categoria Favoritos em Ao vivo, segurar OK no canal)
 - Recomendações do TMDB (em alta, populares, em cartaz) só com o que existe na sua lista, com backdrop, sinopse em português, gêneros, nota e trailer no YouTube; cache local para funcionar offline
 - Arte para jogos de futebol sem imagem: "Time A × Time B" com escudos. As imagens dos escudos são carregadas da internet, de uma base pública de dados esportivos (TheSportsDB), e pertencem aos respectivos clubes; o PrimeTV não as fornece nem as distribui, só exibe. Sem conexão ou sem escudo conhecido, entra um escudo estilizado com a sigla do time
+- Canais e filmes repetidos em várias qualidades aparecem uma vez só, na melhor (4K/FHD/HD/SD), com troca automática se a melhor falhar
+- Margem de segurança ajustável para TVs que cortam as bordas (overscan)
 - Tudo navegável só com o D-pad, foco visível e interface escalada para qualquer resolução
 
 - Configurações: lista, intervalo de atualização por seção, palavras-chave de futebol, decodificador e buffer do player, idioma

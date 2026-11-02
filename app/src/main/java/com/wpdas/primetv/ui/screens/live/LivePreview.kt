@@ -19,8 +19,9 @@ import com.wpdas.primetv.data.player.PlayerFactory
  */
 @OptIn(UnstableApi::class)
 @Composable
-fun LivePreview(url: String?, playerFactory: PlayerFactory, modifier: Modifier = Modifier) {
-    val player = remember { playerFactory.create().apply { volume = 0f } }
+fun LivePreview(url: String?, playerFactory: PlayerFactory, modifier: Modifier = Modifier, withSound: Boolean = false) {
+    val player = remember { playerFactory.create() }
+    LaunchedEffect(withSound) { player.volume = if (withSound) 1f else 0f }
     DisposableEffect(Unit) { onDispose { player.release() } }
     LaunchedEffect(url) {
         if (url == null) {

@@ -16,4 +16,6 @@ interface SettingsRepository {
     suspend fun setPreferSoftwareDecoder(enabled: Boolean)
     suspend fun setBufferProfile(profile: BufferProfile)
     suspend fun setLanguage(language: String)
+    suspend fun setOverscanPercent(percent: Int)
+    suspend fun setPreviewSound(enabled: Boolean)
 }

@@ -1,6 +1,7 @@
 package com.wpdas.primetv.data.sync
 
 import androidx.room.withTransaction
+import com.wpdas.primetv.core.util.Quality
 import com.wpdas.primetv.core.util.TextNormalizer
 import com.wpdas.primetv.data.local.db.CategoryEntity
 import com.wpdas.primetv.data.local.db.ChannelEntity
@@ -83,6 +84,8 @@ class XtreamImporter @Inject constructor(
                             isAdult = dto.isAdult.toBoolLenient(),
                             isFootball = football.matches(name, catId?.let(names::get)),
                             searchKey = TextNormalizer.searchKey(name),
+                            groupKey = Quality.groupKey(name),
+                            qualityRank = Quality.rank(name),
                         ),
                     )
                 }
@@ -128,6 +131,7 @@ class XtreamImporter @Inject constructor(
                             isAdult = dto.isAdult.toBoolLenient(),
                             isFootball = football.matches(name, catId?.let(names::get)),
                             normalizedTitle = TextNormalizer.normalize(name),
+                            qualityRank = Quality.rank(name),
                         ),
                     )
                 }

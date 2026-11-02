@@ -341,6 +341,18 @@ private fun PlayerPane(state: SettingsUiState, viewModel: SettingsViewModel) {
         onClick = viewModel::cycleBuffer,
     )
     Text(t("settings.player_restart_hint"), style = PrimeTheme.typography.caption, color = PrimeTheme.colors.textSecondary)
+    SettingRow(
+        title = t("settings.overscan"),
+        subtitle = t("settings.overscan_hint"),
+        value = if (state.settings.overscanPercent == 0) t("settings.overscan_off") else "${state.settings.overscanPercent}%",
+        onClick = viewModel::cycleOverscan,
+    )
+    SettingRow(
+        title = t("settings.preview_sound"),
+        subtitle = t("settings.preview_sound_hint"),
+        value = t(if (state.settings.previewSound) "settings.on" else "settings.off"),
+        onClick = viewModel::togglePreviewSound,
+    )
 }
 
 @Composable

@@ -48,6 +48,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
@@ -79,6 +80,7 @@ import com.wpdas.primetv.domain.model.Episode
 import com.wpdas.primetv.ui.components.Artwork
 import com.wpdas.primetv.ui.components.EpisodeRow
 import com.wpdas.primetv.ui.components.LiveBadge
+import com.wpdas.primetv.ui.components.tryRequestFocus
 import com.wpdas.primetv.ui.components.LoadingSpinner
 import com.wpdas.primetv.ui.components.PrimeButton
 import com.wpdas.primetv.ui.components.PrimeButtonStyle
@@ -124,16 +126,22 @@ fun PlayerScreen(
     BackHandler {
         when {
             state.panel != PlayerPanel.NONE -> viewModel.closePanel()
+            state.liveMenu -> viewModel.closeLiveMenu()
             state.controlsVisible && !state.hasError && !state.isBuffering -> viewModel.hideControls()
             else -> onBack()
         }
     }
 
     // Foco: controles visíveis -> botão play/pause; escondidos -> a própria tela recebe as teclas.
-    LaunchedEffect(state.controlsVisible, state.panel, state.loaded) {
+    LaunchedEffect(state.controlsVisible, state.panel, state.loaded, state.isLive, state.liveMenu) {
         if (!state.loaded) return@LaunchedEffect
         if (state.panel != PlayerPanel.NONE) return@LaunchedEffect
-        if (state.controlsVisible) runCatching { playPauseFocus.requestFocus() } else runCatching { rootFocus.requestFocus() }
+        when {
+            state.isLive && !state.liveMenu -> runCatching { rootFocus.requestFocus() }
+            state.isLive && state.liveMenu -> runCatching { playPauseFocus.requestFocus() } // primeiro botão do menu
+            state.controlsVisible -> runCatching { playPauseFocus.requestFocus() }
+            else -> runCatching { rootFocus.requestFocus() }
+        }
     }
 
     Box(
@@ -142,7 +150,7 @@ fun PlayerScreen(
             .background(Color.Black)
             .focusRequester(rootFocus)
             .focusable()
-            .onPreviewKeyEvent { event -> handleKey(event.type == KeyEventType.KeyDown, event.key, state, viewModel) },
+            .onPreviewKeyEvent { event -> handleKey(event, state, viewModel) },
     ) {
         AndroidView(
             factory = { ctx ->
@@ -172,6 +180,24 @@ fun PlayerScreen(
             }
         }
 
+        state.channelInput?.let { input ->
+            Text(
+                "${'$'}input\u2009_",
+                style = PrimeTheme.typography.heroTitle,
+                color = colors.text,
+                modifier = Modifier.align(Alignment.TopEnd).padding(top = 90.dp, end = PrimeDimens.screenMargin)
+                    .background(colors.background.copy(alpha = 0.8f), PrimeTheme.shapes.card).padding(horizontal = 20.dp, vertical = 8.dp),
+            )
+        }
+        state.toastKey?.let { key ->
+            Text(
+                t(key, "value" to (state.toastArg ?: "")),
+                style = PrimeTheme.typography.body,
+                color = colors.text,
+                modifier = Modifier.align(Alignment.BottomStart).padding(start = PrimeDimens.screenMargin, bottom = 170.dp)
+                    .background(colors.surface2, PrimeTheme.shapes.card).padding(horizontal = 14.dp, vertical = 10.dp),
+            )
+        }
         val countdown = state.nextCountdown
         val next = state.nextEpisode
         if (countdown != null && next != null && !state.hasError) {
@@ -186,6 +212,7 @@ fun PlayerScreen(
                 offSelected = false,
                 onSelect = { viewModel.selectAudio(it) },
                 onOff = null,
+                onClose = viewModel::closePanel,
                 modifier = Modifier.align(Alignment.CenterEnd),
             )
             PlayerPanel.SUBTITLES -> TrackPanel(
@@ -195,6 +222,7 @@ fun PlayerScreen(
                 offSelected = state.subtitlesOff,
                 onSelect = { viewModel.selectSubtitle(it) },
                 onOff = { viewModel.selectSubtitle(null) },
+                onClose = viewModel::closePanel,
                 modifier = Modifier.align(Alignment.CenterEnd),
             )
             PlayerPanel.EPISODES -> EpisodesPanel(state = state, onPlay = viewModel::playEpisode, modifier = Modifier.align(Alignment.CenterEnd))
@@ -203,19 +231,44 @@ fun PlayerScreen(
     }
 }
 
-/** Teclas com os controles escondidos: OK mostra, esquerda/direita pulam 10 s, cima/baixo trocam canal. */
-private fun handleKey(isDown: Boolean, key: Key, state: PlayerUiState, vm: PlayerViewModel): Boolean {
-    if (!isDown) return false
+/**
+ * Teclas no player.
+ * - Ao vivo: cima/baixo sempre trocam de canal, OK pausa/retoma e mostra a barra, números
+ *   escolhem o canal, esquerda/direita abrem a linha de opções (Áudio/Legendas).
+ * - Filmes/séries com controles escondidos: OK mostra, esquerda/direita pulam 10 s (segurar acelera).
+ */
+private fun handleKey(event: androidx.compose.ui.input.key.KeyEvent, state: PlayerUiState, vm: PlayerViewModel): Boolean {
+    if (event.type != KeyEventType.KeyDown) return false
+    val key = event.key
+    val repeat = event.nativeKeyEvent.repeatCount
     // Teclas de mídia valem sempre.
     when (key) {
         Key.MediaPlayPause, Key.MediaPlay, Key.MediaPause -> { vm.togglePlayPause(); return true }
-        Key.MediaFastForward -> { vm.seekBy(PlayerFactory.SEEK_STEP_MS); return true }
-        Key.MediaRewind -> { vm.seekBy(-PlayerFactory.SEEK_STEP_MS); return true }
+        Key.MediaFastForward -> { vm.seekBy(vm.seekStep(repeat)); return true }
+        Key.MediaRewind -> { vm.seekBy(-vm.seekStep(repeat)); return true }
         Key.MediaNext, Key.ChannelUp -> { if (state.isLive) vm.stepChannel(+1) else vm.playNextEpisode(); return true }
         Key.MediaPrevious, Key.ChannelDown -> { if (state.isLive) vm.stepChannel(-1); return true }
         else -> Unit
     }
     if (state.panel != PlayerPanel.NONE || state.hasError) return false
+    if (state.isLive) {
+        digitOf(key)?.let { vm.onDigit(it); return true }
+        if (state.channelInput != null && (key == Key.DirectionCenter || key == Key.Enter || key == Key.NumPadEnter)) {
+            vm.commitChannelInput(); return true
+        }
+        when (key) {
+            Key.DirectionUp -> { if (repeat == 0) vm.stepChannel(-1); return true }
+            Key.DirectionDown -> { if (repeat == 0) vm.stepChannel(+1); return true }
+            else -> Unit
+        }
+        if (state.liveMenu) return false // foco navega entre Áudio/Legendas
+        return when (key) {
+            Key.DirectionCenter, Key.Enter, Key.NumPadEnter -> { vm.togglePlayPause(); true }
+            Key.DirectionLeft, Key.DirectionRight -> { vm.openLiveMenu(); true }
+            Key.Back, Key.Escape -> false
+            else -> { vm.showControls(); true }
+        }
+    }
     if (state.controlsVisible) {
         // Controles visíveis: o foco navega entre os botões; só reinicia o relógio de ocultar.
         vm.showControls()
@@ -223,13 +276,26 @@ private fun handleKey(isDown: Boolean, key: Key, state: PlayerUiState, vm: Playe
     }
     return when (key) {
         Key.DirectionCenter, Key.Enter, Key.NumPadEnter -> { vm.showControls(); true }
-        Key.DirectionLeft -> { if (state.isLive) vm.showControls() else vm.seekBy(-PlayerFactory.SEEK_STEP_MS); true }
-        Key.DirectionRight -> { if (state.isLive) vm.showControls() else vm.seekBy(PlayerFactory.SEEK_STEP_MS); true }
-        Key.DirectionUp -> { if (state.isLive) vm.stepChannel(-1) else vm.showControls(); true }
-        Key.DirectionDown -> { if (state.isLive) vm.stepChannel(+1) else vm.showControls(); true }
+        Key.DirectionLeft -> { vm.seekBy(-vm.seekStep(repeat)); true }
+        Key.DirectionRight -> { vm.seekBy(vm.seekStep(repeat)); true }
+        Key.DirectionUp, Key.DirectionDown -> { vm.showControls(); true }
         Key.Back, Key.Escape -> false
         else -> { vm.showControls(); true }
     }
+}
+
+private fun digitOf(key: Key): Int? = when (key) {
+    Key.Zero, Key.NumPad0 -> 0
+    Key.One, Key.NumPad1 -> 1
+    Key.Two, Key.NumPad2 -> 2
+    Key.Three, Key.NumPad3 -> 3
+    Key.Four, Key.NumPad4 -> 4
+    Key.Five, Key.NumPad5 -> 5
+    Key.Six, Key.NumPad6 -> 6
+    Key.Seven, Key.NumPad7 -> 7
+    Key.Eight, Key.NumPad8 -> 8
+    Key.Nine, Key.NumPad9 -> 9
+    else -> null
 }
 
 @Composable
@@ -273,6 +339,7 @@ private fun TopOverlay(state: PlayerUiState, onBack: () -> Unit) {
 private fun BottomControls(state: PlayerUiState, viewModel: PlayerViewModel, playPauseFocus: FocusRequester, modifier: Modifier = Modifier) {
     val colors = PrimeTheme.colors
     val typography = PrimeTheme.typography
+    val seekFocus = remember { FocusRequester() }
     Column(
         modifier
             .fillMaxWidth()
@@ -281,13 +348,7 @@ private fun BottomControls(state: PlayerUiState, viewModel: PlayerViewModel, pla
             .focusGroup(),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        if (!state.isLive) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text(formatTime(state.positionMs), style = typography.cardBody, color = colors.textBody)
-                SeekBar(progress = state.progress, buffered = state.buffered, modifier = Modifier.weight(1f))
-                Text(formatTime(state.durationMs), style = typography.cardBody, color = colors.textBody)
-            }
-        } else {
+        if (state.isLive) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 state.nowProgram?.let { program ->
                     Text(
@@ -295,13 +356,49 @@ private fun BottomControls(state: PlayerUiState, viewModel: PlayerViewModel, pla
                         style = typography.caption, color = colors.textSecondary,
                     )
                     SeekBar(progress = program.progressAt(System.currentTimeMillis()), buffered = 0f, modifier = Modifier.weight(1f), showThumb = false)
-                } ?: Text(t("player.live_hint"), style = typography.caption, color = colors.textSecondary)
+                } ?: Text(t("player.live_hint"), style = typography.caption, color = colors.textSecondary, modifier = Modifier.weight(1f))
             }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Icon(
+                    if (state.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                    contentDescription = null, tint = colors.text, modifier = Modifier.size(28.dp),
+                )
+                Text(t(if (state.isPlaying) "player.live_keys" else "player.live_paused"), style = typography.cardBody, color = colors.textBody, modifier = Modifier.weight(1f))
+                if (state.liveMenu) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OptionButton(t("player.audio"), modifier = Modifier.focusRequester(playPauseFocus)) { viewModel.openPanel(PlayerPanel.AUDIO) }
+                        OptionButton(t("player.subtitles")) { viewModel.openPanel(PlayerPanel.SUBTITLES) }
+                    }
+                } else {
+                    Text(t("player.live_menu_hint"), style = typography.caption, color = colors.textSecondary)
+                }
+            }
+            return@Column
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Text(formatTime(state.positionMs), style = typography.cardBody, color = colors.textBody)
+            SeekBar(
+                progress = state.progress,
+                buffered = state.buffered,
+                modifier = Modifier
+                    .weight(1f)
+                    .focusRequester(seekFocus)
+                    .onPreviewKeyEvent { event ->
+                        if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                        val repeat = event.nativeKeyEvent.repeatCount
+                        when (event.key) {
+                            Key.DirectionLeft -> { viewModel.seekBy(-viewModel.seekStep(repeat)); true }
+                            Key.DirectionRight -> { viewModel.seekBy(viewModel.seekStep(repeat)); true }
+                            Key.DirectionCenter, Key.Enter, Key.NumPadEnter -> { viewModel.togglePlayPause(); true }
+                            else -> false
+                        }
+                    },
+                focusable = true,
+            )
+            Text(formatTime(state.durationMs), style = typography.cardBody, color = colors.textBody)
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (!state.isLive) {
-                RoundButton(icon = Icons.Rounded.Replay10, description = "-10", onClick = { viewModel.seekBy(-PlayerFactory.SEEK_STEP_MS) }, size = 52.dp)
-            }
+            RoundButton(icon = Icons.Rounded.Replay10, description = "-10", onClick = { viewModel.seekBy(-PlayerFactory.SEEK_STEP_MS) }, size = 52.dp)
             RoundButton(
                 icon = if (state.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                 description = if (state.isPlaying) "pause" else "play",
@@ -310,13 +407,12 @@ private fun BottomControls(state: PlayerUiState, viewModel: PlayerViewModel, pla
                 primary = true,
                 modifier = Modifier.focusRequester(playPauseFocus),
             )
-            if (!state.isLive) {
-                RoundButton(icon = Icons.Rounded.Forward10, description = "+10", onClick = { viewModel.seekBy(PlayerFactory.SEEK_STEP_MS) }, size = 52.dp)
-            }
+            RoundButton(icon = Icons.Rounded.Forward10, description = "+10", onClick = { viewModel.seekBy(PlayerFactory.SEEK_STEP_MS) }, size = 52.dp)
+            Text(t("player.seek_hint"), style = typography.caption, color = colors.textSecondary, modifier = Modifier.padding(start = 8.dp))
             Spacer(Modifier.weight(1f))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (state.audioTracks.size > 1) OptionButton(t("player.audio")) { viewModel.openPanel(PlayerPanel.AUDIO) }
-                if (state.subtitleTracks.isNotEmpty()) OptionButton(t("player.subtitles")) { viewModel.openPanel(PlayerPanel.SUBTITLES) }
+                OptionButton(t("player.audio")) { viewModel.openPanel(PlayerPanel.AUDIO) }
+                OptionButton(t("player.subtitles")) { viewModel.openPanel(PlayerPanel.SUBTITLES) }
                 if (state.episodes.isNotEmpty()) OptionButton(t("player.episodes")) { viewModel.openPanel(PlayerPanel.EPISODES) }
                 if (state.nextEpisode != null) OptionButton(t("player.next_episode")) { viewModel.playNextEpisode() }
             }
@@ -325,9 +421,18 @@ private fun BottomControls(state: PlayerUiState, viewModel: PlayerViewModel, pla
 }
 
 @Composable
-private fun SeekBar(progress: Float, buffered: Float, modifier: Modifier = Modifier, showThumb: Boolean = true) {
+private fun SeekBar(progress: Float, buffered: Float, modifier: Modifier = Modifier, showThumb: Boolean = true, focusable: Boolean = false) {
     val colors = PrimeTheme.colors
-    Box(modifier.height(18.dp), contentAlignment = Alignment.CenterStart) {
+    var focused by remember { androidx.compose.runtime.mutableStateOf(false) }
+    val base = if (focusable) {
+        modifier
+            .onFocusChanged { focused = it.isFocused }
+            .focusable()
+            .height(26.dp)
+            .then(if (focused) Modifier.border(3.dp, colors.accent, RoundedCornerShape(13.dp)) else Modifier)
+            .padding(horizontal = 6.dp)
+    } else modifier.height(18.dp)
+    Box(base, contentAlignment = Alignment.CenterStart) {
         Box(Modifier.fillMaxWidth().height(6.dp).background(colors.divider, RoundedCornerShape(3.dp)))
         Box(Modifier.fillMaxWidth(buffered.coerceIn(0f, 1f)).height(6.dp).background(colors.dotInactive, RoundedCornerShape(3.dp)))
         Box(Modifier.fillMaxWidth(progress.coerceIn(0f, 1f)).height(6.dp).background(colors.accent, RoundedCornerShape(3.dp)))
@@ -367,7 +472,7 @@ private fun RoundButton(icon: androidx.compose.ui.graphics.vector.ImageVector, d
 }
 
 @Composable
-private fun OptionButton(label: String, onClick: () -> Unit) {
+private fun OptionButton(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     PrimeButton(
         text = label,
         onClick = onClick,
@@ -375,6 +480,7 @@ private fun OptionButton(label: String, onClick: () -> Unit) {
         height = 44.dp,
         horizontalPadding = 16.dp,
         textStyle = PrimeTheme.typography.buttonSmall,
+        modifier = modifier,
     )
 }
 
@@ -419,16 +525,24 @@ private fun TrackPanel(
     offSelected: Boolean,
     onSelect: (TrackOption) -> Unit,
     onOff: (() -> Unit)?,
+    onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = PrimeTheme.colors
     val first = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { first.requestFocus() } }
+    RequestFocusWhenReady(first)
     Column(
         modifier.width(360.dp).fillMaxHeight().background(colors.surface.copy(alpha = 0.97f)).padding(24.dp).focusGroup(),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Text(title, style = PrimeTheme.typography.subtitle, color = colors.text, modifier = Modifier.padding(bottom = 10.dp))
+        if (options.isEmpty() && offLabel == null) {
+            Text(t("player.single_audio"), style = PrimeTheme.typography.body, color = colors.textSecondary)
+            PrimeButton(text = t("common.close"), onClick = onClose, style = PrimeButtonStyle.Secondary, height = 44.dp, horizontalPadding = 18.dp, textStyle = PrimeTheme.typography.buttonSmall, modifier = Modifier.focusRequester(first).padding(top = 8.dp))
+        }
+        if (options.isEmpty() && offLabel != null) {
+            Text(t("player.no_subtitles"), style = PrimeTheme.typography.body, color = colors.textSecondary, modifier = Modifier.padding(bottom = 8.dp))
+        }
         if (offLabel != null && onOff != null) {
             PanelRow(label = offLabel, selected = offSelected, onClick = onOff, modifier = Modifier.focusRequester(first))
         }
@@ -476,13 +590,22 @@ private fun EpisodesPanel(state: PlayerUiState, onPlay: (Episode) -> Unit, modif
     val season = current?.season ?: state.episodes.firstOrNull()?.season ?: 1
     val episodes = state.episodes.filter { it.season == season }
     val first = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { first.requestFocus() } }
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val currentIndex = episodes.indexOfFirst { it.id == current?.id }.coerceAtLeast(0)
+    // O item precisa estar composto para receber foco: rola até ele e tenta por alguns quadros.
+    LaunchedEffect(Unit) {
+        listState.scrollToItem(currentIndex)
+        repeat(10) {
+            kotlinx.coroutines.delay(50)
+            if (first.tryRequestFocus()) return@LaunchedEffect
+        }
+    }
     Column(
         modifier.width(560.dp).fillMaxHeight().background(colors.surface.copy(alpha = 0.97f)).padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Text(t("player.episodes_title", "n" to season), style = PrimeTheme.typography.subtitle, color = colors.text, modifier = Modifier.padding(bottom = 6.dp))
-        LazyColumn(Modifier.fillMaxSize().focusRestorer().focusGroup(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        LazyColumn(Modifier.fillMaxSize().focusRestorer().focusGroup(), state = listState, verticalArrangement = Arrangement.spacedBy(8.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 6.dp)) {
             items(episodes, key = { it.id }) { episode ->
                 EpisodeRow(
                     episode = episode,
@@ -491,6 +614,17 @@ private fun EpisodesPanel(state: PlayerUiState, onPlay: (Episode) -> Unit, modif
                     modifier = if (episode.id == (current?.id ?: episodes.firstOrNull()?.id)) Modifier.focusRequester(first) else Modifier,
                 )
             }
+        }
+    }
+}
+
+/** Pede foco assim que o alvo estiver anexado (painéis que acabaram de aparecer). */
+@Composable
+private fun RequestFocusWhenReady(requester: FocusRequester) {
+    LaunchedEffect(Unit) {
+        repeat(10) {
+            kotlinx.coroutines.delay(40)
+            if (requester.tryRequestFocus()) return@LaunchedEffect
         }
     }
 }

@@ -35,7 +35,8 @@ data class Match(val home: String, val away: String)
  */
 object MatchArtist {
     private val VERSUS = Regex("""^(.*?[\p{L}\d].*?)\s+(?:x|vs\.?|×|v)\s+(.*?[\p{L}\d].*?)$""", RegexOption.IGNORE_CASE)
-    private val NOISE = Regex("""(?i)^(dia\s+\d{1,2}/\d{1,2}\s*[-–:]\s*|\d{1,2}(?::|h)\d{2}\s*[-–:]\s*|jogo\s*\d*\s*[-–:]\s*)""")
+    /** Prefixos que não são time: "VT - ", "AO VIVO: ", "Dia 04/11 - ", "18:30 - ", "Jogo 2 - ". */
+    private val NOISE = Regex("""(?i)^(?:(?:vt|ao vivo|reprise|replay|compacto|melhores momentos|jogo\s*\d*|dia\s+\d{1,2}/\d{1,2}|\d{1,2}(?::|h)\d{2})\s*[-–:|]?\s*)+""")
     /** Corta o que vem depois de " - ", " | " ou " (": "Atlético-MG (Premiere)" -> "Atlético-MG". */
     private val TRAILING = Regex("""\s+[-–|]\s.*$|\s*\(.*$""")
 

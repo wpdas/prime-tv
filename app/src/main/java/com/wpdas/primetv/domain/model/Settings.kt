@@ -35,6 +35,12 @@ data class AppSettings(
     val preferSoftwareDecoder: Boolean = false,
     val bufferProfile: BufferProfile = BufferProfile.NORMAL,
     val language: String = "pt-BR",
+    /** Margem de segurança (overscan) em % de cada borda: TVs que cortam as bordas da imagem. */
+    val overscanPercent: Int = 0,
+    val previewSound: Boolean = false,
 ) {
+    companion object {
+        val OVERSCAN_OPTIONS = listOf(0, 2, 4, 6)
+    }
     fun interval(section: ContentSection): SyncInterval = syncIntervals[section] ?: SyncInterval.defaultFor(section)
 }

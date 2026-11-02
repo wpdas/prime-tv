@@ -104,6 +104,16 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settingsRepository.setBufferProfile(_state.value.settings.bufferProfile.next()) }
     }
 
+    fun cycleOverscan() {
+        val options = AppSettings.OVERSCAN_OPTIONS
+        val next = options[(options.indexOf(_state.value.settings.overscanPercent).coerceAtLeast(0) + 1) % options.size]
+        viewModelScope.launch { settingsRepository.setOverscanPercent(next) }
+    }
+
+    fun togglePreviewSound() {
+        viewModelScope.launch { settingsRepository.setPreviewSound(!_state.value.settings.previewSound) }
+    }
+
     fun selectLanguage(language: String) {
         viewModelScope.launch {
             settingsRepository.setLanguage(language)

@@ -38,6 +38,7 @@ fun ChannelRow(
     modifier: Modifier = Modifier,
     onLongClick: (() -> Unit)? = null,
     onFocused: (() -> Unit)? = null,
+    qualityLabel: String? = null,
 ) {
     val colors = PrimeTheme.colors
     val shape = PrimeTheme.shapes.card
@@ -71,8 +72,13 @@ fun ChannelRow(
                 }
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                    Text(name, style = PrimeTheme.typography.bodyStrong, color = colors.text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.weight(1f, fill = false), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(name, style = PrimeTheme.typography.bodyStrong, color = colors.text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                        if (qualityLabel != null) {
+                            Text(qualityLabel, style = PrimeTheme.typography.badge, color = colors.textBody, modifier = Modifier.background(colors.surface2, PrimeTheme.shapes.small).padding(horizontal = 5.dp, vertical = 2.dp))
+                        }
+                    }
                     if (timeRange != null) Text(timeRange, style = PrimeTheme.typography.caption, color = colors.textSecondary, maxLines = 1, modifier = Modifier.padding(start = 12.dp))
                 }
                 if (nowTitle != null) {

@@ -37,6 +37,15 @@ data class PlayerUiState(
     val nowProgram: EpgProgram? = null,
     /** Sinaliza à tela que a reprodução terminou e ela deve fechar. */
     val finished: Boolean = false,
+    /** Ao vivo: dígitos sendo digitados para pular de canal ("12_"). */
+    val channelInput: String? = null,
+    /** Ao vivo: linha de opções (Áudio/Legendas) aberta com esquerda/direita. */
+    val liveMenu: Boolean = false,
+    /** Ao vivo: qualidade da variante em uso ("4K", "FHD"), se o nome informar. */
+    val qualityLabel: String? = null,
+    /** Aviso curto (ex.: "Trocando para HD"). */
+    val toastKey: String? = null,
+    val toastArg: String? = null,
 ) {
     val progress: Float get() = if (durationMs <= 0) 0f else (positionMs.toFloat() / durationMs).coerceIn(0f, 1f)
     val buffered: Float get() = if (durationMs <= 0) 0f else (bufferedMs.toFloat() / durationMs).coerceIn(0f, 1f)

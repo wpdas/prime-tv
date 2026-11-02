@@ -41,6 +41,8 @@ class SettingsStore @Inject constructor(
                 preferSoftwareDecoder = prefs[KEY_SOFTWARE_DECODER] ?: false,
                 bufferProfile = prefs[KEY_BUFFER]?.let { v -> BufferProfile.entries.firstOrNull { it.name == v } } ?: BufferProfile.NORMAL,
                 language = prefs[KEY_LANGUAGE] ?: "pt-BR",
+                overscanPercent = prefs[KEY_OVERSCAN] ?: 0,
+                previewSound = prefs[KEY_PREVIEW_SOUND] ?: false,
             )
         }
         // Primeiro valor lido de forma síncrona: arquivo minúsculo, evita "piscar" com padrões errados.
@@ -57,6 +59,8 @@ class SettingsStore @Inject constructor(
             preferSoftwareDecoder = prefs[KEY_SOFTWARE_DECODER] ?: false,
             bufferProfile = prefs[KEY_BUFFER]?.let { v -> BufferProfile.entries.firstOrNull { it.name == v } } ?: BufferProfile.NORMAL,
             language = prefs[KEY_LANGUAGE] ?: "pt-BR",
+            overscanPercent = prefs[KEY_OVERSCAN] ?: 0,
+            previewSound = prefs[KEY_PREVIEW_SOUND] ?: false,
         )
     }.getOrDefault(AppSettings(footballKeywords = FootballClassifier.DEFAULT_KEYWORDS))
 
@@ -84,6 +88,14 @@ class SettingsStore @Inject constructor(
         store.edit { it[KEY_LANGUAGE] = language }
     }
 
+    override suspend fun setOverscanPercent(percent: Int) {
+        store.edit { it[KEY_OVERSCAN] = percent.coerceIn(0, 10) }
+    }
+
+    override suspend fun setPreviewSound(enabled: Boolean) {
+        store.edit { it[KEY_PREVIEW_SOUND] = enabled }
+    }
+
     private companion object {
         fun intervalKey(section: ContentSection) = stringPreferencesKey("sync_interval_${section.name.lowercase()}")
         val KEY_UNMETERED = booleanPreferencesKey("sync_unmetered_only")
@@ -91,5 +103,7 @@ class SettingsStore @Inject constructor(
         val KEY_SOFTWARE_DECODER = booleanPreferencesKey("player_software_decoder")
         val KEY_BUFFER = stringPreferencesKey("player_buffer")
         val KEY_LANGUAGE = stringPreferencesKey("language")
+        val KEY_OVERSCAN = androidx.datastore.preferences.core.intPreferencesKey("overscan_percent")
+        val KEY_PREVIEW_SOUND = booleanPreferencesKey("preview_sound")
     }
 }

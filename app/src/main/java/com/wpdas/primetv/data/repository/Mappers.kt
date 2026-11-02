@@ -27,6 +27,7 @@ internal fun CategoryEntity.toDomain() = Category(
 internal fun ChannelEntity.toDomain() = Channel(
     id = id, name = name, number = number, logoUrl = logoUrl, categoryId = categoryId, categoryName = categoryName,
     streamUrl = streamUrl, epgChannelId = epgChannelId, epgKey = epgKey, isAdult = isAdult, isFootball = isFootball,
+    groupKey = groupKey, qualityRank = qualityRank,
 )
 
 internal fun MovieEntity.toDomain() = Movie(
@@ -66,6 +67,6 @@ fun Series.toMediaItem(inMyList: Boolean = false) = MediaItem(
 )
 
 fun Channel.toMediaItem(inMyList: Boolean = false) = MediaItem(
-    id = id, title = name, type = MediaType.CHANNEL, posterUrl = logoUrl, backdropUrl = null,
+    id = id, title = displayName, type = MediaType.CHANNEL, posterUrl = logoUrl, backdropUrl = null,
     placeholderColor = placeholderFor(id), genres = listOfNotNull(categoryName), inMyList = inMyList,
 )

@@ -12,6 +12,7 @@ import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import com.wpdas.primetv.domain.model.BufferProfile
 import com.wpdas.primetv.domain.repository.SettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -49,7 +50,15 @@ class PlayerFactory @Inject constructor(
             .setBufferDurationsMs(buffer.minBufferMs, buffer.maxBufferMs, buffer.playbackMs, buffer.rebufferMs)
             .setPrioritizeTimeOverSizeThresholds(true)
             .build()
+        // Streams adaptativos (HLS com várias qualidades): sempre a maior que o aparelho suporta.
+        val trackSelector = DefaultTrackSelector(context).apply {
+            parameters = buildUponParameters()
+                .setForceHighestSupportedBitrate(true)
+                .setPreferredAudioLanguages("pt", "por", "pt-BR")
+                .build()
+        }
         return ExoPlayer.Builder(context, renderers)
+            .setTrackSelector(trackSelector)
             .setMediaSourceFactory(DefaultMediaSourceFactory(dataSourceFactory))
             .setLoadControl(loadControl)
             .setSeekBackIncrementMs(SEEK_STEP_MS)

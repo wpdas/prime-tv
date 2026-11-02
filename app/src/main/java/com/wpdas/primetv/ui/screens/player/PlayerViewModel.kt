@@ -58,7 +58,7 @@ class PlayerViewModel @Inject constructor(
     private sealed interface Content {
         data class Movie(val movie: com.wpdas.primetv.domain.model.Movie) : Content
         data class SeriesEpisode(val seriesId: String, val episodes: List<Episode>, val episode: Episode) : Content
-        data class Live(val channel: Channel, val zapList: List<Channel>) : Content
+        data class Live(val channel: Channel, val zapList: List<Channel>, val variants: List<Channel> = emptyList()) : Content
     }
 
     private var content: Content? = null
@@ -84,8 +84,8 @@ class PlayerViewModel @Inject constructor(
         }
 
         override fun onPlayerError(error: PlaybackException) {
-            val live = content is Content.Live
-            if (live && !retriedLive) {
+            val live = content as? Content.Live
+            if (live != null && !retriedLive) {
                 // Servidores com limite de conexões recusam por alguns segundos após a prévia; tenta mais uma vez.
                 retriedLive = true
                 viewModelScope.launch {
@@ -95,10 +95,21 @@ class PlayerViewModel @Inject constructor(
                 }
                 return
             }
+            // Variante de qualidade mais baixa do mesmo canal, se houver (UHD -> FHD -> HD -> SD).
+            if (live != null) {
+                val next = live.variants.firstOrNull { it.qualityRank > live.channel.qualityRank }
+                if (next != null) {
+                    viewModelScope.launch {
+                        showToast("player.switching_quality", next.qualityLabel ?: "")
+                        tuneChannel(next, keepVariants = true)
+                    }
+                    return
+                }
+            }
             _state.update {
                 it.copy(
                     isBuffering = false,
-                    errorKey = if (live) "player.error_live" else "player.error",
+                    errorKey = if (live != null) "player.error_live" else "player.error",
                     errorDetail = error.errorCodeName.removePrefix("ERROR_CODE_").lowercase().replace('_', ' '),
                     controlsVisible = true,
                 )
@@ -175,9 +186,10 @@ class PlayerViewModel @Inject constructor(
         tuneChannel(channel)
     }
 
-    private suspend fun tuneChannel(channel: Channel) {
+    private suspend fun tuneChannel(channel: Channel, keepVariants: Boolean = false) {
         val live = content as? Content.Live ?: return
-        content = live.copy(channel = channel)
+        val variants = if (keepVariants) live.variants else runCatching { catalog.channelVariants(channel.groupKey) }.getOrDefault(emptyList())
+        content = live.copy(channel = channel, variants = variants)
         retriedLive = false
         library.recordChannel(channel.id)
         val now = runCatching { catalog.nowPlaying(ChannelFilter.Category(channel.categoryId ?: ""), System.currentTimeMillis()) }.getOrDefault(emptyMap())
@@ -191,9 +203,59 @@ class PlayerViewModel @Inject constructor(
                 nowProgram = channel.epgKey?.let(now::get),
                 durationMs = 0,
                 positionMs = 0,
+                qualityLabel = channel.qualityLabel,
+                liveMenu = false,
             )
         }
         start(channel.streamUrl, 0L)
+    }
+
+    private fun showToast(key: String, arg: String? = null) {
+        _state.update { it.copy(toastKey = key, toastArg = arg) }
+        viewModelScope.launch {
+            delay(TOAST_MS)
+            _state.update { if (it.toastKey == key) it.copy(toastKey = null, toastArg = null) else it }
+        }
+    }
+
+    // ------------------------------------------------------------------ ao vivo: números e menu
+
+    private var digitJob: Job? = null
+
+    /** Dígito do controle: acumula até 4 números e, após uma pausa, sintoniza o canal com esse número. */
+    fun onDigit(digit: Int) {
+        if (!_state.value.isLive) return
+        val current = (_state.value.channelInput ?: "").takeIf { it.length < 4 } ?: ""
+        val input = current + digit
+        _state.update { it.copy(channelInput = input) }
+        digitJob?.cancel()
+        digitJob = viewModelScope.launch {
+            delay(DIGIT_COMMIT_MS)
+            commitChannelInput()
+        }
+    }
+
+    fun commitChannelInput() {
+        digitJob?.cancel()
+        val number = _state.value.channelInput?.toIntOrNull()
+        _state.update { it.copy(channelInput = null) }
+        if (number == null) return
+        viewModelScope.launch {
+            val live = content as? Content.Live ?: return@launch
+            val target = live.zapList.firstOrNull { it.number == number }
+                ?: catalog.channelsOnce(ChannelFilter.All).firstOrNull { it.number == number }
+            if (target == null) showToast("player.channel_not_found", number.toString()) else tuneChannel(target)
+        }
+    }
+
+    fun openLiveMenu() {
+        cancelHide()
+        _state.update { it.copy(liveMenu = true, controlsVisible = true) }
+    }
+
+    fun closeLiveMenu() {
+        _state.update { it.copy(liveMenu = false) }
+        showControls()
     }
 
     private fun start(url: String, positionMs: Long) {
@@ -279,7 +341,7 @@ class PlayerViewModel @Inject constructor(
         hideJob = viewModelScope.launch {
             delay(CONTROLS_TIMEOUT_MS)
             val s = _state.value
-            if (s.isPlaying && s.panel == PlayerPanel.NONE && !s.hasError) _state.update { it.copy(controlsVisible = false) }
+            if (s.isPlaying && s.panel == PlayerPanel.NONE && !s.hasError && !s.liveMenu) _state.update { it.copy(controlsVisible = false) }
         }
     }
 
@@ -297,7 +359,19 @@ class PlayerViewModel @Inject constructor(
         if (_state.value.isLive) return
         val target = (player.currentPosition + deltaMs).coerceIn(0, player.duration.takeIf { it != C.TIME_UNSET } ?: Long.MAX_VALUE)
         player.seekTo(target)
+        _state.update { it.copy(positionMs = target) }
         showControls()
+    }
+
+    /**
+     * Passo do salto quando a tecla fica pressionada: 10 s, depois 30 s, 1 min e 2 min,
+     * para atravessar um filme de duas horas em poucos segundos.
+     */
+    fun seekStep(repeatCount: Int): Long = when {
+        repeatCount < 3 -> 10_000L
+        repeatCount < 8 -> 30_000L
+        repeatCount < 16 -> 60_000L
+        else -> 120_000L
     }
 
     fun openPanel(panel: PlayerPanel) {
@@ -425,5 +499,7 @@ class PlayerViewModel @Inject constructor(
         const val CONTROLS_TIMEOUT_MS = 4_000L
         const val NEXT_CARD_WINDOW_MS = 10_000L
         const val LIVE_RETRY_DELAY_MS = 1_500L
+        const val DIGIT_COMMIT_MS = 1_500L
+        const val TOAST_MS = 2_500L
     }
 }

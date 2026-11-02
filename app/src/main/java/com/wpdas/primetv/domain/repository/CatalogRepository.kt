@@ -66,6 +66,8 @@ interface CatalogRepository {
     suspend fun episodesOnce(seriesId: String): List<Episode>
     suspend fun episodeOnce(id: String): Episode?
     suspend fun channelsOnce(filter: ChannelFilter): List<Channel>
+    /** Todas as variantes de qualidade de um canal, da melhor para a pior. */
+    suspend fun channelVariants(groupKey: String): List<Channel>
 
     /** Busca por prefixo no índice FTS. Deve responder em menos de 100 ms. */
     suspend fun search(query: String, limit: Int): SearchResults
