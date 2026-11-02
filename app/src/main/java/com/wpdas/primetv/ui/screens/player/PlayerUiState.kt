@@ -6,7 +6,7 @@ import com.wpdas.primetv.domain.model.Episode
 
 data class TrackOption(val id: String, val label: String, val selected: Boolean)
 
-enum class PlayerPanel { NONE, AUDIO, SUBTITLES, EPISODES }
+enum class PlayerPanel { NONE, AUDIO, SUBTITLES, EPISODES, QUALITY }
 
 data class PlayerUiState(
     val loaded: Boolean = false,
@@ -27,6 +27,10 @@ data class PlayerUiState(
     val audioTracks: List<TrackOption> = emptyList(),
     val subtitleTracks: List<TrackOption> = emptyList(),
     val subtitlesOff: Boolean = true,
+    /** Menu Qualidade: Auto/faixas do stream e versões da lista. Vazio = só uma qualidade. */
+    val qualityOptions: List<QualityOption> = emptyList(),
+    /** Velocidade estimada do download do stream (bits/s), para mostrar junto do carregamento. */
+    val bitrateBps: Long? = null,
     // séries
     val episodes: List<Episode> = emptyList(),
     val currentEpisode: Episode? = null,

@@ -166,7 +166,18 @@ fun PlayerScreen(
         )
 
         if (state.isBuffering && !state.hasError) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { LoadingSpinner(size = 44.dp, strokeWidth = 4.dp) }
+            Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                LoadingSpinner(size = 44.dp, strokeWidth = 4.dp)
+                // Velocidade do download do stream (não é teste de velocidade): explica um travamento.
+                state.bitrateBps?.let { bps ->
+                    Text(
+                        com.wpdas.primetv.core.util.Bitrate.format(bps),
+                        style = PrimeTheme.typography.caption,
+                        color = colors.textSecondary,
+                        modifier = Modifier.padding(top = 10.dp).background(colors.background.copy(alpha = 0.6f), PrimeTheme.shapes.small).padding(horizontal = 8.dp, vertical = 3.dp),
+                    )
+                }
+            }
         }
 
         AnimatedVisibility(visible = state.controlsVisible || state.hasError, enter = fadeIn(), exit = fadeOut()) {
@@ -226,6 +237,7 @@ fun PlayerScreen(
                 modifier = Modifier.align(Alignment.CenterEnd),
             )
             PlayerPanel.EPISODES -> EpisodesPanel(state = state, onPlay = viewModel::playEpisode, modifier = Modifier.align(Alignment.CenterEnd))
+            PlayerPanel.QUALITY -> QualityPanel(options = state.qualityOptions, onSelect = viewModel::selectQuality, onClose = viewModel::closePanel, modifier = Modifier.align(Alignment.CenterEnd))
             PlayerPanel.NONE -> Unit
         }
     }
@@ -378,6 +390,7 @@ private fun BottomControls(state: PlayerUiState, viewModel: PlayerViewModel, pla
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OptionButton(t("player.audio"), modifier = Modifier.focusRequester(playPauseFocus)) { viewModel.openPanel(PlayerPanel.AUDIO) }
                         OptionButton(t("player.subtitles")) { viewModel.openPanel(PlayerPanel.SUBTITLES) }
+                        OptionButton(t("player.quality")) { viewModel.openPanel(PlayerPanel.QUALITY) }
                     }
                 } else {
                     Text(t("player.live_menu_hint"), style = typography.caption, color = colors.textSecondary)
@@ -423,6 +436,7 @@ private fun BottomControls(state: PlayerUiState, viewModel: PlayerViewModel, pla
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OptionButton(t("player.audio")) { viewModel.openPanel(PlayerPanel.AUDIO) }
                 OptionButton(t("player.subtitles")) { viewModel.openPanel(PlayerPanel.SUBTITLES) }
+                OptionButton(t("player.quality")) { viewModel.openPanel(PlayerPanel.QUALITY) }
                 if (state.episodes.isNotEmpty()) OptionButton(t("player.episodes")) { viewModel.openPanel(PlayerPanel.EPISODES) }
                 if (state.nextEpisode != null) OptionButton(t("player.next_episode")) { viewModel.playNextEpisode() }
             }
@@ -563,6 +577,39 @@ private fun TrackPanel(
                 onClick = { onSelect(option) },
                 modifier = if (index == 0 && offLabel == null) Modifier.focusRequester(first) else Modifier,
             )
+        }
+    }
+}
+
+/** Menu Qualidade: seção "Resolução do vídeo" (Auto + faixas) e "Versões na lista" (4K/FHD/HD/SD). */
+@Composable
+private fun QualityPanel(options: List<QualityOption>, onSelect: (QualityOption) -> Unit, onClose: () -> Unit, modifier: Modifier = Modifier) {
+    val colors = PrimeTheme.colors
+    val first = remember { FocusRequester() }
+    RequestFocusWhenReady(first)
+    val tracks = options.filter { it.kind != QualityKind.SOURCE }
+    val sources = options.filter { it.kind == QualityKind.SOURCE }
+    Column(
+        modifier.width(360.dp).fillMaxHeight().background(colors.surface.copy(alpha = 0.97f)).padding(24.dp).focusGroup(),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(t("player.quality"), style = PrimeTheme.typography.subtitle, color = colors.text, modifier = Modifier.padding(bottom = 10.dp))
+        if (options.isEmpty()) {
+            Text(t("player.single_quality"), style = PrimeTheme.typography.body, color = colors.textSecondary)
+            PrimeButton(text = t("common.close"), onClick = onClose, style = PrimeButtonStyle.Secondary, height = 44.dp, horizontalPadding = 18.dp, textStyle = PrimeTheme.typography.buttonSmall, modifier = Modifier.focusRequester(first).padding(top = 8.dp))
+            return@Column
+        }
+        if (tracks.isNotEmpty()) {
+            Text(t("player.quality_tracks"), style = PrimeTheme.typography.captionStrong, color = colors.textSecondary, modifier = Modifier.padding(top = 4.dp, bottom = 2.dp))
+            tracks.forEachIndexed { index, option ->
+                PanelRow(label = option.label, selected = option.selected, onClick = { onSelect(option) }, modifier = if (index == 0) Modifier.focusRequester(first) else Modifier)
+            }
+        }
+        if (sources.isNotEmpty()) {
+            Text(t("player.quality_sources"), style = PrimeTheme.typography.captionStrong, color = colors.textSecondary, modifier = Modifier.padding(top = 10.dp, bottom = 2.dp))
+            sources.forEachIndexed { index, option ->
+                PanelRow(label = option.label, selected = option.selected, onClick = { onSelect(option) }, modifier = if (tracks.isEmpty() && index == 0) Modifier.focusRequester(first) else Modifier)
+            }
         }
     }
 }

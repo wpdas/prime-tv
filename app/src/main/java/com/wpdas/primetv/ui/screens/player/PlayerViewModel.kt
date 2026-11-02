@@ -57,7 +57,11 @@ class PlayerViewModel @Inject constructor(
 
     private sealed interface Content {
         /** [movie] é o título aberto (histórico usa o id dele); [playing] é a variante em reprodução. */
-        data class Movie(val movie: com.wpdas.primetv.domain.model.Movie, val playing: com.wpdas.primetv.domain.model.Movie = movie) : Content
+        data class Movie(
+            val movie: com.wpdas.primetv.domain.model.Movie,
+            val playing: com.wpdas.primetv.domain.model.Movie = movie,
+            val variants: List<com.wpdas.primetv.domain.model.Movie> = emptyList(),
+        ) : Content
         data class SeriesEpisode(val seriesId: String, val episodes: List<Episode>, val episode: Episode) : Content
         data class Live(val channel: Channel, val zapList: List<Channel>, val variants: List<Channel> = emptyList()) : Content
     }
@@ -72,6 +76,13 @@ class PlayerViewModel @Inject constructor(
     private var seekPending = false
     private var slowToastShown = false
     private val trackGroups = HashMap<String, Pair<TrackGroup, Int>>()
+    /** Faixas de vídeo do stream atual (menu Qualidade). */
+    private var videoTracks: List<VideoTrack> = emptyList()
+    /** Faixa de vídeo escolhida à mão, ou null (Auto). */
+    private var manualTrackId: String? = null
+    /** O usuário escolheu a qualidade: a troca automática por conexão lenta fica desligada. */
+    private var qualityManual = false
+    private val speedMeter = playerFactory.speedMeter
 
     private val listener = object : Player.Listener {
         override fun onPlaybackStateChanged(playbackState: Int) {
@@ -155,7 +166,9 @@ class PlayerViewModel @Inject constructor(
 
     private suspend fun loadMovie(id: String) {
         val movie = catalog.movieOnce(id) ?: return notFound()
-        content = Content.Movie(movie)
+        val variants = runCatching { catalog.movieVariants(movie.id) }.getOrDefault(emptyList())
+        content = Content.Movie(movie, variants = variants)
+        qualityManual = false
         val start = library.progress(movie.id)?.takeUnless { it.finished }?.positionMs ?: 0L
         _state.update { it.copy(loaded = true, title = TextNormalizer.displayTitle(movie.title), subtitle = movie.year?.toString(), qualityLabel = movie.qualityLabel) }
         start(movie.streamUrl, start)
@@ -175,6 +188,7 @@ class PlayerViewModel @Inject constructor(
     private suspend fun playEpisodeInternal(seriesTitle: String, episodes: List<Episode>, episode: Episode) {
         val seriesId = episode.seriesId
         content = Content.SeriesEpisode(seriesId, episodes, episode)
+        qualityManual = false
         val start = library.progress(episode.id)?.takeUnless { it.finished }?.positionMs ?: 0L
         val index = episodes.indexOf(episode)
         _state.update {
@@ -207,6 +221,7 @@ class PlayerViewModel @Inject constructor(
         val zap = if (live.zapList.any { it.id == channel.id }) live.zapList
         else runCatching { catalog.channelsOnce(ChannelFilter.All) }.getOrDefault(live.zapList)
         content = live.copy(channel = channel, variants = variants, zapList = zap)
+        if (!keepVariants) qualityManual = false
         retriedLive = false
         library.recordChannel(channel.id)
         val now = runCatching { catalog.nowPlaying(ChannelFilter.Category(channel.categoryId ?: ""), System.currentTimeMillis()) }.getOrDefault(emptyMap())
@@ -233,6 +248,13 @@ class PlayerViewModel @Inject constructor(
      * posição); por fim só avisa e sugere aumentar o buffer.
      */
     private suspend fun onSlowConnection() {
+        if (qualityManual) {
+            if (!slowToastShown) {
+                slowToastShown = true
+                showToast("player.slow_connection")
+            }
+            return
+        }
         val params = player.trackSelectionParameters
         val adaptive = player.currentTracks.groups.any { it.type == C.TRACK_TYPE_VIDEO && it.length > 1 }
         if (adaptive && params.forceHighestSupportedBitrate) {
@@ -242,13 +264,10 @@ class PlayerViewModel @Inject constructor(
         }
         when (val c = content) {
             is Content.Movie -> {
-                val next = catalog.movieVariants(c.movie.id).firstOrNull { it.qualityRank > c.playing.qualityRank }
+                val next = c.variants.ifEmpty { catalog.movieVariants(c.movie.id) }.firstOrNull { it.qualityRank > c.playing.qualityRank }
                 if (next != null) {
-                    val position = player.currentPosition
-                    content = c.copy(playing = next)
-                    _state.update { it.copy(qualityLabel = next.qualityLabel) }
                     showToast("player.slow_switching", next.qualityLabel ?: "")
-                    start(next.streamUrl, position)
+                    playMovieVariant(next)
                     return
                 }
             }
@@ -266,6 +285,63 @@ class PlayerViewModel @Inject constructor(
             slowToastShown = true
             showToast("player.slow_connection")
         }
+    }
+
+    /** Mesmo filme em outra qualidade, mantendo a posição. */
+    private fun playMovieVariant(next: com.wpdas.primetv.domain.model.Movie) {
+        val c = content as? Content.Movie ?: return
+        val position = player.currentPosition
+        content = c.copy(playing = next)
+        _state.update { it.copy(qualityLabel = next.qualityLabel) }
+        start(next.streamUrl, position)
+    }
+
+    // ------------------------------------------------------------------ qualidade
+
+    /** Opção do menu Qualidade escolhida pelo usuário. */
+    fun selectQuality(option: QualityOption) {
+        when (option.kind) {
+            QualityKind.AUTO -> {
+                manualTrackId = null
+                qualityManual = false
+                player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
+                    .clearOverridesOfType(C.TRACK_TYPE_VIDEO)
+                    .setForceHighestSupportedBitrate(false)
+                    .build()
+                refreshQualityOptions()
+            }
+            QualityKind.TRACK -> {
+                val (group, index) = trackGroups[option.id] ?: return
+                manualTrackId = option.id
+                qualityManual = true
+                player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
+                    .setOverrideForType(TrackSelectionOverride(group, index))
+                    .build()
+                refreshQualityOptions()
+            }
+            QualityKind.SOURCE -> {
+                qualityManual = true
+                viewModelScope.launch {
+                    when (val c = content) {
+                        is Content.Movie -> c.variants.firstOrNull { it.id == option.id }?.takeIf { it.id != c.playing.id }?.let { playMovieVariant(it) }
+                        is Content.Live -> c.variants.firstOrNull { it.id == option.id }?.takeIf { it.id != c.channel.id }?.let { tuneChannel(it, keepVariants = true) }
+                        else -> Unit
+                    }
+                }
+            }
+        }
+        showToast("player.quality_set", option.label)
+        closePanel()
+    }
+
+    private fun refreshQualityOptions() {
+        val (sources, playing) = when (val c = content) {
+            is Content.Movie -> c.variants.map { SourceVariant(it.id, it.qualityLabel ?: "—") } to c.playing.id
+            is Content.Live -> c.variants.map { SourceVariant(it.id, it.qualityLabel ?: "—") } to c.channel.id
+            else -> emptyList<SourceVariant>() to null
+        }
+        val options = QualityOptions.build(videoTracks, manualTrackId, sources, playing)
+        _state.update { it.copy(qualityOptions = options) }
     }
 
     private fun showToast(key: String, arg: String? = null) {
@@ -318,13 +394,16 @@ class PlayerViewModel @Inject constructor(
 
     private fun start(url: String, positionMs: Long) {
         trackGroups.clear()
+        videoTracks = emptyList()
+        manualTrackId = null
         wasReady = false
         seekPending = false
         stalls.reset()
         player.setMediaItem(MediaItem.fromUri(url), positionMs.coerceAtLeast(0))
         player.prepare()
         player.playWhenReady = true
-        _state.update { it.copy(isBuffering = true, errorKey = null, errorDetail = null, controlsVisible = true) }
+        _state.update { it.copy(isBuffering = true, errorKey = null, errorDetail = null, controlsVisible = true, bitrateBps = null, qualityOptions = emptyList()) }
+        refreshQualityOptions()
         scheduleHide()
     }
 
@@ -341,10 +420,11 @@ class PlayerViewModel @Inject constructor(
             val position = player.currentPosition.coerceAtLeast(0)
             val duration = player.duration.takeIf { it != C.TIME_UNSET }?.coerceAtLeast(0) ?: 0
             val buffered = player.bufferedPosition.coerceAtLeast(0)
+            val speed = if (_state.value.isBuffering) speedMeter.bitrate() else null
             _state.update { s ->
                 val remaining = if (duration > 0) duration - position else Long.MAX_VALUE
                 val countdown = if (s.nextEpisode != null && duration > 0 && remaining <= NEXT_CARD_WINDOW_MS) (remaining / 1000).toInt().coerceAtLeast(0) else null
-                s.copy(positionMs = position, durationMs = duration, bufferedMs = buffered, nextCountdown = countdown)
+                s.copy(positionMs = position, durationMs = duration, bufferedMs = buffered, nextCountdown = countdown, bitrateBps = speed)
             }
             val now = System.currentTimeMillis()
             if (player.isPlaying && now - lastSaveMs >= SAVE_INTERVAL_MS) {
@@ -503,6 +583,7 @@ class PlayerViewModel @Inject constructor(
         val text = ArrayList<TrackOption>()
         var videoHeight = 0
         var selectedAudioLang: String? = null
+        val video = ArrayList<VideoTrack>()
         tracks.groups.forEachIndexed { gi, group ->
             for (ti in 0 until group.length) {
                 if (!group.isTrackSupported(ti)) continue
@@ -519,12 +600,18 @@ class PlayerViewModel @Inject constructor(
                         trackGroups[id] = group.mediaTrackGroup to ti
                         text += TrackOption(id, trackLabel(format, text.size + 1), group.isTrackSelected(ti))
                     }
-                    C.TRACK_TYPE_VIDEO -> if (group.isTrackSelected(ti)) videoHeight = format.height
+                    C.TRACK_TYPE_VIDEO -> {
+                        trackGroups[id] = group.mediaTrackGroup to ti
+                        video += VideoTrack(id, format.height, format.bitrate)
+                        if (group.isTrackSelected(ti)) videoHeight = format.height
+                    }
                 }
             }
         }
         val badge = listOfNotNull(videoHeight.takeIf { it > 0 }?.let { "${it}p" }, selectedAudioLang).joinToString(" · ").ifEmpty { null }
+        videoTracks = video
         _state.update { it.copy(audioTracks = audio, subtitleTracks = text, subtitlesOff = text.none { t -> t.selected }, badge = badge) }
+        refreshQualityOptions()
     }
 
     private fun trackLabel(format: Format, ordinal: Int): String =

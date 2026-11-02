@@ -31,8 +31,11 @@ class PlayerFactory @Inject constructor(
     @ApplicationContext private val context: Context,
     http: OkHttpClient,
     private val settings: SettingsRepository,
+    /** Medidor da velocidade de download, compartilhado com o player para mostrar junto do carregamento. */
+    val speedMeter: NetworkSpeedMeter,
 ) {
-    private val dataSourceFactory: DataSource.Factory = DefaultDataSource.Factory(context, OkHttpDataSource.Factory(http))
+    private val dataSourceFactory: DataSource.Factory =
+        DefaultDataSource.Factory(context, OkHttpDataSource.Factory(http).setTransferListener(speedMeter))
 
     fun create(): ExoPlayer {
         val prefs = settings.settings.value
