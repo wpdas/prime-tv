@@ -22,8 +22,8 @@ class SemVerTest {
         assertTrue(SemVer.isNewer("v2.0.0", "1.9.9"))
         assertFalse(SemVer.isNewer("v1.0.0", "1.0.0"))
         assertFalse(SemVer.isNewer("v0.9.9", "1.0.0"))
-        // build local 1.0.0-dev.3 é anterior à release 1.0.0
-        assertTrue(SemVer.isNewer("v1.0.0", "1.0.0-dev.3"))
+        // build local 1.0.0-dev.3 são 3 commits depois da tag v1.0.0: não é mais antigo que ela
+        assertFalse(SemVer.isNewer("v1.0.0", "1.0.0-dev.3"))
         assertFalse(SemVer.isNewer("v1.0.0", "1.0.1-dev.3"))
         // versão de desenvolvimento 0.0.0-dev recebe qualquer release
         assertTrue(SemVer.isNewer("v0.1.0", "0.0.0-dev"))
