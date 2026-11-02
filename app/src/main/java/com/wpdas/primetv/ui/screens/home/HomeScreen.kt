@@ -142,7 +142,10 @@ fun HomeContent(
     var exitJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
     BackHandler(enabled = state.selectedTab == HomeTab.HOME) {
         if (exitArmed) {
+            // Fecha de verdade: encerra a tarefa e, logo depois, o processo (sem isso a box mantém o app
+            // em memória e a próxima abertura não é um início limpo).
             activity?.finishAndRemoveTask()
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ android.os.Process.killProcess(android.os.Process.myPid()) }, EXIT_KILL_DELAY_MS)
         } else {
             exitArmed = true
             exitJob?.cancel()
@@ -342,4 +345,5 @@ private fun continueMeta(cw: ContinueWatchingItem): String {
 
 private const val TAB_FOCUS_DELAY_MS = 350L
 private const val EXIT_CONFIRM_MS = 2_500L
+private const val EXIT_KILL_DELAY_MS = 300L
 private const val LIVE_TAB_FOCUS_DELAY_MS = 700L

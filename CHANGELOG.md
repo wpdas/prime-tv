@@ -4,6 +4,8 @@ Formato: uma seção por versão, com **Novidades** e **Correções**. A seção
 
 ## [Não lançado]
 
+## [0.0.4] - 2026-11-02
+
 ### Novidades
 - Na Início, Voltar mostra "Aperte Voltar de novo para sair" e o segundo toque fecha o app de verdade
 - Segurar ↑/↓/←/→ no controle anda no ritmo da tela: repetições que chegam antes de a rolagem terminar são ignoradas, e o foco não some mais da área visível em boxes mais lentas
