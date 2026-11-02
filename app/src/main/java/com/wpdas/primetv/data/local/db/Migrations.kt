@@ -30,5 +30,15 @@ object Migrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_5_6, MIGRATION_6_7)
+    /** 0.0.4 -> 0.0.5: liga do time junto do escudo e escudos de competição (cache; zera para buscar de novo com a liga). */
+    val MIGRATION_7_8 = object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE team_crests ADD COLUMN league TEXT DEFAULT NULL")
+            db.execSQL("ALTER TABLE team_crests ADD COLUMN leagueId TEXT DEFAULT NULL")
+            db.execSQL("DELETE FROM team_crests")
+            db.execSQL("CREATE TABLE IF NOT EXISTS `league_badges` (`leagueId` TEXT NOT NULL, `url` TEXT, `fetchedAt` INTEGER NOT NULL, PRIMARY KEY(`leagueId`))")
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
 }

@@ -14,6 +14,9 @@ interface CatalogSync {
     /** Sincroniza só uma seção. */
     fun sync(section: ContentSection)
 
+    /** Sincroniza as seções em sequência, numa só execução. */
+    fun sync(sections: List<ContentSection>) = sections.forEach { sync(it) }
+
     /** Sincroniza o que estiver vencido segundo os intervalos configurados (chamado ao abrir o app). */
     fun syncStale()
 

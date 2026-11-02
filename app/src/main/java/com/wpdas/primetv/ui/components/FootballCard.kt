@@ -18,8 +18,13 @@ import androidx.tv.material3.Text
 import com.wpdas.primetv.domain.model.FootballEvent
 import com.wpdas.primetv.ui.theme.PrimeFocus
 import com.wpdas.primetv.ui.theme.PrimeTheme
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
-/** Card 260×92 de "Futebol agora": selo AO VIVO, canal, partida e escudos gerados. */
+private val HOUR_MINUTE: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+
+/** Card 260×92 de "Jogos de hoje": selo AO VIVO ou horário, competição/canal, partida e escudos. */
 @Composable
 fun FootballCard(
     event: FootballEvent,
@@ -44,12 +49,17 @@ fun FootballCard(
         scale = PrimeFocus.scale(),
         border = PrimeFocus.border(shape),
     ) {
-        val match = MatchArtist.parse(event.title) ?: MatchArtist.parse(event.channelName)
+        val match = if (event.home != null && event.away != null) Match(event.home, event.away)
+        else MatchArtist.parse(event.title) ?: MatchArtist.parse(event.channelName)
+        val league = event.league ?: match?.let { rememberLeagueLabel(null, it.home, it.away) }
         Row(Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.SpaceBetween) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (event.isLive) LiveBadge(liveLabel)
-                    Text(event.channelName, style = PrimeTheme.typography.caption, color = colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    when {
+                        event.isLive -> LiveBadge(liveLabel)
+                        event.start != null -> Text(formatHour(event.start), style = PrimeTheme.typography.captionStrong, color = colors.text)
+                    }
+                    Text(league ?: event.channelName, style = PrimeTheme.typography.caption, color = colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 Text(event.title, style = PrimeTheme.typography.bodyStrong, color = colors.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
@@ -63,3 +73,5 @@ fun FootballCard(
         }
     }
 }
+
+internal fun formatHour(millis: Long): String = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).format(HOUR_MINUTE)

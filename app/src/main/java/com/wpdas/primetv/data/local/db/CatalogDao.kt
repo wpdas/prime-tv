@@ -70,6 +70,9 @@ interface CatalogDao {
     @Query("DELETE FROM series") suspend fun deleteSeries()
     @Query("SELECT COUNT(*) FROM series") fun observeSeriesCount(): Flow<Int>
     @Query("SELECT * FROM series WHERE (:categoryId IS NULL OR categoryId = :categoryId) ORDER BY title LIMIT :limit") fun observeSeries(categoryId: String?, limit: Int): Flow<List<SeriesEntity>>
+    /** Séries cujo gênero (vindo da lista) contém o termo, fora das categorias já exibidas. */
+    @Query("SELECT * FROM series WHERE genre LIKE '%' || :term || '%' AND (categoryId IS NULL OR categoryId NOT IN (:excludedCategoryIds)) ORDER BY title LIMIT :limit")
+    fun observeSeriesByGenre(term: String, excludedCategoryIds: List<String>, limit: Int): Flow<List<SeriesEntity>>
     @Query("SELECT * FROM series WHERE isFootball = 1 ORDER BY title LIMIT :limit") fun observeFootballSeries(limit: Int): Flow<List<SeriesEntity>>
     @Query("SELECT * FROM series WHERE id = :id") fun observeSeriesById(id: String): Flow<SeriesEntity?>
     @Query("SELECT * FROM series WHERE id = :id") suspend fun seriesById(id: String): SeriesEntity?
@@ -123,6 +126,13 @@ interface EpgDao {
             "WHERE c.isFootball = 1 AND p.start <= :now AND p.`end` > :now",
     )
     suspend fun nowPlayingFootball(now: Long): List<EpgProgramEntity>
+
+    /** Programas dos canais de futebol no período, uma vez por chave de EPG (variantes compartilham a chave). */
+    @Query(
+        "SELECT * FROM epg_programs WHERE channelKey IN (SELECT DISTINCT epgKey FROM channels WHERE isFootball = 1 AND epgKey IS NOT NULL) " +
+            "AND `end` > :from AND start < :to ORDER BY start",
+    )
+    fun observeFootballPrograms(from: Long, to: Long): Flow<List<EpgProgramEntity>>
 }
 
 @Dao
@@ -152,4 +162,6 @@ interface TmdbDao {
     @Query("DELETE FROM tmdb_cache WHERE fetchedAt < :before") suspend fun pruneCache(before: Long)
     @Query("SELECT * FROM team_crests WHERE teamKey = :key") suspend fun crest(key: String): TeamCrestEntity?
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putCrest(entry: TeamCrestEntity)
+    @Query("SELECT * FROM league_badges WHERE leagueId = :id") suspend fun leagueBadge(id: String): LeagueBadgeEntity?
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putLeagueBadge(entry: LeagueBadgeEntity)
 }

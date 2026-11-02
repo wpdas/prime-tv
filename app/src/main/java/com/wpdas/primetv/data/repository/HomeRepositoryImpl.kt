@@ -3,6 +3,10 @@ package com.wpdas.primetv.data.repository
 import com.wpdas.primetv.domain.model.CategoryRow
 import com.wpdas.primetv.domain.model.ContentSection
 import com.wpdas.primetv.domain.model.ContinueWatchingItem
+import com.wpdas.primetv.domain.catalog.TabKeywords
+import com.wpdas.primetv.domain.football.LeagueNames
+import com.wpdas.primetv.domain.football.MatchSchedule
+import com.wpdas.primetv.domain.football.MatchStatus
 import com.wpdas.primetv.domain.model.FootballEvent
 import com.wpdas.primetv.domain.model.HomeTab
 import com.wpdas.primetv.domain.model.MediaItem
@@ -17,8 +21,10 @@ import com.wpdas.primetv.domain.update.UpdateRepository
 import kotlinx.coroutines.flow.onStart
 import com.wpdas.primetv.domain.sync.CatalogSync
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -59,15 +65,33 @@ class HomeRepositoryImpl @Inject constructor(
 
     override fun continueWatching(): Flow<List<ContinueWatchingItem>> = library.continueWatching(CONTINUE_ITEMS)
 
-    override fun footballNow(): Flow<List<FootballEvent>> = catalog.footballChannels(FOOTBALL_NOW).map { channels ->
-        val now = System.currentTimeMillis()
-        val airing = runCatching { catalog.nowPlaying(ChannelFilter.Football, now) }.getOrDefault(emptyMap())
-        channels.map { ch ->
-            FootballEvent(
-                id = ch.id,
-                channelName = ch.name,
-                title = ch.epgKey?.let { airing[it]?.title } ?: ch.categoryName ?: ch.name,
-            )
+    /** Jogos do dia (ao vivo primeiro, depois os próximos). Lista sem canais de evento: canais de futebol com o que está no ar. */
+    override fun footballNow(): Flow<List<FootballEvent>> =
+        combine(catalog.matchSchedule(), minuteTicker()) { schedule, now -> schedule to now }.flatMapLatest { (schedule, now) ->
+            val upcoming = schedule.filter { it.status(now) != MatchStatus.FINISHED }
+            if (schedule.isNotEmpty()) {
+                flowOf(upcoming.take(FOOTBALL_NOW).map { e ->
+                    FootballEvent(
+                        id = e.key, channelId = e.channelId, channelName = e.channelName, title = "${e.home} x ${e.away}",
+                        isLive = e.status(now) == MatchStatus.LIVE, start = e.start,
+                        league = LeagueNames.fromHint(e.leagueHint), home = e.home, away = e.away,
+                    )
+                })
+            } else {
+                catalog.footballChannels(FOOTBALL_NOW).map { channels ->
+                    val airing = runCatching { catalog.nowPlaying(ChannelFilter.Football, now) }.getOrDefault(emptyMap())
+                    channels.filterNot { MatchSchedule.isPlaceholder(it) }.map { ch ->
+                        FootballEvent(id = ch.id, channelName = ch.name, title = ch.epgKey?.let { airing[it]?.title } ?: ch.categoryName ?: ch.name)
+                    }
+                }
+            }
+        }
+
+    /** Tique por minuto para o status (ao vivo/encerrado) acompanhar o relógio. */
+    private fun minuteTicker(): Flow<Long> = flow {
+        while (true) {
+            emit(System.currentTimeMillis())
+            delay(60_000L - System.currentTimeMillis() % 60_000L)
         }
     }
 
@@ -79,14 +103,48 @@ class HomeRepositoryImpl @Inject constructor(
         ) { recent, movies, series -> (recent + movies + series).filter { it.items.isNotEmpty() } }
         HomeTab.MOVIES -> sectionRows(ContentSection.MOVIES, maxRows = Int.MAX_VALUE)
         HomeTab.SERIES -> sectionRows(ContentSection.SERIES, maxRows = Int.MAX_VALUE)
+        // A aba Futebol abre a tela de Jogos; estas linhas são o trilho "Vídeos" dela.
         HomeTab.FOOTBALL -> combine(
-            catalog.footballChannels(ROW_ITEMS).map { list -> CategoryRow("football-live", "Canais de futebol", list.map { it.toMediaItem() }, ContentSection.LIVE, FOOTBALL_CATEGORY) },
             catalog.footballMovies(ROW_ITEMS).map { list -> CategoryRow("football-vod", "Jogos e programas", list.map { it.toMediaItem() }) },
             catalog.footballSeries(ROW_ITEMS).map { list -> CategoryRow("football-series", "Séries de futebol", list.map { it.toMediaItem() }) },
-        ) { a, b, c -> listOf(a, b, c).filter { it.items.isNotEmpty() } }
+        ) { a, b -> listOf(a, b).filter { it.items.isNotEmpty() } }
+        HomeTab.KIDS -> keywordRows(HomeTab.KIDS)
+        HomeTab.ANIME -> keywordRows(HomeTab.ANIME)
         HomeTab.MY_LIST -> myListRows()
         HomeTab.LIVE -> flowOf(emptyList())
     }.combine(myList) { rows, ids -> rows.map { row -> row.copy(items = row.items.map { it.copy(inMyList = it.id in ids) }) } }
+
+    override fun availableTabs(): Flow<List<HomeTab>> = combine(
+        catalog.categories(ContentSection.LIVE),
+        catalog.categories(ContentSection.MOVIES),
+        catalog.categories(ContentSection.SERIES),
+    ) { live, movies, series ->
+        val present = (live + movies + series).mapNotNullTo(HashSet()) { TabKeywords.tabOf(it.name) }
+        HomeTab.entries.filter { it !in HomeTab.OPTIONAL || it in present }
+    }
+
+    /**
+     * Kids/Anime: uma linha por categoria cujo nome bate com as palavras da aba (filmes, séries, canais),
+     * mais, em Kids, as séries que a lista marca com gênero "Kids" fora dessas categorias.
+     */
+    private fun keywordRows(tab: HomeTab): Flow<List<CategoryRow>> = combine(
+        catalog.categories(ContentSection.MOVIES),
+        catalog.categories(ContentSection.SERIES),
+        catalog.categories(ContentSection.LIVE),
+    ) { movies, series, live -> Triple(movies, series, live) }.flatMapLatest { (movies, series, live) ->
+        val movieCats = movies.filter { TabKeywords.tabOf(it.name) == tab }
+        val seriesCats = series.filter { TabKeywords.tabOf(it.name) == tab }
+        val liveCats = live.filter { TabKeywords.tabOf(it.name) == tab }
+        val flows = buildList {
+            movieCats.forEach { cat -> add(catalog.movies(cat.id, ROW_ITEMS).map { list -> CategoryRow(cat.id, cat.name, list.map { it.toMediaItem() }, ContentSection.MOVIES, cat.id) }) }
+            seriesCats.forEach { cat -> add(catalog.series(cat.id, ROW_ITEMS).map { list -> CategoryRow(cat.id, cat.name, list.map { it.toMediaItem() }, ContentSection.SERIES, cat.id) }) }
+            if (tab == HomeTab.KIDS) {
+                add(catalog.seriesByGenre(KIDS_GENRE, seriesCats.map { it.id }, ROW_ITEMS).map { list -> CategoryRow("kids-genre", "Mais para crianças", list.map { it.toMediaItem() }) })
+            }
+            liveCats.forEach { cat -> add(catalog.channels(ChannelFilter.Category(cat.id)).map { list -> CategoryRow(cat.id, cat.name, list.take(ROW_ITEMS).map { it.toMediaItem() }, ContentSection.LIVE, cat.id) }) }
+        }
+        if (flows.isEmpty()) flowOf(emptyList()) else combine(flows) { rows -> rows.filter { it.items.isNotEmpty() } }
+    }
 
     /** Uma linha por categoria da seção, limitada a [maxRows] categorias e [ROW_ITEMS] itens. */
     private fun sectionRows(section: ContentSection, maxRows: Int): Flow<List<CategoryRow>> =
@@ -140,6 +198,8 @@ class HomeRepositoryImpl @Inject constructor(
         private const val FOOTBALL_NOW = 10
         private const val ROW_ITEMS = 24
         private const val CONTINUE_ITEMS = 12
+        /** Gênero que a lista (Xtream) informa para séries infantis. */
+        private const val KIDS_GENRE = "Kids"
         /** Id virtual usado pela grade para listar só canais de futebol. */
         const val FOOTBALL_CATEGORY = "football"
     }

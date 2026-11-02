@@ -8,6 +8,7 @@ import com.wpdas.primetv.domain.model.Episode
 import com.wpdas.primetv.domain.model.Movie
 import com.wpdas.primetv.domain.model.NowNext
 import com.wpdas.primetv.domain.model.Series
+import com.wpdas.primetv.domain.football.MatchEvent
 import kotlinx.coroutines.flow.Flow
 
 /** Filtro da lista de canais da tela Ao vivo. */
@@ -40,6 +41,8 @@ interface CatalogRepository {
     fun footballChannelCount(): Flow<Int>
     /** Filmes + séries marcados como futebol. */
     fun footballVodCount(): Flow<Int>
+    /** Guia de jogos montado a partir dos nomes dos canais de evento e do EPG dos canais de futebol. */
+    fun matchSchedule(): Flow<List<MatchEvent>>
 
     fun movies(categoryId: String?, limit: Int): Flow<List<Movie>>
     fun recentMovies(limit: Int): Flow<List<Movie>>
@@ -48,6 +51,8 @@ interface CatalogRepository {
 
     fun series(categoryId: String?, limit: Int): Flow<List<Series>>
     fun footballSeries(limit: Int): Flow<List<Series>>
+    /** Séries cujo gênero informado pela lista contém [term], fora das categorias em [excludedCategoryIds]. */
+    fun seriesByGenre(term: String, excludedCategoryIds: List<String>, limit: Int): Flow<List<Series>>
     fun seriesById(id: String): Flow<Series?>
     fun episodes(seriesId: String): Flow<List<Episode>>
     /** Busca os episódios no servidor se ainda não estiverem no banco (Xtream). */

@@ -98,6 +98,8 @@ class CatalogSyncer @Inject constructor(
 
     override fun sync(section: ContentSection) = launchSections(listOf(section))
 
+    override fun sync(sections: List<ContentSection>) = launchSections(sections)
+
     override fun cancel() {
         job?.cancel()
         _status.update { map -> map.mapValues { (_, s) -> if (s is SyncState.Running) SyncState.Idle else s } }

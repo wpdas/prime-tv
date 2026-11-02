@@ -52,6 +52,8 @@ data class LiveUiState(
     /** Canal a focar (número digitado); a tela consome e zera. */
     val jumpToChannelId: String? = null,
     val previewSound: Boolean = false,
+    /** Abas da barra superior (Kids/Anime só com conteúdo). */
+    val tabs: List<com.wpdas.primetv.domain.model.HomeTab> = com.wpdas.primetv.domain.model.HomeTab.entries.filter { it !in com.wpdas.primetv.domain.model.HomeTab.OPTIONAL },
 ) {
     companion object {
         const val RAIL_ALL = "all"
@@ -71,6 +73,7 @@ class LiveViewModel @Inject constructor(
     private val library: LibraryRepository,
     private val settings: com.wpdas.primetv.domain.repository.SettingsRepository,
     private val liveState: com.wpdas.primetv.data.local.prefs.LiveStateStore,
+    private val home: com.wpdas.primetv.domain.repository.HomeRepository,
     val playerFactory: PlayerFactory,
 ) : ViewModel() {
 
@@ -108,6 +111,7 @@ class LiveViewModel @Inject constructor(
             .onEach { (rail, ch) -> liveState.save(rail, ch ?: restoreChannelId) }
             .launchIn(viewModelScope)
         settings.settings.onEach { s -> _state.update { it.copy(previewSound = s.previewSound) } }.launchIn(viewModelScope)
+        home.availableTabs().onEach { tabs -> _state.update { it.copy(tabs = tabs) } }.launchIn(viewModelScope)
         val favoriteChannels = library.favoriteIds(MediaType.CHANNEL)
         favoriteChannels.onEach { ids -> _state.update { it.copy(favoriteIds = ids.toSet()) } }.launchIn(viewModelScope)
 

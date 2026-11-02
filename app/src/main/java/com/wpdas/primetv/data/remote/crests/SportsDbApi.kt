@@ -13,6 +13,9 @@ interface SportsDbApi {
     @GET("api/v1/json/$TEST_KEY/searchteams.php")
     suspend fun searchTeams(@Query("t") name: String): SportsDbTeams
 
+    @GET("api/v1/json/$TEST_KEY/lookupleague.php")
+    suspend fun lookupLeague(@Query("id") id: String): SportsDbLeagues
+
     companion object {
         const val BASE_URL = "https://www.thesportsdb.com/"
         const val TEST_KEY = "123"
@@ -30,4 +33,18 @@ data class SportsDbTeam(
     @SerialName("strSport") val sport: String? = null,
     @SerialName("strCountry") val country: String? = null,
     @SerialName("strBadge") val badge: String? = null,
+    @SerialName("strLeague") val league: String? = null,
+    @SerialName("idLeague") val leagueId: String? = null,
+    @SerialName("strGender") val gender: String? = null,
+)
+
+@Serializable
+data class SportsDbLeagues(val leagues: List<SportsDbLeague>? = null)
+
+@Serializable
+data class SportsDbLeague(
+    @SerialName("idLeague") val id: String? = null,
+    @SerialName("strLeague") val name: String? = null,
+    @SerialName("strBadge") val badge: String? = null,
+    @SerialName("strLogo") val logo: String? = null,
 )

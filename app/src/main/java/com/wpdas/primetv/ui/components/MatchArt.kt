@@ -25,8 +25,8 @@ import com.wpdas.primetv.core.util.TextNormalizer
 import com.wpdas.primetv.ui.theme.InterFontFamily
 import com.wpdas.primetv.ui.theme.PrimeTheme
 
-/** Partida reconhecida num nome: "Flamengo x Palmeiras". */
-data class Match(val home: String, val away: String)
+/** Alias do modelo do domínio, para os componentes que já usam [Match] daqui. */
+typealias Match = com.wpdas.primetv.domain.football.Match
 
 /**
  * Arte gerada para jogos sem imagem: escudo do time A, "×" e escudo do time B.
@@ -34,21 +34,8 @@ data class Match(val home: String, val away: String)
  * ou cores derivadas do nome, com a sigla por cima.
  */
 object MatchArtist {
-    private val VERSUS = Regex("""^(.*?[\p{L}\d].*?)\s+(?:x|vs\.?|×|v)\s+(.*?[\p{L}\d].*?)$""", RegexOption.IGNORE_CASE)
-    /** Prefixos que não são time: "VT - ", "AO VIVO: ", "Dia 04/11 - ", "18:30 - ", "Jogo 2 - ". */
-    private val NOISE = Regex("""(?i)^(?:(?:vt|ao vivo|reprise|replay|compacto|melhores momentos|jogo\s*\d*|dia\s+\d{1,2}/\d{1,2}|\d{1,2}(?::|h)\d{2})\s*[-–:|]?\s*)+""")
-    /** Corta o que vem depois de " - ", " | " ou " (": "Atlético-MG (Premiere)" -> "Atlético-MG". */
-    private val TRAILING = Regex("""\s+[-–|]\s.*$|\s*\(.*$""")
-
     /** Extrai os dois times de um título; null quando não é uma partida. */
-    fun parse(title: String): Match? {
-        val cleaned = title.replace(NOISE, "").trim()
-        val m = VERSUS.find(cleaned) ?: return null
-        val home = m.groupValues[1].replace(TRAILING, "").trim().trimEnd('-', '–', ':')
-        val away = m.groupValues[2].replace(TRAILING, "").trim()
-        if (home.length < 2 || away.length < 2 || home.length > 40 || away.length > 40) return null
-        return Match(home, away)
-    }
+    fun parse(title: String): Match? = com.wpdas.primetv.domain.football.MatchTitle.parse(title)
 
     /** "Atlético-MG" -> "CAM"? Simples e previsível: iniciais das palavras ou 3 primeiras letras. */
     fun abbreviation(team: String): String {
@@ -144,11 +131,14 @@ private fun rememberCrestUrl(team: String): String? {
 fun TeamBadge(team: String, size: Dp, modifier: Modifier = Modifier) {
     val crest = rememberCrestUrl(team)
     if (crest != null) {
-        coil3.compose.AsyncImage(
+        // Enquanto a imagem baixa (ou se falhar), fica o escudo estilizado no lugar.
+        coil3.compose.SubcomposeAsyncImage(
             model = crest,
             contentDescription = team,
             modifier = modifier.size(size),
             contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+            loading = { StylizedBadge(team, size) },
+            error = { StylizedBadge(team, size) },
         )
         return
     }
@@ -203,3 +193,28 @@ fun MatchArt(match: Match, modifier: Modifier = Modifier, badgeSize: Dp = 64.dp)
         }
     }
 }
+
+/** Competição para exibir: rótulo e, quando a base pública tiver, o escudo dela. */
+data class LeagueDisplay(val label: String?, val badgeUrl: String?)
+
+/**
+ * Rótulo: o que a lista informa ([hint]) vem primeiro; senão a liga do mandante (ou do visitante)
+ * segundo a base pública de times, traduzida por tabela. O escudo vem sempre da base, pela liga do time.
+ */
+@Composable
+fun rememberLeague(hint: String?, home: String, away: String): LeagueDisplay {
+    val fromHint = com.wpdas.primetv.domain.football.LeagueNames.fromHint(hint)
+    val resolver = LocalCrestResolver.current ?: return LeagueDisplay(fromHint, null)
+    val state = androidx.compose.runtime.produceState(initialValue = LeagueDisplay(fromHint, null), key1 = home, key2 = away, key3 = hint) {
+        // Primeiro o rótulo (mesma consulta do escudo do time); o escudo da liga é outra chamada e chega depois.
+        val info = runCatching { resolver.teamInfo(home).takeIf { it.league != null } ?: resolver.teamInfo(away) }.getOrNull() ?: return@produceState
+        value = LeagueDisplay(fromHint ?: com.wpdas.primetv.domain.football.LeagueNames.fromSportsDb(info.league), null)
+        val badge = info.leagueId?.let { id -> runCatching { resolver.leagueBadge(id) }.getOrNull() } ?: return@produceState
+        value = value.copy(badgeUrl = badge)
+    }
+    return state.value
+}
+
+/** Só o rótulo da competição (cards pequenos). */
+@Composable
+fun rememberLeagueLabel(hint: String?, home: String, away: String): String? = rememberLeague(hint, home, away).label

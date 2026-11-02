@@ -13,6 +13,7 @@ import com.wpdas.primetv.ui.screens.appmenu.AppMenuScreen
 import com.wpdas.primetv.ui.screens.category.CategoryScreen
 import com.wpdas.primetv.ui.screens.details.DetailsScreen
 import com.wpdas.primetv.ui.screens.home.HomeScreen
+import com.wpdas.primetv.ui.screens.football.FootballScreen
 import com.wpdas.primetv.ui.screens.live.LiveScreen
 import com.wpdas.primetv.ui.screens.receivelink.ReceiveLinkScreen
 import com.wpdas.primetv.ui.screens.settings.SettingsScreen
@@ -36,6 +37,7 @@ fun PrimeNavHost(
             HomeScreen(
                 onOpenSearch = { navController.navigate(SearchRoute) },
                 onOpenLive = { navController.navigate(LiveRoute) },
+                onOpenFootball = { navController.navigate(FootballRoute) },
                 onOpenDetails = { navController.navigate(DetailsRoute(it)) },
                 onPlay = { id, episode -> navController.navigate(PlayerRoute(id, episode)) },
                 onOpenAppMenu = { navController.navigate(AppMenuRoute) },
@@ -49,14 +51,32 @@ fun PrimeNavHost(
         composable<LiveRoute> {
             LiveScreen(
                 onTabSelected = { tab ->
-                    if (tab != HomeTab.LIVE) {
-                        navController.navigate(HomeRoute(tab.name)) { popUpTo<HomeRoute> { inclusive = true } }
+                    when (tab) {
+                        HomeTab.LIVE -> Unit
+                        HomeTab.FOOTBALL -> navController.navigate(FootballRoute) { popUpTo<LiveRoute> { inclusive = true } }
+                        else -> navController.navigate(HomeRoute(tab.name)) { popUpTo<HomeRoute> { inclusive = true } }
                     }
                 },
                 onOpenSearch = { navController.navigate(SearchRoute) },
                 onOpenAppMenu = { navController.navigate(AppMenuRoute) },
                 onOpenSettings = { navController.navigate(SettingsRoute) },
                 onPlay = { channel -> navController.navigate(PlayerRoute(channel.id)) },
+            )
+        }
+        composable<FootballRoute> {
+            FootballScreen(
+                onTabSelected = { tab ->
+                    when (tab) {
+                        HomeTab.FOOTBALL -> Unit
+                        HomeTab.LIVE -> navController.navigate(LiveRoute) { popUpTo<FootballRoute> { inclusive = true } }
+                        else -> navController.navigate(HomeRoute(tab.name)) { popUpTo<HomeRoute> { inclusive = true } }
+                    }
+                },
+                onOpenSearch = { navController.navigate(SearchRoute) },
+                onOpenAppMenu = { navController.navigate(AppMenuRoute) },
+                onOpenSettings = { navController.navigate(SettingsRoute) },
+                onPlayChannel = { id -> navController.navigate(PlayerRoute(id)) },
+                onOpenItem = ::openItem,
             )
         }
         composable<CategoryRoute> {

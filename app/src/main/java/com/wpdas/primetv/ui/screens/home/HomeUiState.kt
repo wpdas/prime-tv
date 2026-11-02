@@ -8,6 +8,8 @@ import com.wpdas.primetv.domain.model.MediaItem
 
 data class HomeUiState(
     val selectedTab: HomeTab = HomeTab.HOME,
+    /** Abas visíveis na barra (Kids/Anime só com conteúdo). */
+    val tabs: List<HomeTab> = HomeTab.entries.filter { it !in HomeTab.OPTIONAL },
     val featured: List<MediaItem> = emptyList(),
     val featuredIndex: Int = 0,
     /** Item fixado no destaque porque um card dele está em foco (sobrepõe a rotação). */

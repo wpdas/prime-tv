@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -56,6 +57,7 @@ import com.wpdas.primetv.ui.theme.PrimeTheme
 fun HomeScreen(
     onOpenSearch: () -> Unit,
     onOpenLive: () -> Unit,
+    onOpenFootball: () -> Unit,
     onOpenDetails: (String) -> Unit,
     onPlay: (String, String?) -> Unit,
     onOpenAppMenu: () -> Unit,
@@ -75,7 +77,13 @@ fun HomeScreen(
     HomeContent(
         state = state,
         viewModel = viewModel,
-        onTabSelected = { tab -> if (tab == HomeTab.LIVE) onOpenLive() else viewModel.onTabSelected(tab) },
+        onTabSelected = { tab ->
+            when (tab) {
+                HomeTab.LIVE -> onOpenLive()
+                HomeTab.FOOTBALL -> onOpenFootball()
+                else -> viewModel.onTabSelected(tab)
+            }
+        },
         onTopBarFocused = viewModel::onTopBarFocused,
         onCardFocused = viewModel::onCardFocused,
         onWatch = { onPlay(it.id, null) },
@@ -88,6 +96,7 @@ fun HomeScreen(
         onOpenAppMenu = onOpenAppMenu,
         onOpenSettings = onOpenSettings,
         onOpenLive = onOpenLive,
+        onOpenFootball = onOpenFootball,
     )
 }
 
@@ -106,6 +115,7 @@ fun HomeContent(
     onOpenAppMenu: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenLive: () -> Unit,
+    onOpenFootball: () -> Unit = {},
     onPlayChannel: (String) -> Unit = {},
     onSeeAll: (CategoryRow) -> Unit = {},
 ) {
@@ -191,11 +201,13 @@ fun HomeContent(
             var tabFocusJob by remember { androidx.compose.runtime.mutableStateOf<kotlinx.coroutines.Job?>(null) }
             TopBar(
                 selectedTab = state.selectedTab,
+                tabs = state.tabs,
                 onTabSelected = onTabSelected,
                 onTabFocused = { tab ->
                     tabFocusJob?.cancel()
                     // Ao vivo troca de tela, então espera mais para não disparar a caminho de Filmes/Séries.
-                    if (tab != state.selectedTab) tabFocusJob = scope.launch { kotlinx.coroutines.delay(if (tab == HomeTab.LIVE) LIVE_TAB_FOCUS_DELAY_MS else TAB_FOCUS_DELAY_MS); onTabSelected(tab) }
+                    val opensScreen = tab == HomeTab.LIVE || tab == HomeTab.FOOTBALL
+                    if (tab != state.selectedTab) tabFocusJob = scope.launch { kotlinx.coroutines.delay(if (opensScreen) LIVE_TAB_FOCUS_DELAY_MS else TAB_FOCUS_DELAY_MS); onTabSelected(tab) }
                 },
                 onLogoClick = onOpenAppMenu,
                 onSearchClick = onOpenSearch,
@@ -245,12 +257,13 @@ fun HomeContent(
                         }
                     }
                 }
-                if (state.football.isNotEmpty() && state.selectedTab in setOf(HomeTab.HOME, HomeTab.FOOTBALL)) {
+                if (state.football.isNotEmpty() && state.selectedTab == HomeTab.HOME) {
                     item(key = "football") {
                         HomeRow(title = t("home.football_now"), hint = t("home.football_now_hint"), focusRequester = rowRequester("football"), onFocused = { viewModel?.lastFocusedRow = "football" }) {
                             items(state.football, key = { it.id }) { event ->
-                                FootballCard(event = event, liveLabel = t("common.live"), onClick = { onPlayChannel(event.id) })
+                                FootballCard(event = event, liveLabel = t("common.live"), onClick = { onPlayChannel(event.channelId) })
                             }
+                            item(key = "football-guide") { SeeAllCard(label = t("football.see_guide"), onClick = onOpenFootball, modifier = Modifier.height(92.dp)) }
                         }
                     }
                 }

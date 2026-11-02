@@ -45,6 +45,8 @@ fun TopBar(
     onFocused: (() -> Unit)? = null,
     /** Aba ganhou foco (estilo Netflix: a tela troca sem precisar de OK). */
     onTabFocused: ((HomeTab) -> Unit)? = null,
+    /** Abas visíveis; Kids e Anime só entram quando a lista tem conteúdo para elas. */
+    tabs: List<HomeTab> = HomeTab.entries.filter { it !in HomeTab.OPTIONAL },
 ) {
     Row(
         modifier = modifier
@@ -66,7 +68,7 @@ fun TopBar(
                 style = PrimeButtonStyle.Ghost,
                 size = 44.dp,
             )
-            HomeTab.entries.forEach { tab ->
+            tabs.forEach { tab ->
                 TabItem(
                     label = t(tab.labelKey),
                     selected = tab == selectedTab,

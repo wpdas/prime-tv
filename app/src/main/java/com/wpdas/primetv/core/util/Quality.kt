@@ -39,6 +39,10 @@ object Quality {
     private val DUP_MARK = Regex("""[²³⁴]""")
     private val SPACES = Regex("""\s+""")
 
+    /** Nome sem tags de qualidade nem marcador de repetição, mantendo caixa e acentos ("Band FHD²" -> "Band"). */
+    fun stripTags(name: String): String =
+        name.replace(TAG, " ").replace(DUP_MARK, " ").replace(SPACES, " ").trim().ifEmpty { name.trim() }
+
     /**
      * Chave de agrupamento estrita: dois nomes só caem no mesmo grupo se forem iguais tirando
      * a tag de qualidade e o marcador de servidor repetido. Caixa, acentos e espaços extras não

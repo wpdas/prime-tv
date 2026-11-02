@@ -15,10 +15,16 @@ class FootballClassifier(keywords: List<String> = DEFAULT_KEYWORDS) {
         .map { Regex("(?<![a-z0-9])" + Regex.escape(it) + "(?![a-z0-9])") }
 
     fun matches(name: String?, category: String?): Boolean {
+        if (matchesKeywords(name, category)) return true
+        val n = name?.let { TextNormalizer.stripAccents(it.lowercase()) }.orEmpty()
+        return VERSUS.containsMatchIn(n)
+    }
+
+    /** Só pelas palavras-chave (sem a regra "time x time"): canais que são de futebol por natureza. */
+    fun matchesKeywords(name: String?, category: String?): Boolean {
         val n = name?.let { TextNormalizer.stripAccents(it.lowercase()) }.orEmpty()
         val c = category?.let { TextNormalizer.stripAccents(it.lowercase()) }.orEmpty()
-        if (needles.any { it.containsMatchIn(n) || it.containsMatchIn(c) }) return true
-        return VERSUS.containsMatchIn(n)
+        return needles.any { it.containsMatchIn(n) || it.containsMatchIn(c) }
     }
 
     companion object {

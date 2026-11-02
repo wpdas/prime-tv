@@ -42,6 +42,7 @@ class HomeViewModel @Inject constructor(
         repository.featured().onEach { list ->
             _state.update { it.copy(featured = list, featuredIndex = it.featuredIndex.coerceIn(0, (list.size - 1).coerceAtLeast(0))) }
         }.launchIn(viewModelScope)
+        repository.availableTabs().onEach { tabs -> _state.update { it.copy(tabs = tabs) } }.launchIn(viewModelScope)
         repository.continueWatching().onEach { list -> _state.update { it.copy(continueWatching = list) } }.launchIn(viewModelScope)
         repository.footballNow().onEach { list -> _state.update { it.copy(football = list) } }.launchIn(viewModelScope)
         tab.flatMapLatest { repository.categoryRows(it) }

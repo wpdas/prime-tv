@@ -13,6 +13,8 @@ interface HomeRepository {
     fun continueWatching(): Flow<List<ContinueWatchingItem>>
     fun footballNow(): Flow<List<FootballEvent>>
     fun categoryRows(tab: HomeTab): Flow<List<CategoryRow>>
+    /** Abas da barra superior na ordem: Kids e Anime só quando a lista tiver categorias correspondentes. */
+    fun availableTabs(): Flow<List<HomeTab>>
     /** Nome da seção sendo atualizada em segundo plano, ou null. */
     fun backgroundUpdate(): Flow<String?>
     suspend fun toggleMyList(itemId: String)

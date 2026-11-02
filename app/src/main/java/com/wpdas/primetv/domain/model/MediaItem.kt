@@ -32,12 +32,21 @@ data class ContinueWatchingItem(
     val episodeId: String? = null,
 )
 
-/** Evento de futebol ao vivo (canal + partida). */
+/** Jogo de futebol para a linha da Início: canal, partida e, quando a lista informa, horário e competição. */
 data class FootballEvent(
+    /** Único na linha (chave do jogo ou id do canal). */
     val id: String,
+    /** Canal a abrir no player. */
+    val channelId: String = id,
     val channelName: String,
     val title: String,
     val isLive: Boolean = true,
+    /** Início em epoch ms (null quando só sabemos que está no ar agora). */
+    val start: Long? = null,
+    /** Competição já pronta para exibir ("Brasileirão Série B"), ou null. */
+    val league: String? = null,
+    val home: String? = null,
+    val away: String? = null,
 )
 
 /** Linha de categoria na tela de Início. [section]/[categoryId] habilitam o card "Ver todos". */

@@ -186,10 +186,20 @@ data class TmdbMatchEntity(
     val matchedAt: Long,
 )
 
-/** Escudo de time (URL de terceiros). [url] null = procurado e não encontrado. */
+/** Escudo de time (URL de terceiros) e liga em que joga. [url] null = procurado e não encontrado. */
 @Entity(tableName = "team_crests")
 data class TeamCrestEntity(
     @PrimaryKey val teamKey: String,
+    val url: String?,
+    val fetchedAt: Long,
+    @ColumnInfo(defaultValue = "NULL") val league: String? = null,
+    @ColumnInfo(defaultValue = "NULL") val leagueId: String? = null,
+)
+
+/** Escudo de competição (URL de terceiros), pela id da base pública. [url] null = sem imagem. */
+@Entity(tableName = "league_badges")
+data class LeagueBadgeEntity(
+    @PrimaryKey val leagueId: String,
     val url: String?,
     val fetchedAt: Long,
 )

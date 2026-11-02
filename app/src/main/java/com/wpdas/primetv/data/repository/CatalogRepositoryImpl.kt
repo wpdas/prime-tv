@@ -10,6 +10,9 @@ import com.wpdas.primetv.data.remote.xtream.XtreamClient
 import com.wpdas.primetv.data.remote.xtream.blankToNull
 import com.wpdas.primetv.data.remote.xtream.toIntLenient
 import com.wpdas.primetv.data.sync.SearchType
+import com.wpdas.primetv.domain.football.FootballClassifierProvider
+import com.wpdas.primetv.domain.football.MatchEvent
+import com.wpdas.primetv.domain.football.MatchSchedule
 import com.wpdas.primetv.domain.model.Category
 import com.wpdas.primetv.domain.model.Channel
 import com.wpdas.primetv.domain.model.ContentSection
@@ -25,7 +28,9 @@ import com.wpdas.primetv.domain.repository.ChannelFilter
 import com.wpdas.primetv.domain.repository.SearchResults
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -37,6 +42,7 @@ class CatalogRepositoryImpl @Inject constructor(
     private val db: PrimeDatabase,
     private val playlistStore: PlaylistStore,
     private val xtream: XtreamClient,
+    private val footballProvider: FootballClassifierProvider,
     @IoDispatcher private val io: CoroutineDispatcher,
 ) : CatalogRepository {
 
@@ -65,6 +71,21 @@ class CatalogRepositoryImpl @Inject constructor(
     override fun footballChannelCount(): Flow<Int> = dao.observeFootballChannelCount()
     override fun footballVodCount(): Flow<Int> = dao.observeFootballVodCount()
 
+    override fun matchSchedule(): Flow<List<MatchEvent>> {
+        val now = System.currentTimeMillis()
+        val from = now - MATCH_PAST_WINDOW_MS
+        val to = now + MATCH_FUTURE_WINDOW_MS
+        return combine(dao.observeFootballChannelsAll(), epg.observeFootballPrograms(from, to)) { channels, programs ->
+            val classifier = footballProvider.get()
+            MatchSchedule.build(
+                channels = channels.map { it.toDomain() },
+                programs = programs.map { it.toDomain() },
+                now = System.currentTimeMillis(),
+                keywordMatch = { classifier.matchesKeywords(it.name, it.categoryName) },
+            )
+        }.flowOn(io)
+    }
+
     override fun movies(categoryId: String?, limit: Int): Flow<List<Movie>> =
         (if (categoryId == null) dao.observeAllMovies(limit) else dao.observeCategoryMovies(categoryId, limit)).map { l -> l.map { it.toDomain() } }
     override fun recentMovies(limit: Int): Flow<List<Movie>> = dao.observeAllMovies(limit).map { l -> l.map { it.toDomain() } }
@@ -73,6 +94,8 @@ class CatalogRepositoryImpl @Inject constructor(
 
     override fun series(categoryId: String?, limit: Int): Flow<List<Series>> = dao.observeSeries(categoryId, limit).map { l -> l.map { it.toDomain() } }
     override fun footballSeries(limit: Int): Flow<List<Series>> = dao.observeFootballSeries(limit).map { l -> l.map { it.toDomain() } }
+    override fun seriesByGenre(term: String, excludedCategoryIds: List<String>, limit: Int): Flow<List<Series>> =
+        dao.observeSeriesByGenre(term, excludedCategoryIds.ifEmpty { listOf("") }, limit).map { l -> l.map { it.toDomain() } }
     override fun seriesById(id: String): Flow<Series?> = dao.observeSeriesById(id).map { it?.toDomain() }
     override fun episodes(seriesId: String): Flow<List<Episode>> = dao.observeEpisodes(seriesId).map { l -> l.map { it.toDomain() } }
 
@@ -194,5 +217,9 @@ class CatalogRepositoryImpl @Inject constructor(
                 else -> null
             }
         }
+
+        /** Janela de EPG lida para o guia: ontem à noite até depois de amanhã. */
+        private const val MATCH_PAST_WINDOW_MS = 30L * 60 * 60 * 1000
+        private const val MATCH_FUTURE_WINDOW_MS = 48L * 60 * 60 * 1000
     }
 }

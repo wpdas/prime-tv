@@ -118,6 +118,7 @@ fun LiveScreen(
         var tabFocusJob by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<kotlinx.coroutines.Job?>(null) }
         TopBar(
             selectedTab = HomeTab.LIVE,
+            tabs = state.tabs,
             onTabSelected = onTabSelected,
             onTabFocused = { tab ->
                 tabFocusJob?.cancel()
