@@ -209,9 +209,8 @@ fun HomeContent(
                     val opensScreen = tab == HomeTab.LIVE || tab == HomeTab.FOOTBALL
                     if (tab != state.selectedTab) tabFocusJob = scope.launch { kotlinx.coroutines.delay(if (opensScreen) LIVE_TAB_FOCUS_DELAY_MS else TAB_FOCUS_DELAY_MS); onTabSelected(tab) }
                 },
-                onLogoClick = onOpenAppMenu,
                 onSearchClick = onOpenSearch,
-                onSettingsClick = onOpenSettings,
+                onMenuClick = onOpenAppMenu,
                 onFocused = {
                     onTopBarFocused()
                     // Com o foco na barra, o destaque volta a aparecer inteiro.

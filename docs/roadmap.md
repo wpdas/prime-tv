@@ -55,6 +55,9 @@ Feito com escudos estilizados gerados no app (sigla + cores do clube para os mai
 ### Destaque com imagem em toda a largura ✅ (fase 5)
 Com backdrop do TMDB o destaque usa a imagem em toda a largura com o texto sobre um degradê; só com o pôster vertical da lista, mantém o layout do protótipo (texto à esquerda, imagem à direita).
 
+### Guia de jogos ✅
+Feito a partir do que a lista traz (canais de evento com horário no nome + EPG), com competição e escudos da base pública TheSportsDB (chave de teste, ~30 chamadas/min; cache de 30 dias e pré-carga ao abrir o app). Pendências: lembrete/despertador de jogo (toast quando começar, enquanto o app estiver aberto; sem notificações na box), calendário de dias futuros (a lista só anuncia os jogos do dia; exigiria uma API de tabela) e logo da competição para ligas que a lista nomeia mas a base não tem.
+
 ### Controle parental (adiado)
 Previsto na especificação (PIN de 4 dígitos, ocultar categorias adultas por palavras-chave e marcação manual), mas adiado: na prática o conteúdo adulto costuma vir habilitado ou não na própria lista, por definição de quem contratou com o provedor. Reavaliar se houver pedido dos usuários. Quando entrar: PIN no DataStore (hash), filtro `isAdult`/palavras-chave nas consultas e diálogo de PIN na tela Ao vivo e nas categorias.
 

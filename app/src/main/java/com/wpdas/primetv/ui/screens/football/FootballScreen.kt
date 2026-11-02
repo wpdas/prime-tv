@@ -111,9 +111,8 @@ fun FootballScreen(
                 tabFocusJob?.cancel()
                 if (tab != HomeTab.FOOTBALL) tabFocusJob = scope.launch { delay(TAB_FOCUS_DELAY_MS); onTabSelected(tab) }
             },
-            onLogoClick = onOpenAppMenu,
             onSearchClick = onOpenSearch,
-            onSettingsClick = onOpenSettings,
+            onMenuClick = onOpenAppMenu,
         )
         Row(
             Modifier.fillMaxSize().padding(start = PrimeDimens.screenMargin, end = PrimeDimens.screenMargin, top = 8.dp, bottom = 32.dp),

@@ -4,6 +4,16 @@ Formato: uma seção por versão, com **Novidades** e **Correções**. A seção
 
 ## [Não lançado]
 
+### Novidades
+- Aba Futebol abre o Guia de jogos: partidas do dia com horário, escudos dos times, competição e canal, montadas a partir dos canais de evento da lista ("Time x Time - 16:45") e do guia de programação. Trilho com Jogos, Ao vivo agora, Canais e Vídeos; OK abre o canal. Reprises e anúncios de jogos futuros ficam de fora
+- Competição e escudos vêm da base pública TheSportsDB (o que a lista informa, como "Série B", tem prioridade); são pré-carregados aos poucos ao abrir o app e ficam guardados por 30 dias
+- Na Início, "Futebol agora" virou "Jogos de hoje": ao vivo primeiro, depois os próximos, com horário e competição, e um card "Ver guia de jogos"
+- Abas Kids e Anime na barra superior quando a lista tem categorias infantis ou de anime (uma linha por categoria; em Kids, também as séries marcadas como "Kids" pela lista)
+- Menu Qualidade no player (ao vivo e filmes): Auto e as resoluções do stream quando ele é adaptativo, e as versões da lista (4K/FHD/HD/SD) do mesmo canal ou filme; a escolha manual desliga a troca automática por conexão lenta
+- Velocidade de download do stream aparece junto do spinner enquanto carrega
+- Ao subir da lista para a barra superior, o foco cai sempre na aba ativa, sem trocar de seção sem querer
+- O logo deixa de ser botão; o menu do app (atualização, configurações, trocar lista, sobre) fica no ícone ⋯ à direita
+
 ## [0.0.4] - 2026-11-02
 
 ### Novidades
