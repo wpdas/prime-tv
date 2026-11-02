@@ -15,7 +15,11 @@ enum class SyncInterval(val hours: Int, val labelKey: String) {
     fun next(): SyncInterval = entries[(ordinal + 1) % entries.size]
 
     companion object {
-        fun defaultFor(section: ContentSection) = if (section == ContentSection.EPG) H12 else D1
+        /** Canais de evento ("Jogos do Dia") são renomeados ao longo do dia: Ao vivo e Guia a cada 6 h; filmes e séries por dia. */
+        fun defaultFor(section: ContentSection) = when (section) {
+            ContentSection.LIVE, ContentSection.EPG -> H6
+            else -> D1
+        }
     }
 }
 

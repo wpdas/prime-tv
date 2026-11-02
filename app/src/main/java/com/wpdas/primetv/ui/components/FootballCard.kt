@@ -59,7 +59,8 @@ fun FootballCard(
                         event.isLive -> LiveBadge(liveLabel)
                         event.start != null -> Text(formatHour(event.start), style = PrimeTheme.typography.captionStrong, color = colors.text)
                     }
-                    Text(league ?: event.channelName, style = PrimeTheme.typography.caption, color = colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    // Canal de evento tem o próprio jogo como nome: não repete o título enquanto a liga não chega.
+                    Text(league ?: event.channelName.takeUnless { MatchArtist.parse(it) != null }.orEmpty(), style = PrimeTheme.typography.caption, color = colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 Text(event.title, style = PrimeTheme.typography.bodyStrong, color = colors.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }

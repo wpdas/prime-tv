@@ -13,6 +13,7 @@ Formato: uma seção por versão, com **Novidades** e **Correções**. A seção
 - Velocidade de download do stream aparece junto do spinner enquanto carrega
 - Ao subir da lista para a barra superior, o foco cai sempre na aba ativa, sem trocar de seção sem querer
 - O logo deixa de ser botão; o menu do app (atualização, configurações, trocar lista, sobre) fica no ícone ⋯ à direita
+- Atualização automática de Ao vivo e do Guia passa a ser a cada 6 h por padrão (os canais de jogo mudam ao longo do dia); quem já escolheu outro intervalo mantém a escolha
 
 ## [0.0.4] - 2026-11-02
 

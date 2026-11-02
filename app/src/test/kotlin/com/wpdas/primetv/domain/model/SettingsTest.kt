@@ -7,7 +7,8 @@ import org.junit.Test
 class SettingsTest {
     @Test fun `intervalos padrao e ciclo`() {
         assertEquals(SyncInterval.D1, SyncInterval.defaultFor(ContentSection.MOVIES))
-        assertEquals(SyncInterval.H12, SyncInterval.defaultFor(ContentSection.EPG))
+        assertEquals(SyncInterval.H6, SyncInterval.defaultFor(ContentSection.EPG))
+        assertEquals(SyncInterval.H6, SyncInterval.defaultFor(ContentSection.LIVE))
         assertEquals(SyncInterval.H12, SyncInterval.H6.next())
         assertEquals(SyncInterval.H6, SyncInterval.MANUAL.next())
         assertTrue(SyncInterval.MANUAL.isManual)
