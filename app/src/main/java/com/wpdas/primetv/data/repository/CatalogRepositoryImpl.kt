@@ -162,7 +162,10 @@ class CatalogRepositoryImpl @Inject constructor(
         val series = byType[SearchType.SERIES]?.let { dao.seriesByIds(it) }.orEmpty().map { it.toDomain() }
         // Mantém a ordem de relevância do FTS (ordem do índice) dentro de cada tipo.
         val order = hits.withIndex().associate { it.value.refId to it.index }
-        val bestChannels = channels.groupBy { it.groupKey.ifEmpty { it.id } }.values.map { group -> group.minByOrNull { it.qualityRank }!! }
+        // Mesma regra das listas: só colapsa grupos que têm alguma variante com tag de qualidade.
+        val bestChannels = channels.groupBy { it.groupKey.ifEmpty { it.id } }.values.flatMap { group ->
+            if (group.any { it.qualityRank < com.wpdas.primetv.core.util.Quality.RANK_UNKNOWN }) listOf(group.minByOrNull { it.qualityRank }!!) else group
+        }
         SearchResults(
             channels = bestChannels.sortedBy { order[it.id] },
             movies = movies.sortedBy { order[it.id] },

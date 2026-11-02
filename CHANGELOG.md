@@ -12,7 +12,7 @@ Formato: uma seção por versão, com **Novidades** e **Correções**. A seção
 - Configurações › Player: margem de segurança (overscan) e som na prévia
 
 ### Correções
-- Dentro de uma categoria do Ao vivo (TELECINE, HBO…), a deduplicação de qualidade passa a ser por categoria; antes, canais sumiam quando a melhor variante estava em outra categoria
+- Deduplicação de qualidade corrigida em todo lugar (Ao vivo, categorias, Futebol, Filmes, busca e contagens): só colapsa dentro do escopo mostrado e só quando o grupo tem alguma tag de qualidade. Antes, canais sumiam de TELECINE/HBO e jogos repetidos do Brasileirão apareciam uma vez só
 - Atualizar o app não apaga mais favoritos, histórico nem a lista; quando a estrutura do banco muda, a lista é reimportada em segundo plano
 - Voltar fecha o painel de Áudio/Legendas/Episódios de uma vez
 - Texto literal "$input_" ao digitar número de canal
