@@ -43,6 +43,7 @@ class SettingsStore @Inject constructor(
                 language = prefs[KEY_LANGUAGE] ?: "pt-BR",
                 overscanPercent = prefs[KEY_OVERSCAN] ?: 0,
                 previewSound = prefs[KEY_PREVIEW_SOUND] ?: false,
+                resumeLive = prefs[KEY_RESUME_LIVE] ?: true,
             )
         }
         // Primeiro valor lido de forma síncrona: arquivo minúsculo, evita "piscar" com padrões errados.
@@ -61,6 +62,7 @@ class SettingsStore @Inject constructor(
             language = prefs[KEY_LANGUAGE] ?: "pt-BR",
             overscanPercent = prefs[KEY_OVERSCAN] ?: 0,
             previewSound = prefs[KEY_PREVIEW_SOUND] ?: false,
+            resumeLive = prefs[KEY_RESUME_LIVE] ?: true,
         )
     }.getOrDefault(AppSettings(footballKeywords = FootballClassifier.DEFAULT_KEYWORDS))
 
@@ -96,6 +98,10 @@ class SettingsStore @Inject constructor(
         store.edit { it[KEY_PREVIEW_SOUND] = enabled }
     }
 
+    override suspend fun setResumeLive(enabled: Boolean) {
+        store.edit { it[KEY_RESUME_LIVE] = enabled }
+    }
+
     private companion object {
         fun intervalKey(section: ContentSection) = stringPreferencesKey("sync_interval_${section.name.lowercase()}")
         val KEY_UNMETERED = booleanPreferencesKey("sync_unmetered_only")
@@ -105,5 +111,6 @@ class SettingsStore @Inject constructor(
         val KEY_LANGUAGE = stringPreferencesKey("language")
         val KEY_OVERSCAN = androidx.datastore.preferences.core.intPreferencesKey("overscan_percent")
         val KEY_PREVIEW_SOUND = booleanPreferencesKey("preview_sound")
+        val KEY_RESUME_LIVE = booleanPreferencesKey("player_resume_live")
     }
 }

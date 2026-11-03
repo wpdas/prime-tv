@@ -114,6 +114,10 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settingsRepository.setPreviewSound(!_state.value.settings.previewSound) }
     }
 
+    fun toggleResumeLive() {
+        viewModelScope.launch { settingsRepository.setResumeLive(!_state.value.settings.resumeLive) }
+    }
+
     fun selectLanguage(language: String) {
         viewModelScope.launch {
             settingsRepository.setLanguage(language)

@@ -26,8 +26,21 @@ class LiveStateStore @Inject constructor(@ApplicationContext private val context
         }
     }
 
+    /** Canal em exibição em tela cheia, ou null quando o usuário saiu do player por conta própria. */
+    suspend fun readWatching(): String? =
+        runCatching { context.appDataStore.data.first()[KEY_WATCHING] }.getOrNull()
+
+    suspend fun saveWatching(channelId: String?) {
+        runCatching {
+            context.appDataStore.edit {
+                if (channelId != null) it[KEY_WATCHING] = channelId else it.remove(KEY_WATCHING)
+            }
+        }
+    }
+
     private companion object {
         val KEY_RAIL = stringPreferencesKey("live_last_rail")
         val KEY_CHANNEL = stringPreferencesKey("live_last_channel")
+        val KEY_WATCHING = stringPreferencesKey("live_watching_channel")
     }
 }

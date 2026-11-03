@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -21,18 +22,23 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import com.wpdas.primetv.R
 import com.wpdas.primetv.ui.components.LogoWordmark
 import com.wpdas.primetv.ui.components.tryRequestFocus
 import com.wpdas.primetv.ui.theme.PrimeTheme
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Vinheta de abertura: o wordmark "PrimeTV" surge num leve zoom vindo em direção à tela,
- * com um som curto que cresce e termina num "plim". Dura ~2,2 s, qualquer tecla pula, e
- * não atrasa nada: a lista e a Início carregam por baixo enquanto ela roda.
+ * com um som curto que cresce e termina num "plim". Espera ~1 s de fundo liso antes de
+ * começar, para a animação não disputar o processador com a inicialização do app (banco,
+ * lista, primeira composição) e travar. Qualquer tecla pula, e nada espera por ela: a lista
+ * e a Início carregam por baixo enquanto ela roda.
  */
 @Composable
 fun IntroOverlay(onFinished: () -> Unit) {
@@ -41,14 +47,19 @@ fun IntroOverlay(onFinished: () -> Unit) {
     val scale = remember { Animatable(0.82f) }
     val alpha = remember { Animatable(0f) }
     val focus = remember { FocusRequester() }
-    val player = remember { runCatching { MediaPlayer.create(context, R.raw.intro) }.getOrNull() }
+    // Guardado fora do estado do Compose: criado em segundo plano e liberado ao sair.
+    val holder = remember { arrayOfNulls<MediaPlayer>(1) }
 
     DisposableEffect(Unit) {
-        runCatching { player?.start() }
-        onDispose { runCatching { player?.release() } }
+        onDispose { runCatching { holder[0]?.release() }; holder[0] = null }
     }
     LaunchedEffect(Unit) {
         focus.tryRequestFocus()
+        // Decodifica o som fora da thread principal enquanto a tela "respira".
+        val player = withContext(Dispatchers.IO) { runCatching { MediaPlayer.create(context, R.raw.intro) }.getOrNull() }
+        holder[0] = player
+        delay(START_DELAY_MS)
+        runCatching { player?.start() }
         coroutineScope {
             launch { alpha.animateTo(1f, tween(FADE_IN_MS)) }
             launch { scale.animateTo(1f, tween(ZOOM_MS, easing = CubicBezierEasing(0.2f, 0.8f, 0.2f, 1f))) }
@@ -72,7 +83,8 @@ fun IntroOverlay(onFinished: () -> Unit) {
     ) {
         LogoWordmark(
             fontSize = 84,
-            modifier = Modifier.graphicsLayer {
+            // Folga em volta: o texto não é cortado nas bordas da própria caixa ao ser desenhado maior.
+            modifier = Modifier.padding(24.dp).graphicsLayer {
                 scaleX = scale.value
                 scaleY = scale.value
                 this.alpha = alpha.value
@@ -81,6 +93,7 @@ fun IntroOverlay(onFinished: () -> Unit) {
     }
 }
 
+private const val START_DELAY_MS = 1_000L
 private const val FADE_IN_MS = 450
 private const val ZOOM_MS = 1_500
 private const val HOLD_MS = 1_750L

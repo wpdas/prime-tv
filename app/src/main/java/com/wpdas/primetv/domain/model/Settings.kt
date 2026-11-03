@@ -42,6 +42,8 @@ data class AppSettings(
     /** Margem de segurança (overscan) em % de cada borda: TVs que cortam as bordas da imagem. */
     val overscanPercent: Int = 0,
     val previewSound: Boolean = false,
+    /** Fechou o app assistindo a um canal ao vivo: ao abrir, volta direto nesse canal. */
+    val resumeLive: Boolean = true,
 ) {
     companion object {
         val OVERSCAN_OPTIONS = listOf(0, 2, 4, 6)

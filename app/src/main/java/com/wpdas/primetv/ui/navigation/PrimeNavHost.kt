@@ -22,14 +22,27 @@ import com.wpdas.primetv.ui.screens.player.PlayerScreen
 import com.wpdas.primetv.ui.screens.search.SearchScreen
 import com.wpdas.primetv.ui.screens.setup.SetupScreen
 
+/**
+ * [resumeChannelId]: canal ao vivo que estava em tela cheia quando o app foi fechado; abre o
+ * player por cima da Início assim que chegar (uma vez, [onResumeConsumed] marca como feito).
+ */
 @Composable
 fun PrimeNavHost(
     startDestination: Any,
     navController: NavHostController = rememberNavController(),
+    resumeChannelId: String? = null,
+    onResumeConsumed: () -> Unit = {},
 ) {
     fun openItem(item: MediaItem) {
         if (item.type == MediaType.CHANNEL) navController.navigate(PlayerRoute(item.id))
         else navController.navigate(DetailsRoute(item.id))
+    }
+
+    androidx.compose.runtime.LaunchedEffect(resumeChannelId) {
+        if (resumeChannelId != null) {
+            onResumeConsumed()
+            navController.navigate(PlayerRoute(resumeChannelId))
+        }
     }
 
     NavHost(navController = navController, startDestination = startDestination) {
@@ -117,6 +130,7 @@ fun PrimeNavHost(
                     navController.navigate(HomeRoute()) { popUpTo(navController.graph.id) { inclusive = true } }
                 },
                 onReceiveLink = { navController.navigate(ReceiveLinkRoute) },
+                onOpenUpdate = { navController.navigate(UpdateRoute) },
             )
         }
         composable<ReceiveLinkRoute> {

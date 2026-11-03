@@ -356,6 +356,12 @@ private fun PlayerPane(state: SettingsUiState, viewModel: SettingsViewModel) {
         value = t(if (state.settings.previewSound) "settings.on" else "settings.off"),
         onClick = viewModel::togglePreviewSound,
     )
+    SettingRow(
+        title = t("settings.resume_live"),
+        subtitle = t("settings.resume_live_hint"),
+        value = t(if (state.settings.resumeLive) "settings.on" else "settings.off"),
+        onClick = viewModel::toggleResumeLive,
+    )
 }
 
 @Composable

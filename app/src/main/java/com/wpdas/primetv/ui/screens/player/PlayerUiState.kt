@@ -6,7 +6,7 @@ import com.wpdas.primetv.domain.model.Episode
 
 data class TrackOption(val id: String, val label: String, val selected: Boolean)
 
-enum class PlayerPanel { NONE, AUDIO, SUBTITLES, EPISODES, QUALITY }
+enum class PlayerPanel { NONE, AUDIO, SUBTITLES, EPISODES, QUALITY, CHANNELS }
 
 data class PlayerUiState(
     val loaded: Boolean = false,
@@ -39,6 +39,9 @@ data class PlayerUiState(
     // ao vivo
     val channel: Channel? = null,
     val nowProgram: EpgProgram? = null,
+    /** Ao vivo: canais da lista de zapping atual (painel aberto com OK) e o que está no ar em cada um. */
+    val zapList: List<Channel> = emptyList(),
+    val zapNowPlaying: Map<String, EpgProgram> = emptyMap(),
     /** Sinaliza à tela que a reprodução terminou e ela deve fechar. */
     val finished: Boolean = false,
     /** Ao vivo: dígitos sendo digitados para pular de canal ("12_"). */

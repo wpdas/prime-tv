@@ -102,6 +102,8 @@ fun PlayerScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val rootFocus = remember { FocusRequester() }
     val playPauseFocus = remember { FocusRequester() }
+    // Sair de propósito: desmarca o canal "em exibição" (o app não reabre nele).
+    val leave: () -> Unit = { viewModel.onLeave(); onBack() }
 
     // Tela acesa e pausa ao ir para segundo plano.
     DisposableEffect(lifecycleOwner) {
@@ -121,14 +123,14 @@ fun PlayerScreen(
         }
     }
 
-    LaunchedEffect(state.finished) { if (state.finished) onBack() }
+    LaunchedEffect(state.finished) { if (state.finished) leave() }
 
     BackHandler {
         when {
             state.panel != PlayerPanel.NONE -> viewModel.closePanel()
             state.liveMenu -> viewModel.closeLiveMenu()
             state.controlsVisible && !state.hasError && !state.isBuffering -> viewModel.hideControls()
-            else -> onBack()
+            else -> leave()
         }
     }
 
@@ -182,9 +184,9 @@ fun PlayerScreen(
 
         AnimatedVisibility(visible = state.controlsVisible || state.hasError, enter = fadeIn(), exit = fadeOut()) {
             Box(Modifier.fillMaxSize()) {
-                TopOverlay(state = state, onBack = onBack)
+                TopOverlay(state = state, onBack = leave)
                 if (state.hasError) {
-                    ErrorOverlay(state = state, onRetry = viewModel::retry, onBack = onBack, modifier = Modifier.align(Alignment.Center))
+                    ErrorOverlay(state = state, onRetry = viewModel::retry, onBack = leave, modifier = Modifier.align(Alignment.Center))
                 } else {
                     BottomControls(state = state, viewModel = viewModel, playPauseFocus = playPauseFocus, modifier = Modifier.align(Alignment.BottomCenter))
                 }
@@ -238,6 +240,7 @@ fun PlayerScreen(
             )
             PlayerPanel.EPISODES -> EpisodesPanel(state = state, onPlay = viewModel::playEpisode, modifier = Modifier.align(Alignment.CenterEnd))
             PlayerPanel.QUALITY -> QualityPanel(options = state.qualityOptions, onSelect = viewModel::selectQuality, onClose = viewModel::closePanel, modifier = Modifier.align(Alignment.CenterEnd))
+            PlayerPanel.CHANNELS -> ChannelsPanel(state = state, onSelect = viewModel::selectChannel, modifier = Modifier.align(Alignment.CenterStart))
             PlayerPanel.NONE -> Unit
         }
     }
@@ -245,8 +248,9 @@ fun PlayerScreen(
 
 /**
  * Teclas no player.
- * - Ao vivo: cima/baixo sempre trocam de canal, OK pausa/retoma e mostra a barra, números
- *   escolhem o canal, esquerda/direita abrem a linha de opções (Áudio/Legendas).
+ * - Ao vivo: cima/baixo sempre trocam de canal, OK abre a lista de canais à esquerda (ou retoma
+ *   se estiver pausado pela tecla de mídia), números escolhem o canal, esquerda/direita abrem a
+ *   linha de opções (Áudio/Legendas/Qualidade).
  * - Filmes/séries com controles escondidos: qualquer tecla mostra os controles; esquerda/direita só
  *   avançam na barra de progresso (segurar acelera), nunca com a barra escondida.
  */
@@ -286,7 +290,11 @@ private fun handleKey(event: androidx.compose.ui.input.key.KeyEvent, state: Play
         }
         if (state.liveMenu) return false // foco navega entre Áudio/Legendas
         return when (key) {
-            Key.DirectionCenter, Key.Enter, Key.NumPadEnter -> { vm.togglePlayPause(); true }
+            Key.DirectionCenter, Key.Enter, Key.NumPadEnter -> {
+                // Pausado pela tecla de mídia: OK retoma. Tocando: OK abre a lista de canais.
+                if (!state.isPlaying && !state.isBuffering) vm.togglePlayPause() else vm.openChannels()
+                true
+            }
             Key.DirectionLeft, Key.DirectionRight -> { vm.openLiveMenu(); true }
             Key.Back, Key.Escape -> false
             else -> { vm.showControls(); true }
@@ -380,11 +388,13 @@ private fun BottomControls(state: PlayerUiState, viewModel: PlayerViewModel, pla
                 } ?: Text(t("player.live_hint"), style = typography.caption, color = colors.textSecondary, modifier = Modifier.weight(1f))
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                // Carregando conta como "tocando": só a pausa de verdade (tecla de mídia) muda a dica.
+                val active = state.isPlaying || state.isBuffering
                 Icon(
-                    if (state.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                    if (active) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                     contentDescription = null, tint = colors.text, modifier = Modifier.size(28.dp),
                 )
-                Text(t(if (state.isPlaying) "player.live_keys" else "player.live_paused"), style = typography.cardBody, color = colors.textBody, modifier = Modifier.weight(1f))
+                Text(t(if (active) "player.live_keys" else "player.live_paused"), style = typography.cardBody, color = colors.textBody, modifier = Modifier.weight(1f))
                 if (state.liveMenu) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OptionButton(t("player.audio"), modifier = Modifier.focusRequester(playPauseFocus)) { viewModel.openPanel(PlayerPanel.AUDIO) }
@@ -675,6 +685,58 @@ private fun EpisodesPanel(state: PlayerUiState, onPlay: (Episode) -> Unit, modif
                     onClick = { onPlay(episode) },
                     stateLabel = if (episode.id == current?.id) t("player.now_playing") else null,
                     modifier = if (episode.id == (current?.id ?: episodes.firstOrNull()?.id)) Modifier.focusRequester(first) else Modifier,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Lista de canais da categoria atual, à esquerda, aberta com OK no ao vivo. O canal continua
+ * tocando atrás (por isso não há prévia); o item em exibição começa focado.
+ */
+@Composable
+private fun ChannelsPanel(state: PlayerUiState, onSelect: (com.wpdas.primetv.domain.model.Channel) -> Unit, modifier: Modifier = Modifier) {
+    val colors = PrimeTheme.colors
+    val channels = state.zapList
+    val currentId = state.channel?.id
+    val first = remember { FocusRequester() }
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val currentIndex = channels.indexOfFirst { it.id == currentId }.coerceAtLeast(0)
+    LaunchedEffect(Unit) {
+        listState.scrollToItem(currentIndex)
+        repeat(10) {
+            kotlinx.coroutines.delay(50)
+            if (first.tryRequestFocus()) return@LaunchedEffect
+        }
+    }
+    val now = System.currentTimeMillis()
+    Column(
+        modifier.width(480.dp).fillMaxHeight().background(colors.surface.copy(alpha = 0.97f)).padding(horizontal = 20.dp, vertical = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(start = 6.dp, end = 6.dp, bottom = 4.dp)) {
+            Text(state.subtitle ?: t("live.all"), style = PrimeTheme.typography.subtitle, color = colors.text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+            Text(t("live.channels_count", "n" to channels.size), style = PrimeTheme.typography.caption, color = colors.textSecondary)
+        }
+        LazyColumn(
+            Modifier.fillMaxSize().focusRestorer().focusGroup(),
+            state = listState,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 6.dp, horizontal = 6.dp),
+        ) {
+            items(channels, key = { it.id }) { channel ->
+                val program = channel.epgKey?.let { state.zapNowPlaying[it] }
+                com.wpdas.primetv.ui.components.ChannelRow(
+                    number = channel.number.toString(),
+                    name = channel.displayName,
+                    logoUrl = channel.logoUrl,
+                    nowTitle = program?.title,
+                    timeRange = if (channel.id == currentId) t("player.now_playing") else program?.let { "${formatClock(it.start)} – ${formatClock(it.end)}" },
+                    progress = program?.progressAt(now) ?: 0f,
+                    onClick = { onSelect(channel) },
+                    qualityLabel = channel.qualityLabel,
+                    modifier = if (channel.id == (currentId ?: channels.firstOrNull()?.id)) Modifier.focusRequester(first) else Modifier,
                 )
             }
         }

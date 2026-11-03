@@ -27,7 +27,11 @@ class SetupViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val playlistRepository: PlaylistRepository,
     private val catalogSync: CatalogSync,
+    private val updates: com.wpdas.primetv.domain.update.UpdateRepository,
 ) : ViewModel() {
+
+    /** O diálogo de versão nova já foi aberto nesta visita à tela. */
+    var updatePromptShown = false
 
     private val prefill: String? = runCatching { savedStateHandle.toRoute<SetupRoute>().prefill }.getOrNull()?.takeIf { it.isNotBlank() }
 
@@ -38,6 +42,15 @@ class SetupViewModel @Inject constructor(
         catalogSync.status.onEach { status -> _state.update { it.copy(sync = status) } }.launchIn(viewModelScope)
         // Link recebido pelo celular: conecta sem exigir mais um OK.
         if (prefill != null) connect()
+        // Quem fica parado aqui (lista ainda não configurada) também recebe versão nova: a atualização
+        // pode trazer justamente o recurso que destrava a configuração (ex.: receber o link pelo celular).
+        updates.pending.onEach { u -> _state.update { it.copy(updateVersion = u?.versionName) } }.launchIn(viewModelScope)
+        viewModelScope.launch {
+            while (true) {
+                updates.checkIfDue()
+                kotlinx.coroutines.delay(UPDATE_RECHECK_MS)
+            }
+        }
     }
 
     fun onUrlChange(url: String) {
@@ -68,6 +81,8 @@ class SetupViewModel @Inject constructor(
     private fun SetupUiState.withGuess(): SetupUiState = copy(guess = guessType(url))
 
     private companion object {
+        const val UPDATE_RECHECK_MS = 30 * 60 * 1000L
+
         fun guessType(url: String): SourceType? {
             val lower = url.lowercase()
             if (lower.isBlank()) return null

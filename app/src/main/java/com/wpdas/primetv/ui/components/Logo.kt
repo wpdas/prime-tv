@@ -50,8 +50,12 @@ fun LogoWordmark(modifier: Modifier = Modifier, fontSize: Int = 20) {
             append("Prime")
             withStyle(SpanStyle(color = colors.accent)) { append("TV") }
         },
-        style = PrimeTheme.typography.logo.copy(fontSize = fontSize.sp, lineHeight = (fontSize * 1.2f).sp),
+        // Altura de linha com folga e sem recorte: em tamanhos grandes (vinheta) o topo do "V" era cortado.
+        style = PrimeTheme.typography.logo.copy(fontSize = fontSize.sp, lineHeight = (fontSize * 1.3f).sp),
         color = colors.text,
+        maxLines = 1,
+        softWrap = false,
+        overflow = androidx.compose.ui.text.style.TextOverflow.Visible,
     )
 }
 

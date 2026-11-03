@@ -4,6 +4,16 @@ Formato: uma seção por versão, com **Novidades** e **Correções**. A seção
 
 ## [Não lançado]
 
+### Novidades
+- Canal ao vivo que não dá sinal (nenhum dado chega por 6 s ao sintonizar, ou o servidor manda alguns pacotes e para) é pulado sozinho: o app avisa "sem sinal" e segue para o próximo canal na direção em que você estava zapeando (próximo ou anterior). Depois de três canais seguidos sem sinal, para e mostra o erro, porque aí o problema é a internet ou o servidor
+- OK durante um canal ao vivo abre a lista de canais da categoria à esquerda, com o que está no ar em cada um; o canal atual continua tocando atrás e começa focado. Escolher troca na hora; Voltar fecha. Pausar fica na tecla de mídia do controle (e OK retoma quando pausado)
+- Reabrir no canal que estava: se o app for fechado no meio de um canal ao vivo, ao abrir, logo depois da vinheta, volta direto nesse canal. Ligado por padrão; desliga em Configurações › Player
+- A tela de configuração da lista também verifica se há versão nova e avisa, com botão "Atualizar agora": quem ainda não conseguiu configurar recebe as melhorias (como receber o link pelo celular) sem precisar entrar no app
+
+### Correções
+- Vinheta de abertura: espera 1 s de fundo liso antes do som e da animação, para não travar enquanto o app ainda está inicializando; o som passa a ser preparado em segundo plano
+- Topo do "V" do nome PrimeTV não é mais cortado na vinheta
+
 ## [0.0.8] - 2026-11-02
 
 ### Correções

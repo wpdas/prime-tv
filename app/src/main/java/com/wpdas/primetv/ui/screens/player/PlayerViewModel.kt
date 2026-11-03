@@ -46,6 +46,8 @@ class PlayerViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val catalog: CatalogRepository,
     private val library: LibraryRepository,
+    private val liveState: com.wpdas.primetv.data.local.prefs.LiveStateStore,
+    @com.wpdas.primetv.core.di.ApplicationScope private val appScope: kotlinx.coroutines.CoroutineScope,
     playerFactory: PlayerFactory,
 ) : ViewModel() {
 
@@ -63,7 +65,13 @@ class PlayerViewModel @Inject constructor(
             val variants: List<com.wpdas.primetv.domain.model.Movie> = emptyList(),
         ) : Content
         data class SeriesEpisode(val seriesId: String, val episodes: List<Episode>, val episode: Episode) : Content
-        data class Live(val channel: Channel, val zapList: List<Channel>, val variants: List<Channel> = emptyList()) : Content
+        /** [zapFilter] é o filtro que gerou [zapList] (categoria do canal ou Todos). */
+        data class Live(
+            val channel: Channel,
+            val zapList: List<Channel>,
+            val zapFilter: ChannelFilter,
+            val variants: List<Channel> = emptyList(),
+        ) : Content
     }
 
     private var content: Content? = null
@@ -85,6 +93,11 @@ class PlayerViewModel @Inject constructor(
     /** O usuário escolheu a qualidade: a troca automática por conexão lenta fica desligada. */
     private var qualityManual = false
     private val speedMeter = playerFactory.speedMeter
+    /** Última direção de zapping do usuário (+1 próximo, -1 anterior): canal sem sinal pula nesse sentido. */
+    private var lastStepDirection = +1
+    /** Pulos automáticos seguidos por falta de sinal; zera quando um canal toca. */
+    private var autoSkips = 0
+    private val signal = com.wpdas.primetv.core.util.SignalWatchdog(NO_SIGNAL_MS)
 
     private val listener = object : Player.Listener {
         override fun onPlaybackStateChanged(playbackState: Int) {
@@ -97,6 +110,8 @@ class PlayerViewModel @Inject constructor(
                 Player.STATE_READY -> {
                     wasReady = true
                     seekPending = false
+                    signal.stop()
+                    autoSkips = 0
                     _state.update { it.copy(isBuffering = false, errorKey = null, errorDetail = null, durationMs = player.duration.coerceAtLeast(0)) }
                 }
                 Player.STATE_ENDED -> onEnded()
@@ -132,11 +147,14 @@ class PlayerViewModel @Inject constructor(
                     return
                 }
             }
+            val detail = error.errorCodeName.removePrefix("ERROR_CODE_").lowercase().replace('_', ' ')
+            // Canal que não responde de jeito nenhum: segue para o próximo, como quando não chega sinal.
+            if (live != null && giveUpChannel(live)) return
             _state.update {
                 it.copy(
                     isBuffering = false,
                     errorKey = if (live != null) "player.error_live" else "player.error",
-                    errorDetail = error.errorCodeName.removePrefix("ERROR_CODE_").lowercase().replace('_', ' '),
+                    errorDetail = detail,
                     controlsVisible = true,
                 )
             }
@@ -210,8 +228,9 @@ class PlayerViewModel @Inject constructor(
 
     private suspend fun loadChannel(id: String) {
         val channel = catalog.channelOnce(id) ?: return notFound()
-        val zap = catalog.channelsOnce(channel.categoryId?.let { ChannelFilter.Category(it) } ?: ChannelFilter.All)
-        content = Content.Live(channel, zap)
+        val filter = channel.categoryId?.let { ChannelFilter.Category(it) } ?: ChannelFilter.All
+        val zap = catalog.channelsOnce(filter)
+        content = Content.Live(channel, zap, filter)
         tuneChannel(channel)
     }
 
@@ -220,13 +239,16 @@ class PlayerViewModel @Inject constructor(
         val variants = if (keepVariants) live.variants else runCatching { catalog.channelVariants(channel.groupKey) }.getOrDefault(emptyList())
         // Canal fora da lista de zapping atual (ex.: número digitado): a lista passa a ser "Todos",
         // para cima/baixo continuarem a partir dele e não voltarem ao primeiro.
-        val zap = if (live.zapList.any { it.id == channel.id }) live.zapList
-        else runCatching { catalog.channelsOnce(ChannelFilter.All) }.getOrDefault(live.zapList)
-        content = live.copy(channel = channel, variants = variants, zapList = zap)
+        val inList = live.zapList.any { it.id == channel.id }
+        val filter = if (inList) live.zapFilter else ChannelFilter.All
+        val zap = if (inList) live.zapList else runCatching { catalog.channelsOnce(ChannelFilter.All) }.getOrDefault(live.zapList)
+        content = live.copy(channel = channel, variants = variants, zapList = zap, zapFilter = filter)
         if (!keepVariants) qualityManual = false
         retriedLive = false
         library.recordChannel(channel.id)
-        val now = runCatching { catalog.nowPlaying(ChannelFilter.Category(channel.categoryId ?: ""), System.currentTimeMillis()) }.getOrDefault(emptyMap())
+        // Canal em exibição: se o app for fechado agora, pode reabrir direto nele (Configurações › Player).
+        liveState.saveWatching(channel.id)
+        val now = runCatching { catalog.nowPlaying(filter, System.currentTimeMillis()) }.getOrDefault(emptyMap())
         _state.update {
             it.copy(
                 loaded = true,
@@ -235,6 +257,8 @@ class PlayerViewModel @Inject constructor(
                 subtitle = channel.categoryName,
                 channel = channel,
                 nowProgram = channel.epgKey?.let(now::get),
+                zapList = zap,
+                zapNowPlaying = now,
                 durationMs = 0,
                 positionMs = 0,
                 qualityLabel = channel.qualityLabel,
@@ -242,6 +266,27 @@ class PlayerViewModel @Inject constructor(
             )
         }
         start(channel.streamUrl, 0L)
+        signal.start(System.currentTimeMillis())
+    }
+
+    /**
+     * Canal que não deu sinal (nem bytes nem erro tratável). Pula para o próximo canal na última
+     * direção usada pelo usuário e avisa; depois de [MAX_AUTO_SKIPS] seguidos, para e mostra o erro
+     * (provavelmente é a internet ou o servidor, não o canal). Devolve false quando não há para onde pular.
+     */
+    private fun giveUpChannel(live: Content.Live): Boolean {
+        signal.stop()
+        if (live.zapList.size < 2) return false
+        if (autoSkips >= MAX_AUTO_SKIPS) {
+            autoSkips = 0
+            runCatching { player.stop() }
+            _state.update { it.copy(isBuffering = false, errorKey = "player.no_signal_many", errorDetail = null, controlsVisible = true) }
+            return true
+        }
+        autoSkips++
+        showToast(if (lastStepDirection >= 0) "player.no_signal_next" else "player.no_signal_prev", live.channel.displayName, NO_SIGNAL_TOAST_MS)
+        stepChannel(lastStepDirection, auto = true)
+        return true
     }
 
     /**
@@ -349,11 +394,11 @@ class PlayerViewModel @Inject constructor(
         _state.update { it.copy(qualityOptions = options) }
     }
 
-    private fun showToast(key: String, arg: String? = null) {
+    private fun showToast(key: String, arg: String? = null, durationMs: Long = TOAST_MS) {
         _state.update { it.copy(toastKey = key, toastArg = arg) }
         viewModelScope.launch {
-            delay(TOAST_MS)
-            _state.update { if (it.toastKey == key) it.copy(toastKey = null, toastArg = null) else it }
+            delay(durationMs)
+            _state.update { if (it.toastKey == key && it.toastArg == arg) it.copy(toastKey = null, toastArg = null) else it }
         }
     }
 
@@ -383,8 +428,25 @@ class PlayerViewModel @Inject constructor(
             val live = content as? Content.Live ?: return@launch
             val target = live.zapList.firstOrNull { it.number == number }
                 ?: catalog.channelsOnce(ChannelFilter.All).firstOrNull { it.number == number }
-            if (target == null) showToast("player.channel_not_found", number.toString()) else tuneChannel(target)
+            if (target == null) showToast("player.channel_not_found", number.toString()) else { autoSkips = 0; tuneChannel(target) }
         }
+    }
+
+    /** OK no ao vivo: lista de canais da categoria atual à esquerda (o canal continua tocando atrás). */
+    fun openChannels() {
+        if (!_state.value.isLive) return
+        signal.stop() // o usuário está escolhendo: não troca o canal por baixo dele
+        openPanel(PlayerPanel.CHANNELS)
+    }
+
+    /** Canal escolhido no painel. */
+    fun selectChannel(channel: Channel) {
+        closePanel()
+        val live = content as? Content.Live ?: return
+        if (channel.id == live.channel.id) return
+        lastStepDirection = +1
+        autoSkips = 0
+        viewModelScope.launch { tuneChannel(channel) }
     }
 
     fun openLiveMenu() {
@@ -427,6 +489,14 @@ class PlayerViewModel @Inject constructor(
             val duration = player.duration.takeIf { it != C.TIME_UNSET }?.coerceAtLeast(0) ?: 0
             val buffered = player.bufferedPosition.coerceAtLeast(0)
             val speed = if (_state.value.isBuffering) speedMeter.bitrate() else null
+            // Canal ao vivo carregando sem receber nada: pula para o próximo.
+            val live = content as? Content.Live
+            if (live != null && !wasReady && !_state.value.hasError && signal.onTick(System.currentTimeMillis(), speed != null)) {
+                if (!giveUpChannel(live)) {
+                    _state.update { it.copy(isBuffering = false, errorKey = "player.error_live", errorDetail = "sem sinal", controlsVisible = true) }
+                }
+                continue
+            }
             _state.update { s ->
                 val remaining = if (duration > 0) duration - position else Long.MAX_VALUE
                 val countdown = if (s.nextEpisode != null && duration > 0 && remaining <= NEXT_CARD_WINDOW_MS) (remaining / 1000).toInt().coerceAtLeast(0) else null
@@ -534,8 +604,10 @@ class PlayerViewModel @Inject constructor(
 
     fun retry() {
         _state.update { it.copy(errorKey = null, errorDetail = null, isBuffering = true) }
+        autoSkips = 0
         player.prepare()
         player.play()
+        if (content is Content.Live) signal.start(System.currentTimeMillis())
     }
 
     fun playEpisode(episode: Episode) {
@@ -551,10 +623,14 @@ class PlayerViewModel @Inject constructor(
         _state.value.nextEpisode?.let { playEpisode(it) }
     }
 
-    /** Cima/baixo no controle: canal anterior/próximo dentro da lista atual. */
-    fun stepChannel(delta: Int) {
+    /** Cima/baixo no controle: canal anterior/próximo dentro da lista atual. [auto] = pulo por falta de sinal. */
+    fun stepChannel(delta: Int, auto: Boolean = false) {
         val live = content as? Content.Live ?: return
         if (live.zapList.size < 2) return
+        if (!auto) {
+            lastStepDirection = if (delta < 0) -1 else +1
+            autoSkips = 0
+        }
         val index = live.zapList.indexOfFirst { it.id == live.channel.id }
         val next = live.zapList[((index + delta) % live.zapList.size + live.zapList.size) % live.zapList.size]
         viewModelScope.launch { tuneChannel(next) }
@@ -642,6 +718,14 @@ class PlayerViewModel @Inject constructor(
         if (wasPlayingBeforeBackground) player.play()
     }
 
+    /**
+     * O usuário saiu do player de propósito (Voltar): o canal deixa de ser "em exibição" e o app
+     * não reabre nele. Fechar o app no meio da transmissão mantém a marca (ver Configurações › Player).
+     */
+    fun onLeave() {
+        if (content is Content.Live) appScope.launch { liveState.saveWatching(null) }
+    }
+
     override fun onCleared() {
         saveProgress()
         player.removeListener(listener)
@@ -659,5 +743,9 @@ class PlayerViewModel @Inject constructor(
         const val TOAST_MS = 2_500L
         const val STALL_LIMIT = 3
         const val STALL_WINDOW_MS = 90_000L
+        /** Sem nenhum byte por este tempo desde a sintonia (ou desde o último dado): canal sem sinal. */
+        const val NO_SIGNAL_MS = 6_000L
+        const val NO_SIGNAL_TOAST_MS = 4_000L
+        const val MAX_AUTO_SKIPS = 3
     }
 }

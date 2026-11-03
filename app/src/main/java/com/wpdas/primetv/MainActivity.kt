@@ -42,14 +42,23 @@ class MainActivity : ComponentActivity() {
         setContent {
             PrimeTheme(i18n = i18n) {
                 // null enquanto não sabemos se há lista configurada (fundo da janela cobre).
-                val start by mainViewModel.startDestination.collectAsStateWithLifecycle()
+                val start by mainViewModel.start.collectAsStateWithLifecycle()
+                // Atividade recriada pelo sistema já restaura a pilha (inclusive o player): não retoma de novo.
+                val freshLaunch = savedInstanceState == null
                 val prefs by settings.settings.collectAsStateWithLifecycle()
                 CompositionLocalProvider(LocalCrestResolver provides crests) {
                     // Margem de segurança para TVs com overscan: encolhe toda a UI pelas bordas.
                     BoxWithConstraints(Modifier.fillMaxSize().background(PrimeThemeTokens.colors.background)) {
                         val pct = prefs.overscanPercent / 100f
                         Box(Modifier.fillMaxSize().padding(horizontal = maxWidth * pct, vertical = maxHeight * pct)) {
-                            start?.let { PrimeNavHost(startDestination = it) }
+                            start?.let { s ->
+                                PrimeNavHost(
+                                    startDestination = s.route,
+                                    // Só depois da vinheta, para o som dela não se misturar ao do canal.
+                                    resumeChannelId = s.resumeChannelId?.takeIf { freshLaunch && !mainViewModel.showIntro && !mainViewModel.resumeConsumed },
+                                    onResumeConsumed = { mainViewModel.resumeConsumed = true },
+                                )
+                            }
                             // Vinheta só na abertura a frio do processo; a tela de baixo carrega enquanto ela roda.
                             if (mainViewModel.showIntro) IntroOverlay(onFinished = { mainViewModel.showIntro = false })
                         }

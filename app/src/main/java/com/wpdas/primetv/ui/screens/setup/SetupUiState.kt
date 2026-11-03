@@ -17,6 +17,8 @@ data class SetupUiState(
     /** Lista validada e salva; o painel de progresso aparece. */
     val connected: Boolean = false,
     val sync: Map<ContentSection, SyncState> = emptyMap(),
+    /** Versão nova publicada no GitHub, se houver. */
+    val updateVersion: String? = null,
 ) {
     val canConnect: Boolean get() = url.isNotBlank() && !isDetecting
     val canStart: Boolean get() = connected && sync[ContentSection.LIVE].let { it is SyncState.Done || it is SyncState.Skipped }

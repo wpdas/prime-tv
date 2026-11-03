@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.PhoneAndroid
+import androidx.compose.material.icons.rounded.SystemUpdateAlt
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -51,9 +52,17 @@ private const val FOCUS_DELAY_MS = 150L
 fun SetupScreen(
     onStartWatching: () -> Unit,
     onReceiveLink: () -> Unit,
+    onOpenUpdate: () -> Unit = {},
     viewModel: SetupViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    // Versão nova detectada: abre o diálogo de atualização uma vez (como na Início); o aviso fica na tela.
+    LaunchedEffect(state.updateVersion) {
+        if (state.updateVersion != null && !viewModel.updatePromptShown && !state.connected) {
+            viewModel.updatePromptShown = true
+            onOpenUpdate()
+        }
+    }
     SetupContent(
         state = state,
         onUrlChange = viewModel::onUrlChange,
@@ -61,6 +70,7 @@ fun SetupScreen(
         onRetryLive = viewModel::retryLive,
         onStartWatching = onStartWatching,
         onReceiveLink = onReceiveLink,
+        onOpenUpdate = onOpenUpdate,
     )
 }
 
@@ -72,6 +82,7 @@ fun SetupContent(
     onRetryLive: () -> Unit,
     onStartWatching: () -> Unit,
     onReceiveLink: () -> Unit,
+    onOpenUpdate: () -> Unit = {},
 ) {
     val colors = PrimeTheme.colors
     val typography = PrimeTheme.typography
@@ -156,11 +167,30 @@ fun SetupContent(
                     )
                 }
             }
+
+            if (state.updateVersion != null && !state.connected) {
+                UpdateBanner(version = state.updateVersion, onOpenUpdate = onOpenUpdate)
+            }
         }
 
         if (state.connected) {
             ProgressPanel(state = state, onRetryLive = onRetryLive, onStartWatching = onStartWatching, startFocus = startFocus)
         }
+    }
+}
+
+/** Versão nova disponível enquanto a lista ainda não foi configurada. */
+@Composable
+private fun UpdateBanner(version: String, onOpenUpdate: () -> Unit) {
+    val colors = PrimeTheme.colors
+    Row(
+        Modifier.fillMaxWidth().background(colors.accentSoftBackground, PrimeTheme.shapes.card).padding(start = 16.dp, end = 10.dp, top = 10.dp, bottom = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Icon(Icons.Rounded.SystemUpdateAlt, contentDescription = null, tint = colors.accentSoftText, modifier = Modifier.size(20.dp))
+        Text(t("setup.update_available", "version" to version), style = PrimeTheme.typography.body, color = colors.text, modifier = Modifier.weight(1f))
+        PrimeButton(text = t("setup.update_now"), onClick = onOpenUpdate, height = 40.dp, horizontalPadding = 16.dp, textStyle = PrimeTheme.typography.buttonSmall)
     }
 }
 

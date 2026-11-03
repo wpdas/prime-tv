@@ -18,4 +18,5 @@ interface SettingsRepository {
     suspend fun setLanguage(language: String)
     suspend fun setOverscanPercent(percent: Int)
     suspend fun setPreviewSound(enabled: Boolean)
+    suspend fun setResumeLive(enabled: Boolean)
 }
