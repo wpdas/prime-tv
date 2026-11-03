@@ -4,6 +4,9 @@ Formato: uma seção por versão, com **Novidades** e **Correções**. A seção
 
 ## [Não lançado]
 
+### Correções
+- Canal sem sinal: antes de pular para o próximo canal, o app tenta as outras qualidades do mesmo canal na lista (4K → FHD → HD → SD), como já fazia quando o canal dava erro
+
 ## [0.1.0] - 2026-11-03
 
 ### Novidades

@@ -137,19 +137,8 @@ class PlayerViewModel @Inject constructor(
                 }
                 return
             }
-            // Variante de qualidade mais baixa do mesmo canal, se houver (UHD -> FHD -> HD -> SD).
-            if (live != null) {
-                val next = live.variants.firstOrNull { it.qualityRank > live.channel.qualityRank }
-                if (next != null) {
-                    viewModelScope.launch {
-                        showToast("player.switching_quality", next.qualityLabel ?: "")
-                        tuneChannel(next, keepVariants = true)
-                    }
-                    return
-                }
-            }
             val detail = error.errorCodeName.removePrefix("ERROR_CODE_").lowercase().replace('_', ' ')
-            // Canal que não responde de jeito nenhum: segue para o próximo, como quando não chega sinal.
+            // Mesmo caminho de quando não chega sinal: outras qualidades do canal e, por fim, o próximo canal.
             if (live != null && giveUpChannel(live)) return
             _state.update {
                 it.copy(
@@ -317,12 +306,20 @@ class PlayerViewModel @Inject constructor(
     }
 
     /**
-     * Canal que não deu sinal (nem bytes nem erro tratável). Pula para o próximo canal na última
-     * direção usada pelo usuário e avisa; depois de [MAX_AUTO_SKIPS] seguidos, para e mostra o erro
-     * (provavelmente é a internet ou o servidor, não o canal). Devolve false quando não há para onde pular.
+     * Canal que não deu sinal (nem bytes nem erro tratável). Em ordem: a variante de qualidade
+     * abaixo do mesmo canal (UHD -> FHD -> HD -> SD); acabando as variantes, pula para o próximo
+     * canal na última direção usada pelo usuário e avisa; depois de [MAX_AUTO_SKIPS] pulos seguidos,
+     * para e mostra o erro (provavelmente é a internet ou o servidor, não o canal).
+     * Devolve false quando não há nem variante nem para onde pular.
      */
     private fun giveUpChannel(live: Content.Live): Boolean {
         signal.stop()
+        val lower = live.variants.firstOrNull { it.qualityRank > live.channel.qualityRank }
+        if (lower != null) {
+            showToast("player.switching_quality", lower.qualityLabel ?: "")
+            viewModelScope.launch { tuneChannel(lower, keepVariants = true) }
+            return true
+        }
         if (live.zapList.size < 2) return false
         if (autoSkips >= MAX_AUTO_SKIPS) {
             autoSkips = 0
