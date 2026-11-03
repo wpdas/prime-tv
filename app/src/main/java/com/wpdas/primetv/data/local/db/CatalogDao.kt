@@ -164,4 +164,6 @@ interface TmdbDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putCrest(entry: TeamCrestEntity)
     @Query("SELECT * FROM league_badges WHERE leagueId = :id") suspend fun leagueBadge(id: String): LeagueBadgeEntity?
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putLeagueBadge(entry: LeagueBadgeEntity)
+    @Query("SELECT * FROM match_leagues WHERE matchKey = :key") suspend fun matchLeague(key: String): MatchLeagueEntity?
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putMatchLeague(entry: MatchLeagueEntity)
 }

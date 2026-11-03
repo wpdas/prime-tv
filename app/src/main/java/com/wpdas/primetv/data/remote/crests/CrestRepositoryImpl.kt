@@ -4,6 +4,8 @@ import com.wpdas.primetv.core.di.IoDispatcher
 import com.wpdas.primetv.core.util.TextNormalizer
 import com.wpdas.primetv.data.local.db.PrimeDatabase
 import com.wpdas.primetv.data.local.db.LeagueBadgeEntity
+import com.wpdas.primetv.data.local.db.MatchLeagueEntity
+import com.wpdas.primetv.domain.crests.LeagueInfo
 import com.wpdas.primetv.data.local.db.TeamCrestEntity
 import com.wpdas.primetv.domain.crests.TeamCrestRepository
 import com.wpdas.primetv.domain.crests.TeamInfo
@@ -43,6 +45,7 @@ class CrestRepositoryImpl @Inject constructor(
 
     private val teams = ConcurrentHashMap<String, TeamInfo>()
     private val leagues = ConcurrentHashMap<String, String?>()
+    private val matches = ConcurrentHashMap<String, java.util.Optional<LeagueInfo>>()
     private val lock = Mutex()
     /** Próximo instante em que a rede pode ser chamada (espaçamento e recuo após 429). */
     private var nextCallAt = 0L
@@ -58,14 +61,14 @@ class CrestRepositoryImpl @Inject constructor(
                 val cached = dao.crest(key)
                 val now = System.currentTimeMillis()
                 if (cached != null && now - cached.fetchedAt < if (cached.url != null) POSITIVE_TTL_MS else NEGATIVE_TTL_MS) {
-                    return@withLock TeamInfo(cached.url, cached.league, cached.leagueId).also { teams[key] = it }
+                    return@withLock TeamInfo(cached.url, cached.league, cached.leagueId, cached.name).also { teams[key] = it }
                 }
                 val fetched = runCatching { throttled { fetchTeam(team) } }.getOrNull()
                 if (fetched == null) {
                     // Sem resposta: fica o que havia (ou nada), sem gravar "não achei".
-                    return@withLock cached?.let { TeamInfo(it.url, it.league, it.leagueId) } ?: NONE
+                    return@withLock cached?.let { TeamInfo(it.url, it.league, it.leagueId, it.name) } ?: NONE
                 }
-                dao.putCrest(TeamCrestEntity(key, fetched.crestUrl, now, fetched.league, fetched.leagueId))
+                dao.putCrest(TeamCrestEntity(key, fetched.crestUrl, now, fetched.league, fetched.leagueId, fetched.name))
                 teams[key] = fetched
                 fetched
             }
@@ -95,11 +98,48 @@ class CrestRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun matchLeague(home: String, away: String, startMs: Long): LeagueInfo? {
+        val day = MatchEvents.dayOf(startMs)
+        val key = MatchEvents.key(home, away, day)
+        if (key.isBlank()) return null
+        matches[key]?.let { return it.orElse(null) }
+        return withContext(io) {
+            // Nomes como a base escreve (mesma consulta do escudo, já em cache na maioria das vezes).
+            val homeName = teamInfo(home).name ?: home
+            val awayName = teamInfo(away).name ?: away
+            lock.withLock {
+                matches[key]?.let { return@withLock it.orElse(null) }
+                val dao = db.tmdbDao()
+                val cached = dao.matchLeague(key)
+                val now = System.currentTimeMillis()
+                if (cached != null && now - cached.fetchedAt < if (cached.league != null) MATCH_TTL_MS else MATCH_NEGATIVE_TTL_MS) {
+                    val info = cached.league?.let { LeagueInfo(it, cached.leagueId, cached.badgeUrl) }
+                    matches[key] = java.util.Optional.ofNullable(info)
+                    return@withLock info
+                }
+                val result = runCatching { throttled { fetchMatch(homeName, awayName, day) } }
+                if (result.isFailure) return@withLock cached?.league?.let { LeagueInfo(it, cached.leagueId, cached.badgeUrl) }
+                val info = result.getOrNull()
+                dao.putMatchLeague(MatchLeagueEntity(key, info?.league, info?.leagueId, info?.badgeUrl, now))
+                matches[key] = java.util.Optional.ofNullable(info)
+                info
+            }
+        }
+    }
+
+    private suspend fun fetchMatch(homeName: String, awayName: String, day: java.time.LocalDate): LeagueInfo? {
+        val found = api.searchEvents(MatchEvents.query(homeName, awayName)).events.orEmpty()
+        val event = MatchEvents.pick(homeName, awayName, day, found) ?: return null
+        val league = event.league?.takeIf { it.isNotBlank() } ?: return null
+        val badge = event.leagueBadge?.takeIf { it.isNotBlank() }?.let { "$it/small" }
+        return LeagueInfo(league, event.leagueId?.takeIf { it.isNotBlank() }, badge)
+    }
+
     private suspend fun fetchTeam(team: String): TeamInfo {
         val query = CrestNames.searchName(team)
         val found = api.searchTeams(query).teams.orEmpty()
         val pick = CrestNames.pick(query, found) ?: return NONE
-        return TeamInfo(pick.badge?.let { "$it/small" }, pick.league?.takeIf { it.isNotBlank() }, pick.leagueId?.takeIf { it.isNotBlank() })
+        return TeamInfo(pick.badge?.let { "$it/small" }, pick.league?.takeIf { it.isNotBlank() }, pick.leagueId?.takeIf { it.isNotBlank() }, pick.name?.takeIf { it.isNotBlank() })
     }
 
     private suspend fun fetchLeague(id: String): String? {
@@ -131,10 +171,53 @@ class CrestRepositoryImpl @Inject constructor(
         val NONE = TeamInfo(null, null)
         const val POSITIVE_TTL_MS = 30L * 24 * 60 * 60 * 1000
         const val NEGATIVE_TTL_MS = 7L * 24 * 60 * 60 * 1000
+        /** Partida: vale pelo dia do jogo; "não achei" tenta de novo em algumas horas (a base pode cadastrar depois). */
+        const val MATCH_TTL_MS = 3L * 24 * 60 * 60 * 1000
+        const val MATCH_NEGATIVE_TTL_MS = 6L * 60 * 60 * 1000
         const val TAG = "Crests"
         const val MIN_INTERVAL_MS = 2_100L
         const val RATE_LIMIT_BACKOFF_MS = 45_000L
         const val MAX_ATTEMPTS = 3
+    }
+}
+
+/** Busca de partida na base pública: chave de cache, texto da consulta e escolha do evento certo. */
+object MatchEvents {
+    private val zone: java.time.ZoneId get() = java.time.ZoneId.systemDefault()
+
+    fun dayOf(startMs: Long): java.time.LocalDate = java.time.Instant.ofEpochMilli(startMs).atZone(zone).toLocalDate()
+
+    fun key(home: String, away: String, day: java.time.LocalDate): String {
+        val h = com.wpdas.primetv.domain.football.TeamNames.key(home)
+        val a = com.wpdas.primetv.domain.football.TeamNames.key(away)
+        return if (h.isEmpty() || a.isEmpty()) "" else "$h|$a|$day"
+    }
+
+    /** "Manchester United" + "Roma" -> "Manchester_United_vs_Roma" (a base aceita sem acentos). */
+    fun query(home: String, away: String): String =
+        "${TextNormalizer.stripAccents(home).trim()}_vs_${TextNormalizer.stripAccents(away).trim()}".replace(' ', '_')
+
+    /**
+     * Só futebol, times iguais aos pedidos (na mesma ordem) e data no dia do jogo ou vizinho (fuso da base
+     * pode diferir); empate, fica a data exata.
+     */
+    fun pick(home: String, away: String, day: java.time.LocalDate, events: List<SportsDbEvent>): SportsDbEvent? {
+        return events
+            .filter { it.sport.equals("Soccer", ignoreCase = true) }
+            .filter { same(home, it.home.orEmpty()) && same(away, it.away.orEmpty()) }
+            .mapNotNull { e -> runCatching { java.time.LocalDate.parse(e.date) }.getOrNull()?.let { it to e } }
+            .filter { (d, _) -> kotlin.math.abs(java.time.temporal.ChronoUnit.DAYS.between(day, d)) <= 1 }
+            .minByOrNull { (d, _) -> kotlin.math.abs(java.time.temporal.ChronoUnit.DAYS.between(day, d)) }
+            ?.second
+    }
+
+    /** [TeamNames.same] mais um prefixo/sufixo de clube ("VfB Stuttgart" ~ "Stuttgart"), com a parte comum de pelo menos 4 letras. */
+    private fun same(a: String, b: String): Boolean {
+        if (com.wpdas.primetv.domain.football.TeamNames.same(a, b)) return true
+        val ka = com.wpdas.primetv.domain.football.TeamNames.key(a)
+        val kb = com.wpdas.primetv.domain.football.TeamNames.key(b)
+        val (short, long) = if (ka.length <= kb.length) ka to kb else kb to ka
+        return short.length >= 4 && (long.endsWith(" $short") || long.startsWith("$short "))
     }
 }
 

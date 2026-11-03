@@ -51,7 +51,7 @@ fun FootballCard(
     ) {
         val match = if (event.home != null && event.away != null) Match(event.home, event.away)
         else MatchArtist.parse(event.title) ?: MatchArtist.parse(event.channelName)
-        val league = event.league ?: match?.let { rememberLeagueLabel(null, it.home, it.away) }
+        val league = event.league ?: match?.let { rememberLeagueLabel(null, it.home, it.away, event.start) }
         Row(Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.SpaceBetween) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {

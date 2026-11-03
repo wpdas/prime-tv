@@ -4,6 +4,9 @@ Formato: uma seção por versão, com **Novidades** e **Correções**. A seção
 
 ## [Não lançado]
 
+### Correções
+- Guia de jogos: a competição e o escudo passam a vir da partida em si na base pública (ex.: Galatasaray x Stuttgart aparece como Champions League), e não mais da liga nacional de cada clube, que errava em copas e torneios continentais. Quando a base não tem o jogo e a lista não informa, não aparece competição nenhuma
+
 ## [0.1.1] - 2026-11-03
 
 ### Correções

@@ -47,7 +47,7 @@ fun MatchRow(
     val colors = PrimeTheme.colors
     val typography = PrimeTheme.typography
     val shape = PrimeTheme.shapes.card
-    val leagueInfo = rememberLeague(event.leagueHint, event.home, event.away)
+    val leagueInfo = rememberLeague(event.leagueHint, event.home, event.away, event.start)
     val league = leagueInfo.label
     val dim = status == MatchStatus.FINISHED
     Surface(
@@ -67,9 +67,12 @@ fun MatchRow(
     ) {
         Row(Modifier.fillMaxWidth().fillMaxHeight().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             // Competição
+            // Competição desconhecida: coluna vazia (nada de chute pela liga do clube).
             Row(Modifier.width(176.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                LeagueBadge(league, leagueInfo.badgeUrl, 36.dp)
-                Text(league.orEmpty(), style = typography.caption, color = colors.textSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                if (league != null) {
+                    LeagueBadge(league, leagueInfo.badgeUrl, 36.dp)
+                    Text(league, style = typography.caption, color = colors.textSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
             }
             // Mandante
             Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End)) {

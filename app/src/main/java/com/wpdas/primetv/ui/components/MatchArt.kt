@@ -198,23 +198,25 @@ fun MatchArt(match: Match, modifier: Modifier = Modifier, badgeSize: Dp = 64.dp)
 data class LeagueDisplay(val label: String?, val badgeUrl: String?)
 
 /**
- * Rótulo: o que a lista informa ([hint]) vem primeiro; senão a liga do mandante (ou do visitante)
- * segundo a base pública de times, traduzida por tabela. O escudo vem sempre da base, pela liga do time.
+ * Competição do jogo: o que a lista informa ([hint]) vem primeiro; senão a partida é procurada na base
+ * pública (competição real daquele jogo, com escudo). Sem resposta confiável, não mostra competição
+ * nenhuma: a liga do clube não serve, porque o jogo pode ser de copa ou torneio continental.
  */
 @Composable
-fun rememberLeague(hint: String?, home: String, away: String): LeagueDisplay {
+fun rememberLeague(hint: String?, home: String, away: String, startMs: Long?): LeagueDisplay {
     val fromHint = com.wpdas.primetv.domain.football.LeagueNames.fromHint(hint)
     val resolver = LocalCrestResolver.current ?: return LeagueDisplay(fromHint, null)
-    val state = androidx.compose.runtime.produceState(initialValue = LeagueDisplay(fromHint, null), key1 = home, key2 = away, key3 = hint) {
-        // Primeiro o rótulo (mesma consulta do escudo do time); o escudo da liga é outra chamada e chega depois.
-        val info = runCatching { resolver.teamInfo(home).takeIf { it.league != null } ?: resolver.teamInfo(away) }.getOrNull() ?: return@produceState
-        value = LeagueDisplay(fromHint ?: com.wpdas.primetv.domain.football.LeagueNames.fromSportsDb(info.league), null)
-        val badge = info.leagueId?.let { id -> runCatching { resolver.leagueBadge(id) }.getOrNull() } ?: return@produceState
-        value = value.copy(badgeUrl = badge)
+    val day = startMs ?: System.currentTimeMillis()
+    val state = androidx.compose.runtime.produceState(initialValue = LeagueDisplay(fromHint, null), key1 = home, key2 = away, key3 = hint to day) {
+        val info = runCatching { resolver.matchLeague(home, away, day) }.getOrNull() ?: return@produceState
+        value = LeagueDisplay(fromHint ?: com.wpdas.primetv.domain.football.LeagueNames.fromSportsDb(info.league), info.badgeUrl)
+        if (info.badgeUrl == null && info.leagueId != null) {
+            runCatching { resolver.leagueBadge(info.leagueId) }.getOrNull()?.let { value = value.copy(badgeUrl = it) }
+        }
     }
     return state.value
 }
 
 /** Só o rótulo da competição (cards pequenos). */
 @Composable
-fun rememberLeagueLabel(hint: String?, home: String, away: String): String? = rememberLeague(hint, home, away).label
+fun rememberLeagueLabel(hint: String?, home: String, away: String, startMs: Long?): String? = rememberLeague(hint, home, away, startMs).label

@@ -194,6 +194,18 @@ data class TeamCrestEntity(
     val fetchedAt: Long,
     @ColumnInfo(defaultValue = "NULL") val league: String? = null,
     @ColumnInfo(defaultValue = "NULL") val leagueId: String? = null,
+    /** Nome do time como a base o conhece (para procurar a partida por "Mandante_vs_Visitante"). */
+    @ColumnInfo(defaultValue = "NULL") val name: String? = null,
+)
+
+/** Competição real de uma partida (mandante|visitante|dia), pela base pública. [league] null = procurado e não achado. */
+@Entity(tableName = "match_leagues")
+data class MatchLeagueEntity(
+    @PrimaryKey val matchKey: String,
+    val league: String?,
+    val leagueId: String?,
+    val badgeUrl: String?,
+    val fetchedAt: Long,
 )
 
 /** Escudo de competição (URL de terceiros), pela id da base pública. [url] null = sem imagem. */

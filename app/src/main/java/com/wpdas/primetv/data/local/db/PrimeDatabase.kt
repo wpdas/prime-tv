@@ -21,8 +21,9 @@ import androidx.room.RoomDatabase
         TmdbMatchEntity::class,
         TeamCrestEntity::class,
         LeagueBadgeEntity::class,
+        MatchLeagueEntity::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = true,
 )
 abstract class PrimeDatabase : RoomDatabase() {

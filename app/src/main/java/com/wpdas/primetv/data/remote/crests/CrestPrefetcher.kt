@@ -23,8 +23,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Ao abrir o app (e sempre que o guia de jogos mudar), busca aos poucos os escudos dos times e das
- * competições do dia e guarda: URLs no banco (30 dias) e imagens no cache em disco do Coil. Assim a
+ * Ao abrir o app (e sempre que o guia de jogos mudar), busca aos poucos os escudos dos times, a
+ * competição real de cada partida e o escudo dela, e guarda: URLs no banco (30 dias) e imagens no cache em disco do Coil. Assim a
  * tela de Jogos abre pronta em vez de preencher aos poucos. Respeita o espaçamento do [TeamCrestRepository].
  */
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
@@ -55,13 +55,13 @@ class CrestPrefetcher @Inject constructor(
         val leaguesDone = HashSet<String>()
         for (event in events) {
             for (team in listOf(event.home, event.away)) {
-                val info = runCatching { crests.teamInfo(team) }.getOrNull() ?: continue
-                info.crestUrl?.let { warm(loader, it) }
-                val leagueId = info.leagueId ?: continue
-                if (leaguesDone.add(leagueId)) {
-                    runCatching { crests.leagueBadge(leagueId) }.getOrNull()?.let { warm(loader, it) }
-                }
+                runCatching { crests.teamInfo(team) }.getOrNull()?.crestUrl?.let { warm(loader, it) }
             }
+            // Competição real da partida (a lista só informa às vezes) e o escudo dela.
+            if (event.leagueHint != null) continue
+            val league = runCatching { crests.matchLeague(event.home, event.away, event.start) }.getOrNull() ?: continue
+            val badge = league.badgeUrl ?: league.leagueId?.takeIf { leaguesDone.add(it) }?.let { id -> runCatching { crests.leagueBadge(id) }.getOrNull() }
+            badge?.let { warm(loader, it) }
         }
     }
 
