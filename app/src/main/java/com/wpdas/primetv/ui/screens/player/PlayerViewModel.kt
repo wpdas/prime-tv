@@ -30,6 +30,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -231,7 +232,52 @@ class PlayerViewModel @Inject constructor(
         val filter = channel.categoryId?.let { ChannelFilter.Category(it) } ?: ChannelFilter.All
         val zap = catalog.channelsOnce(filter)
         content = Content.Live(channel, zap, filter)
+        _state.update { it.copy(zapRailId = channel.categoryId ?: PlayerUiState.ZAP_ALL) }
         tuneChannel(channel)
+    }
+
+    // ------------------------------------------------------------------ grupos de canais (painel)
+
+    /** Esquerda no painel de canais: abre o trilho de grupos (montado na primeira vez). */
+    fun openZapRail() {
+        if (_state.value.panel != PlayerPanel.CHANNELS) return
+        viewModelScope.launch {
+            if (_state.value.zapRail.isEmpty()) _state.update { it.copy(zapRail = buildZapRail()) }
+            _state.update { it.copy(zapRailOpen = true) }
+        }
+    }
+
+    fun closeZapRail() = _state.update { it.copy(zapRailOpen = false) }
+
+    /** Grupo escolhido: a lista do painel (e o zapping cima/baixo) passa a ser a desse grupo. */
+    fun selectZapRail(id: String) {
+        viewModelScope.launch {
+            val live = content as? Content.Live ?: return@launch
+            val filter = when (id) {
+                PlayerUiState.ZAP_ALL -> ChannelFilter.All
+                PlayerUiState.ZAP_FOOTBALL -> ChannelFilter.Football
+                PlayerUiState.ZAP_FAVORITES -> ChannelFilter.Favorites(library.favoriteIds(MediaType.CHANNEL).first())
+                else -> ChannelFilter.Category(id)
+            }
+            val list = runCatching { catalog.channelsOnce(filter) }.getOrDefault(emptyList())
+            val now = runCatching { catalog.nowPlaying(filter, System.currentTimeMillis()) }.getOrDefault(emptyMap())
+            content = live.copy(zapList = list, zapFilter = filter)
+            _state.update { it.copy(zapList = list, zapNowPlaying = now, zapRailId = id, zapRailOpen = false) }
+        }
+    }
+
+    private suspend fun buildZapRail(): List<com.wpdas.primetv.ui.components.RailCategory> {
+        val categories = runCatching { catalog.categories(com.wpdas.primetv.domain.model.ContentSection.LIVE).first() }.getOrDefault(emptyList())
+        val counts = runCatching { catalog.categoryCounts(com.wpdas.primetv.domain.model.ContentSection.LIVE).first() }.getOrDefault(emptyList())
+        val football = runCatching { catalog.footballChannelCount().first() }.getOrDefault(0)
+        val favorites = runCatching { library.favoriteIds(MediaType.CHANNEL).first() }.getOrDefault(emptyList())
+        val byId = counts.associate { it.categoryId to it.count }
+        return buildList {
+            if (favorites.isNotEmpty()) add(com.wpdas.primetv.ui.components.RailCategory(PlayerUiState.ZAP_FAVORITES, "Favoritos", favorites.size))
+            if (football > 0) add(com.wpdas.primetv.ui.components.RailCategory(PlayerUiState.ZAP_FOOTBALL, "Futebol", football))
+            add(com.wpdas.primetv.ui.components.RailCategory(PlayerUiState.ZAP_ALL, "Todos", counts.sumOf { it.count }))
+            categories.forEach { add(com.wpdas.primetv.ui.components.RailCategory(it.id, it.name, byId[it.id] ?: 0)) }
+        }
     }
 
     private suspend fun tuneChannel(channel: Channel, keepVariants: Boolean = false) {
@@ -243,6 +289,7 @@ class PlayerViewModel @Inject constructor(
         val filter = if (inList) live.zapFilter else ChannelFilter.All
         val zap = if (inList) live.zapList else runCatching { catalog.channelsOnce(ChannelFilter.All) }.getOrDefault(live.zapList)
         content = live.copy(channel = channel, variants = variants, zapList = zap, zapFilter = filter)
+        if (!inList) _state.update { it.copy(zapRailId = PlayerUiState.ZAP_ALL) }
         if (!keepVariants) qualityManual = false
         retriedLive = false
         library.recordChannel(channel.id)
@@ -598,7 +645,7 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun closePanel() {
-        _state.update { it.copy(panel = PlayerPanel.NONE) }
+        _state.update { it.copy(panel = PlayerPanel.NONE, zapRailOpen = false) }
         showControls()
     }
 

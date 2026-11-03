@@ -264,6 +264,7 @@
   "player.slow_adaptive": "Conexão lenta. A qualidade passa a se ajustar sozinha.",
   "player.slow_connection": "Conexão lenta. Se continuar travando, aumente o buffer em Configurações › Player.",
   "player.channel_not_found": "Não existe canal com o número {value}.",
+  "player.channels_groups_hint": "◀ grupos de canais · OK: assistir",
   "player.no_signal_next": "{value} sem sinal. Indo para o próximo canal…",
   "player.no_signal_prev": "{value} sem sinal. Indo para o canal anterior…",
   "player.no_signal_many": "Vários canais seguidos sem sinal. Confira a internet da TV Box ou tente de novo em instantes.",

@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -33,10 +34,18 @@ fun CategoryRail(
     onSelect: (RailCategory) -> Unit,
     modifier: Modifier = Modifier,
     width: Dp = 240.dp,
+    /** Quando informado, fica no item selecionado (para a tela pedir foco nele ao abrir o trilho). */
+    selectedFocus: androidx.compose.ui.focus.FocusRequester? = null,
 ) {
     val colors = PrimeTheme.colors
     val shape = PrimeTheme.shapes.card
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    if (selectedFocus != null) {
+        androidx.compose.runtime.LaunchedEffect(Unit) {
+            val index = categories.indexOfFirst { it.id == selectedId }
+            if (index >= 0) runCatching { listState.scrollToItem(index) }
+        }
+    }
     LazyColumn(
         state = listState,
         modifier = modifier.width(width).focusRestorer().focusGroup().throttleHeldDpad(vertical = true) { listState.isScrollInProgress },
@@ -47,7 +56,8 @@ fun CategoryRail(
             val selected = cat.id == selectedId
             Surface(
                 onClick = { onSelect(cat) },
-                modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp)
+                    .then(if (selected && selectedFocus != null) Modifier.focusRequester(selectedFocus) else Modifier),
                 shape = PrimeFocus.shape(shape),
                 colors = ClickableSurfaceDefaults.colors(
                     containerColor = if (selected) colors.selected else colors.background,

@@ -42,6 +42,10 @@ data class PlayerUiState(
     /** Ao vivo: canais da lista de zapping atual (painel aberto com OK) e o que está no ar em cada um. */
     val zapList: List<Channel> = emptyList(),
     val zapNowPlaying: Map<String, EpgProgram> = emptyMap(),
+    /** Grupos de canais (esquerda no painel): Favoritos, Futebol, Todos e categorias; o id do grupo em uso. */
+    val zapRail: List<com.wpdas.primetv.ui.components.RailCategory> = emptyList(),
+    val zapRailId: String = ZAP_ALL,
+    val zapRailOpen: Boolean = false,
     /** Sinaliza à tela que a reprodução terminou e ela deve fechar. */
     val finished: Boolean = false,
     /** Ao vivo: dígitos sendo digitados para pular de canal ("12_"). */
@@ -54,6 +58,12 @@ data class PlayerUiState(
     val toastKey: String? = null,
     val toastArg: String? = null,
 ) {
+    companion object {
+        const val ZAP_ALL = "all"
+        const val ZAP_FOOTBALL = "football"
+        const val ZAP_FAVORITES = "favorites"
+    }
+
     val progress: Float get() = if (durationMs <= 0) 0f else (positionMs.toFloat() / durationMs).coerceIn(0f, 1f)
     val buffered: Float get() = if (durationMs <= 0) 0f else (bufferedMs.toFloat() / durationMs).coerceIn(0f, 1f)
     val hasError: Boolean get() = errorKey != null
