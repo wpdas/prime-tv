@@ -54,7 +54,7 @@ prime-tv/
 ├── gradle/libs.versions.toml       # version catalog
 ├── Makefile                        # atalhos de dev
 ├── CLAUDE.md · README.md · .gitignore
-├── local.properties                # TMDB_API_KEY (ignorado)
+├── local.properties                # TMDB_API_KEY, IPTV_TEST_URL, FAKE_LINK_RECEIVER (ignorado)
 └── keystore.properties             # assinatura release (ignorado)
 ```
 

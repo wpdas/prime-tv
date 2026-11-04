@@ -21,7 +21,7 @@ App Android de IPTV com interface no estilo Netflix, feito para **TV Box com And
 
 - Configurações: lista, intervalo de atualização por seção, palavras-chave de futebol, decodificador e buffer do player, idioma
 - Atualização automática em segundo plano (WorkManager), com verificação ao abrir o app
-- "Receber link pelo celular": código, QR e espera pelo link (o site que entrega o link é a próxima etapa do roadmap)
+- "Receber link pelo celular": a TV mostra código e QR code, o link colado no celular (site [prime-tv-web](https://github.com/wpdas/prime-tv-web)) chega em poucos segundos e é apagado do servidor assim que a TV confirma
 - Atualização do próprio app pelo GitHub Releases: checagem diária silenciosa, aviso na Início, download com progresso e instalação pelo sistema
 - CI em cada PR e release assinada automaticamente a cada tag `v*`
 
@@ -69,7 +69,7 @@ Próximo: polimento (desempenho em box fraca, estados de erro e vazio, revisão 
 
 - JDK 17
 - Android SDK com `platforms;android-37` e `build-tools;36.0.0` (o Android Studio instala)
-- `local.properties` com `sdk.dir` e, opcionalmente, `TMDB_API_KEY=...` (sem a chave, o destaque usa itens da própria lista)
+- `local.properties` com `sdk.dir` e, opcionalmente, `TMDB_API_KEY=...` (sem a chave, o destaque usa itens da própria lista), `IPTV_TEST_URL=...` (lista real pré-preenchida no Setup, só no build debug) e `FAKE_LINK_RECEIVER=true` ("Receber link" sem rede, entregando `IPTV_TEST_URL` depois de alguns segundos)
 
 ```bash
 make build          # APK debug em app/build/outputs/apk/debug/

@@ -7,31 +7,29 @@
 - [ ] Implementação do app Android (TV Box, Android 11, sem assinatura de loja)
 - [ ] Repositório no GitHub com releases do APK (usado pela verificação de atualização do app)
 
-## Fase 2 — Site "Receber link" (issue futura)
+## Fase 2 — Site "Receber link" ✅ feito
 
 **Problema:** o usuário recebe o link da lista IPTV pelo WhatsApp ou outro app no celular. Digitar ou copiar esse link na TV Box com o controle remoto é difícil.
 
-**Solução:** um site simples onde o usuário envia o link do celular para a TV.
+**Solução:** um site simples onde o usuário envia o link do celular para a TV. Código e site no repo [wpdas/prime-tv-web](https://github.com/wpdas/prime-tv-web) (Cloudflare Worker + D1, plano grátis). Produção: https://prime-tv-web.wendersonpdas.workers.dev (página do celular em `/link`). O endereço entra no app como `LINK_SITE_URL` em `app/build.gradle.kts`; a API fica na mesma origem.
 
 Fluxo:
 1. No app, o usuário escolhe **Receber link pelo celular** (tela de configuração inicial e em Configurações › Lista IPTV).
-2. O app gera um código curto e temporário (ex.: `K7P-4QX`, válido por ~10 min) e mostra também um QR code que abre o site com o código já preenchido.
+2. O app pede um código ao site (`POST /api/sessions`), mostra o código (`K7P-4QX`, válido por 10 min) e um QR code que abre o site com o código já preenchido (`siteUrl?code=XXXXXX`).
 3. No site, o usuário digita o código. Se for válido, o site libera o campo para colar o link.
-4. Ao enviar, o app recebe o link e mostra a confirmação ("Link recebido · Detectado: Xtream Codes") com o botão **Usar este link**.
+4. O app consulta o site a cada 3 s (`GET /api/sessions/{code}` com `Authorization: Bearer {deviceToken}`) enquanto a tela estiver aberta. Quando o link chega, confirma (`DELETE /api/sessions/{code}`), o servidor apaga a URL e a TV mostra "Link recebido · Detectado: Xtream Codes" com o botão **Usar este link**.
 
-Entrega do link ao app (decidir na implementação):
-- WebSocket, usando o serviço de WebSocket que já existe; ou
-- polling simples (o app consulta a cada poucos segundos enquanto a tela está aberta).
+Contrato da API (respostas JSON; erros `{ error, message }` com `message` em pt-BR):
+- `POST /api/sessions` → `201 { code, deviceToken, expiresAt, siteUrl }`. O servidor gera o código (mesmo alfabeto do app, sem 0/O/1/I/L) e o `deviceToken`, segredo da TV que nunca aparece na tela nem em log.
+- `GET /api/sessions/{code}` (Bearer) → `200 { status: "pending" | "delivered" | "expired", url?, expiresAt }`. `delivered` com `url` = link recebido (pode ser relido por 60 s); `delivered` sem `url` = já confirmado (o app trata como expirado); `expired` = sessão sumiu. `401` = token errado (o app pede um código novo). `429` e falha de rede não derrubam a tela: o app avisa "Sem conexão com o site" e continua tentando.
+- `DELETE /api/sessions/{code}` (Bearer) → `204`. É a confirmação: o app chama logo após receber a URL e também ao sair da tela ou ao gerar novo código.
 
-Requisitos a considerar:
-- Código de uso único, com expiração e limite de tentativas (evitar força bruta).
-- O link contém usuário e senha: trafegar só por HTTPS, não registrar em log e apagar do servidor assim que o app confirmar o recebimento.
-- Domínio do site: [a definir].
+No app: `domain/link/LinkReceiver` (interface), `data/link/HttpLinkReceiver` (Retrofit, polling) e `FakeLinkReceiver` (sem rede, entrega `IPTV_TEST_URL`; ligado por `FAKE_LINK_RECEIVER=true` em `local.properties`, só no build debug). Testes com MockWebServer em `HttpLinkReceiverTest`.
 
-Critérios de aceite:
+Critérios de aceite (atendidos):
 - Código expira e pode ser regenerado pela TV.
 - Link enviado chega ao app em poucos segundos.
-- Nenhum link fica guardado no servidor após a entrega.
+- Nenhum link fica guardado no servidor após a entrega (confirmação da TV ou faxina 60 s depois da primeira leitura).
 
 ## Melhorias planejadas (abrir como issues após o primeiro push)
 
