@@ -4,6 +4,8 @@ Formato: uma seção por versão, com **Novidades** e **Correções**. A seção
 
 ## [Não lançado]
 
+## [0.2.0] - 2026-11-04
+
 ### Novidades
 - Receber link pelo celular funciona de verdade: a TV mostra um código e um QR code do site, você cola o link no celular e ele chega na TV em poucos segundos, sem digitar nada no controle. O link é apagado do site assim que a TV confirma o recebimento. Se a TV ficar sem internet enquanto espera, ela avisa e continua tentando; se não der para gerar o código, há um botão "Tentar de novo"
 
