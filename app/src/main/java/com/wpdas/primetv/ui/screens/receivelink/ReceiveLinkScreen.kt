@@ -1,6 +1,8 @@
 package com.wpdas.primetv.ui.screens.receivelink
 
+import android.content.Intent
 import android.graphics.Bitmap
+import android.provider.Settings
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
@@ -26,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -61,6 +64,7 @@ fun ReceiveLinkScreen(
     val colors = PrimeTheme.colors
     val typography = PrimeTheme.typography
     val actionFocus = remember { FocusRequester() }
+    val context = LocalContext.current
     LaunchedEffect(state.receivedLink != null, state.expired, state.createError != null) { if (!state.creating) runCatching { actionFocus.requestFocus() } }
 
     Row(
@@ -100,7 +104,19 @@ fun ReceiveLinkScreen(
                     color = colors.textBody,
                     textAlign = TextAlign.Center,
                 )
-                PrimeButton(text = t("common.retry"), onClick = viewModel::newCode, modifier = Modifier.focusRequester(actionFocus))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    PrimeButton(text = t("common.retry"), onClick = viewModel::newCode, modifier = Modifier.focusRequester(actionFocus))
+                    if (createError.messageKey == "receive.error_ssl") {
+                        // Relógio errado é a causa comum: leva direto à tela do sistema para acertar.
+                        PrimeButton(
+                            text = t("update.open_date_settings"),
+                            onClick = { runCatching { context.startActivity(Intent(Settings.ACTION_DATE_SETTINGS)) } },
+                            style = PrimeButtonStyle.Secondary,
+                            horizontalPadding = 18.dp,
+                            textStyle = typography.buttonSmall,
+                        )
+                    }
+                }
             } else if (link == null) {
                 Text(t("receive.your_code"), style = typography.cardBody, color = colors.textSecondary)
                 CodeBoxes(state.formattedCode)

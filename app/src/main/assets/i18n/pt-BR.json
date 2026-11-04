@@ -218,7 +218,7 @@
   "receive.create_failed": "Não foi possível gerar o código. Confira a internet da TV Box e tente de novo.",
   "receive.error_server": "O site não respondeu ({detail}). Confira a internet da TV Box e tente de novo.",
   "receive.error_dns": "A TV Box não encontrou o endereço do site ({detail}). Confira a internet e o DNS da TV Box e tente de novo.",
-  "receive.error_ssl": "A conexão segura com o site falhou ({detail}). Confira a data e a hora da TV Box em Configurações › Data e hora e tente de novo.",
+  "receive.error_ssl": "A conexão segura com o site foi recusada: {detail}. Acerte a data e a hora da TV Box (Configurações › Data e hora, com ajuste automático ligado) e tente de novo.",
   "receive.waiting": "Aguardando o link…",
   "receive.offline": "Sem conexão com o site. Tentando de novo…",
   "receive.expires_in": "O código expira em {time}",

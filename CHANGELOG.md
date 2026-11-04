@@ -4,6 +4,11 @@ Formato: uma seção por versão, com **Novidades** e **Correções**. A seção
 
 ## [Não lançado]
 
+## [0.2.3] - 2026-11-04
+
+### Correções
+- Relógio da TV Box errado: a mensagem agora diz "data do aparelho atrasada/adiantada" também nas boxes que não informam o texto do erro (só o tipo), e a tela Receber link ganha o botão "Abrir Data e hora", como já havia em Verificar atualização
+
 ## [0.2.2] - 2026-11-04
 
 ### Correções

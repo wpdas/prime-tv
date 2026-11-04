@@ -21,5 +21,8 @@ class SslErrorsTest {
         assertEquals("data do aparelho adiantada", SslErrors.describe(handshake("certificate expired at NotAfter: ...")))
         assertEquals("autoridade certificadora desconhecida", SslErrors.describe(handshake("Chain validation failed", CertPathValidatorException("Trust anchor for certification path not found."))))
         assertEquals("CertificateException", SslErrors.describe(handshake("x", CertificateException("algo"))))
+        // Box com relógio atrasado: só o nome da classe, sem texto.
+        assertEquals("data do aparelho atrasada", SslErrors.describe(handshake("Chain validation failed", java.security.cert.CertificateNotYetValidException())))
+        assertEquals("data do aparelho adiantada", SslErrors.describe(handshake("Chain validation failed", java.security.cert.CertificateExpiredException())))
     }
 }

@@ -11,9 +11,10 @@ object SslErrors {
 
     /** "data do aparelho atrasada", "data do aparelho adiantada", "autoridade certificadora desconhecida" ou o nome do erro. */
     fun describe(error: Throwable): String {
-        val text = generateSequence(error) { it.cause }.joinToString(" ") { it.message.orEmpty() }.lowercase()
+        // Nome da classe entra também: boxes antigas lançam CertificateNotYetValidException sem mensagem.
+        val text = generateSequence(error) { it.cause }.joinToString(" ") { "${it.javaClass.simpleName} ${it.message.orEmpty()}" }.lowercase()
         return when {
-            "not yet valid" in text || "notbefore" in text -> "data do aparelho atrasada"
+            "not yet valid" in text || "notyetvalid" in text || "notbefore" in text -> "data do aparelho atrasada"
             "expired" in text || "notafter" in text -> "data do aparelho adiantada"
             "trust anchor" in text || "unable to find valid certification path" in text || "unknown ca" in text -> "autoridade certificadora desconhecida"
             else -> generateSequence(error) { it.cause }.last().javaClass.simpleName
