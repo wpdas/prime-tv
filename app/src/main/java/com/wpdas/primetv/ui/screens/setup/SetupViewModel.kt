@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import com.wpdas.primetv.domain.update.UpdateCheck
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -44,11 +45,13 @@ class SetupViewModel @Inject constructor(
         if (prefill != null) connect()
         // Quem fica parado aqui (lista ainda não configurada) também recebe versão nova: a atualização
         // pode trazer justamente o recurso que destrava a configuração (ex.: receber o link pelo celular).
+        // Consulta sempre que a tela abre, sem respeitar o intervalo da checagem em segundo plano: na
+        // abertura a rede do aparelho pode ainda não estar pronta, e aí a primeira tentativa falha.
         updates.pending.onEach { u -> _state.update { it.copy(updateVersion = u?.versionName) } }.launchIn(viewModelScope)
         viewModelScope.launch {
             while (true) {
-                updates.checkIfDue()
-                kotlinx.coroutines.delay(UPDATE_RECHECK_MS)
+                val failed = updates.check() is UpdateCheck.Failed
+                kotlinx.coroutines.delay(if (failed) UPDATE_RETRY_MS else UPDATE_RECHECK_MS)
             }
         }
     }
@@ -82,6 +85,8 @@ class SetupViewModel @Inject constructor(
 
     private companion object {
         const val UPDATE_RECHECK_MS = 30 * 60 * 1000L
+        /** Sem resposta (rede ainda subindo, servidor fora): tenta de novo logo. */
+        const val UPDATE_RETRY_MS = 60 * 1000L
 
         fun guessType(url: String): SourceType? {
             val lower = url.lowercase()

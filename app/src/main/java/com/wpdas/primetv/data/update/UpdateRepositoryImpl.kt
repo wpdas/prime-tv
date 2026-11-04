@@ -70,8 +70,12 @@ class UpdateRepositoryImpl @Inject constructor(
     override suspend fun checkIfDue(minIntervalMs: Long) {
         val last = runCatching { context.appDataStore.data.map { it[KEY_LAST_CHECK] ?: 0L }.first() }.getOrDefault(0L)
         if (System.currentTimeMillis() - last < minIntervalMs) return
-        context.appDataStore.edit { it[KEY_LAST_CHECK] = System.currentTimeMillis() }
-        runCatching { check() }
+        // Só conta como checado quando o servidor respondeu: falha (rede ainda subindo na abertura,
+        // por exemplo) não pode travar a próxima tentativa por meia hora.
+        val result = runCatching { check() }.getOrNull()
+        if (result != null && result !is UpdateCheck.Failed) {
+            context.appDataStore.edit { it[KEY_LAST_CHECK] = System.currentTimeMillis() }
+        }
     }
 
     override suspend fun check(): UpdateCheck = withContext(io) {
