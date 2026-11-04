@@ -24,6 +24,8 @@ val tmdbApiKey: String = localProps.getProperty("TMDB_API_KEY")
 val hasReleaseKeystore = keystoreProps.getProperty("storeFile") != null
 // URL de uma lista real para testes manuais. Só entra no build debug; nunca no release nem no git.
 val iptvTestUrl: String = System.getenv("IPTV_TEST_URL") ?: localProps.getProperty("IPTV_TEST_URL") ?: ""
+// "Receber link" sem rede (entrega IPTV_TEST_URL depois de alguns segundos). Só no build debug.
+val fakeLinkReceiver: Boolean = (System.getenv("FAKE_LINK_RECEIVER") ?: localProps.getProperty("FAKE_LINK_RECEIVER") ?: "false").toBoolean()
 
 // ---------------------------------------------------------------------------
 // Versão derivada da tag git: vX.Y.Z -> versionName "X.Y.Z", versionCode X*10000+Y*100+Z.
@@ -60,9 +62,10 @@ android {
 
         buildConfigField("String", "TMDB_API_KEY", "\"$tmdbApiKey\"")
         buildConfigField("String", "GITHUB_REPO", "\"wpdas/prime-tv\"")
-        // Site de "Receber link pelo celular" (fase 2 do roadmap; domínio a definir).
-        buildConfigField("String", "LINK_SITE_URL", "\"https://primetv.example/link\"")
+        // Site de "Receber link pelo celular" (repo wpdas/prime-tv-web). A API fica na mesma origem (/api/...).
+        buildConfigField("String", "LINK_SITE_URL", "\"https://prime-tv-web.wendersonpdas.workers.dev/link\"")
         buildConfigField("String", "IPTV_TEST_URL", "\"\"")
+        buildConfigField("boolean", "FAKE_LINK_RECEIVER", "false")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -90,6 +93,7 @@ android {
         debug {
             isMinifyEnabled = false
             buildConfigField("String", "IPTV_TEST_URL", "\"${iptvTestUrl.replace("\"", "\\\"")}\"")
+            buildConfigField("boolean", "FAKE_LINK_RECEIVER", fakeLinkReceiver.toString())
         }
     }
 

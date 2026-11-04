@@ -12,14 +12,14 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Receptor de teste: gera o código e fica "aguardando". Em builds debug com
+ * Receptor de teste, sem rede: gera o código localmente e fica "aguardando". Em build debug com
  * IPTV_TEST_URL, entrega essa URL depois de alguns segundos para dar para ver o estado
- * "Link recebido". O backend real (site + WebSocket/polling) é a fase 2 do roadmap.
+ * "Link recebido". Ligado por `FAKE_LINK_RECEIVER=true` (ver [LinkModule]).
  */
 @Singleton
 class FakeLinkReceiver @Inject constructor() : LinkReceiver {
 
-    override fun newSession(): LinkSession {
+    override suspend fun newSession(): LinkSession {
         val code = LinkCodes.generate()
         return LinkSession(code = code, expiresAt = System.currentTimeMillis() + SESSION_TTL_MS, url = LinkCodes.urlFor(code))
     }
@@ -36,13 +36,15 @@ class FakeLinkReceiver @Inject constructor() : LinkReceiver {
         emit(LinkEvent.Expired)
     }
 
+    override suspend fun release(session: LinkSession) = Unit
+
     private companion object {
         const val SESSION_TTL_MS = 10 * 60 * 1000L
         const val FAKE_DELIVERY_MS = 15_000L
     }
 }
 
-/** Códigos curtos sem caracteres ambíguos (0/O, 1/I/L). */
+/** Códigos curtos sem caracteres ambíguos (0/O, 1/I/L); mesmo alfabeto do site. */
 object LinkCodes {
     private const val ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
     private val random = SecureRandom()
@@ -52,5 +54,5 @@ object LinkCodes {
     /** "K7P4QX" -> "K7P-4QX" para leitura na TV. */
     fun format(code: String): String = if (code.length == 6) "${code.take(3)}-${code.drop(3)}" else code
 
-    fun urlFor(code: String): String = "${BuildConfig.LINK_SITE_URL}?code=$code"
+    fun urlFor(code: String): String = LinkSites.qrUrl(BuildConfig.LINK_SITE_URL, code)
 }
