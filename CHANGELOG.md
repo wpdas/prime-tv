@@ -4,6 +4,11 @@ Formato: uma seção por versão, com **Novidades** e **Correções**. A seção
 
 ## [Não lançado]
 
+## [0.2.1] - 2026-11-04
+
+### Correções
+- Tela inicial da lista: a busca por versão nova agora acontece toda vez que a tela abre e, se a internet ainda não respondeu (comum logo depois de ligar o aparelho), tenta de novo a cada minuto. Antes uma falha na abertura segurava a checagem por 30 minutos e o aviso de atualização não aparecia
+
 ## [0.2.0] - 2026-11-04
 
 ### Novidades
