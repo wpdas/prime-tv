@@ -17,8 +17,17 @@ sealed interface LinkEvent {
     data object Offline : LinkEvent
 }
 
-/** Falha ao criar a sessão. [userMessage] é o texto do servidor (pt-BR, com uma ação), se houver. */
-class LinkException(val userMessage: String? = null, cause: Throwable? = null) : Exception(userMessage, cause)
+/**
+ * Falha ao criar a sessão. [userMessage] é o texto do servidor (pt-BR, com uma ação), se houver;
+ * senão a tela usa [messageKey] (texto do app) com [detail] (causa resumida: "HTTP 500",
+ * "data do aparelho atrasada"), para o usuário saber se é internet, DNS, certificado ou o site.
+ */
+class LinkException(
+    val userMessage: String? = null,
+    val messageKey: String = "receive.create_failed",
+    val detail: String? = null,
+    cause: Throwable? = null,
+) : Exception(userMessage ?: messageKey, cause)
 
 /**
  * Abstrai o canal de entrega. A implementação real consulta o site por polling; a fake serve

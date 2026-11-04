@@ -95,7 +95,7 @@ fun ReceiveLinkScreen(
             } else if (createError != null) {
                 Icon(Icons.Rounded.CloudOff, contentDescription = null, tint = colors.live, modifier = Modifier.size(44.dp))
                 Text(
-                    createError.ifBlank { t("receive.create_failed") },
+                    createError.serverMessage?.takeIf { it.isNotBlank() } ?: t(createError.messageKey, "detail" to createError.detail.orEmpty()),
                     style = typography.body,
                     color = colors.textBody,
                     textAlign = TextAlign.Center,

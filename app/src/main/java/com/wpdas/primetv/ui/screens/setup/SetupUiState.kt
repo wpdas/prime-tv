@@ -19,6 +19,9 @@ data class SetupUiState(
     val sync: Map<ContentSection, SyncState> = emptyMap(),
     /** Versão nova publicada no GitHub, se houver. */
     val updateVersion: String? = null,
+    /** A checagem de versão falhou: chave da mensagem e causa resumida, para o usuário saber o que ajustar. */
+    val updateErrorKey: String? = null,
+    val updateErrorDetail: String? = null,
 ) {
     val canConnect: Boolean get() = url.isNotBlank() && !isDetecting
     val canStart: Boolean get() = connected && sync[ContentSection.LIVE].let { it is SyncState.Done || it is SyncState.Skipped }

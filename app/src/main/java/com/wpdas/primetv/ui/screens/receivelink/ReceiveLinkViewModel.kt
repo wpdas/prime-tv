@@ -21,11 +21,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/** Motivo de não ter dado para gerar o código: texto do servidor ou chave do app com a causa. */
+data class LinkFailure(val serverMessage: String?, val messageKey: String, val detail: String?)
+
 data class ReceiveLinkUiState(
     /** Pedindo um código ao site ("Gerando código…"). */
     val creating: Boolean = false,
-    /** Não deu para gerar o código; texto do servidor, ou vazio para a mensagem padrão. */
-    val createError: String? = null,
+    val createError: LinkFailure? = null,
     val code: String = "",
     val qrUrl: String = "",
     val secondsLeft: Int = 0,
@@ -75,7 +77,7 @@ class ReceiveLinkViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: LinkException) {
-                _state.value = ReceiveLinkUiState(createError = e.userMessage.orEmpty())
+                _state.value = ReceiveLinkUiState(createError = LinkFailure(e.userMessage, e.messageKey, e.detail))
                 return@launch
             }
             current = session

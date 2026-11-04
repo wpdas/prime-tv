@@ -78,6 +78,24 @@ class HttpLinkReceiverTest {
             fail("devia lançar")
         } catch (e: LinkException) {
             assertEquals("Muitas tentativas. Aguarde um minuto e tente de novo.", e.userMessage)
+            assertEquals("receive.error_server", e.messageKey)
+            assertEquals("HTTP 429", e.detail)
+        }
+    }
+
+    @Test fun `host desconhecido vira erro de dns`() = runTest {
+        val api = Retrofit.Builder()
+            .baseUrl("http://nao-existe.invalid/")
+            .client(OkHttpClient())
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+            .build()
+            .create(LinkApi::class.java)
+        try {
+            HttpLinkReceiver(api, json, UnconfinedTestDispatcher(testScheduler)).newSession()
+            fail("devia lançar")
+        } catch (e: LinkException) {
+            assertNull(e.userMessage)
+            assertEquals("receive.error_dns", e.messageKey)
         }
     }
 
@@ -88,6 +106,8 @@ class HttpLinkReceiverTest {
             fail("devia lançar")
         } catch (e: LinkException) {
             assertNull(e.userMessage)
+            assertEquals("receive.error_server", e.messageKey)
+            assertNotNull(e.detail)
         }
     }
 

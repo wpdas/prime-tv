@@ -4,6 +4,12 @@ Formato: uma seção por versão, com **Novidades** e **Correções**. A seção
 
 ## [Não lançado]
 
+## [0.2.2] - 2026-11-04
+
+### Correções
+- Receber link pelo celular: quando não dá para gerar o código, a mensagem diz a causa em vez de só "confira a internet": site sem resposta, endereço não encontrado (DNS) ou conexão segura recusada (data e hora do aparelho erradas ou sistema antigo), com a dica do que ajustar
+- Tela inicial da lista: se a busca por versão nova falhar, aparece uma linha discreta com o motivo (sem internet, data e hora erradas, GitHub sem resposta), em vez de ficar em silêncio
+
 ## [0.2.1] - 2026-11-04
 
 ### Correções

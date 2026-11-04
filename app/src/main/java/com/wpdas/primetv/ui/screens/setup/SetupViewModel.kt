@@ -50,8 +50,10 @@ class SetupViewModel @Inject constructor(
         updates.pending.onEach { u -> _state.update { it.copy(updateVersion = u?.versionName) } }.launchIn(viewModelScope)
         viewModelScope.launch {
             while (true) {
-                val failed = updates.check() is UpdateCheck.Failed
-                kotlinx.coroutines.delay(if (failed) UPDATE_RETRY_MS else UPDATE_RECHECK_MS)
+                val result = updates.check()
+                val failed = result as? UpdateCheck.Failed
+                _state.update { it.copy(updateErrorKey = failed?.messageKey, updateErrorDetail = failed?.detail) }
+                kotlinx.coroutines.delay(if (failed != null) UPDATE_RETRY_MS else UPDATE_RECHECK_MS)
             }
         }
     }

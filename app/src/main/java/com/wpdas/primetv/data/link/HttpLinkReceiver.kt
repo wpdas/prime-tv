@@ -2,6 +2,7 @@ package com.wpdas.primetv.data.link
 
 import com.wpdas.primetv.BuildConfig
 import com.wpdas.primetv.core.di.IoDispatcher
+import com.wpdas.primetv.core.util.SslErrors
 import com.wpdas.primetv.domain.link.LinkEvent
 import com.wpdas.primetv.domain.link.LinkException
 import com.wpdas.primetv.domain.link.LinkReceiver
@@ -17,6 +18,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import retrofit2.HttpException
 import java.io.IOException
+import java.net.UnknownHostException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -40,11 +42,14 @@ class HttpLinkReceiver @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: HttpException) {
-            throw LinkException(serverMessage(e), e)
+            throw LinkException(serverMessage(e), "receive.error_server", "HTTP ${e.code()}", e)
+        } catch (e: UnknownHostException) {
+            throw LinkException(null, "receive.error_dns", e.javaClass.simpleName, e)
         } catch (e: IOException) {
-            throw LinkException(null, e)
+            if (SslErrors.isTls(e)) throw LinkException(null, "receive.error_ssl", SslErrors.describe(e), e)
+            throw LinkException(null, "receive.error_server", e.javaClass.simpleName, e)
         } catch (e: RuntimeException) {
-            throw LinkException(null, e)
+            throw LinkException(null, "receive.error_server", e.javaClass.simpleName, e)
         }
         LinkSession(
             code = created.code,

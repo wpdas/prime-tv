@@ -171,6 +171,15 @@ fun SetupContent(
             if (state.updateVersion != null && !state.connected) {
                 UpdateBanner(version = state.updateVersion, onOpenUpdate = onOpenUpdate)
             }
+            // Sem conseguir falar com o GitHub (data errada, DNS, sem internet): diz a causa em vez de ficar mudo.
+            val updateErrorKey = state.updateErrorKey
+            if (updateErrorKey != null && state.updateVersion == null && !state.connected) {
+                Text(
+                    t("setup.update_failed", "reason" to t(updateErrorKey, "detail" to state.updateErrorDetail.orEmpty())),
+                    style = typography.caption,
+                    color = colors.textSecondary,
+                )
+            }
         }
 
         if (state.connected) {
