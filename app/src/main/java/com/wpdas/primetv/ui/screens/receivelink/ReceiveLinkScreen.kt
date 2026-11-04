@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -60,7 +61,7 @@ fun ReceiveLinkScreen(
     val colors = PrimeTheme.colors
     val typography = PrimeTheme.typography
     val actionFocus = remember { FocusRequester() }
-    LaunchedEffect(state.receivedLink != null, state.expired) { runCatching { actionFocus.requestFocus() } }
+    LaunchedEffect(state.receivedLink != null, state.expired, state.createError != null) { if (!state.creating) runCatching { actionFocus.requestFocus() } }
 
     Row(
         Modifier.fillMaxSize().background(colors.background).padding(horizontal = 96.dp),
@@ -87,7 +88,20 @@ fun ReceiveLinkScreen(
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
             val link = state.receivedLink
-            if (link == null) {
+            val createError = state.createError
+            if (state.creating) {
+                Box(Modifier.size(148.dp), contentAlignment = Alignment.Center) { LoadingSpinner(size = 36.dp) }
+                Text(t("receive.creating"), style = typography.body, color = colors.textBody)
+            } else if (createError != null) {
+                Icon(Icons.Rounded.CloudOff, contentDescription = null, tint = colors.live, modifier = Modifier.size(44.dp))
+                Text(
+                    createError.ifBlank { t("receive.create_failed") },
+                    style = typography.body,
+                    color = colors.textBody,
+                    textAlign = TextAlign.Center,
+                )
+                PrimeButton(text = t("common.retry"), onClick = viewModel::newCode, modifier = Modifier.focusRequester(actionFocus))
+            } else if (link == null) {
                 Text(t("receive.your_code"), style = typography.cardBody, color = colors.textSecondary)
                 CodeBoxes(state.formattedCode)
                 QrImage(state.qrUrl)
@@ -96,7 +110,8 @@ fun ReceiveLinkScreen(
                 } else {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         LoadingSpinner(size = 16.dp, strokeWidth = 3.dp)
-                        Text(t("receive.waiting"), style = typography.body, color = colors.textBody)
+                        if (state.offline) Text(t("receive.offline"), style = typography.body, color = colors.live)
+                        else Text(t("receive.waiting"), style = typography.body, color = colors.textBody)
                     }
                     Text(t("receive.expires_in", "time" to "%d:%02d".format(state.secondsLeft / 60, state.secondsLeft % 60)), style = typography.caption, color = colors.textSecondary)
                 }
