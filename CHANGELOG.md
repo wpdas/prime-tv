@@ -4,6 +4,8 @@ Formato: uma seção por versão, com **Novidades** e **Correções**. A seção
 
 ## [Não lançado]
 
+## [0.3.0] - 2026-11-05
+
 ### Novidades
 - Configurações › Player › "Saída na resolução do vídeo" (desligado por padrão): em tela cheia a box pede ao sistema o modo de saída com a resolução do próprio vídeo (ex.: 1080p), e a TV faz o upscaling no lugar da box. Depende de a box expor os modos pelo HDMI; a tela pode piscar ao entrar e sair
 
