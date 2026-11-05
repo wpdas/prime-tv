@@ -40,6 +40,7 @@ abstract class DataModule {
     @Binds abstract fun bindSettingsRepository(impl: com.wpdas.primetv.data.local.prefs.SettingsStore): com.wpdas.primetv.domain.repository.SettingsRepository
     @Binds abstract fun bindUpdateRepository(impl: com.wpdas.primetv.data.update.UpdateRepositoryImpl): com.wpdas.primetv.domain.update.UpdateRepository
     @Binds abstract fun bindTeamCrestRepository(impl: com.wpdas.primetv.data.remote.crests.CrestRepositoryImpl): com.wpdas.primetv.domain.crests.TeamCrestRepository
+    @Binds abstract fun bindMatchArtWarmer(impl: com.wpdas.primetv.data.remote.crests.CrestPrefetcher): com.wpdas.primetv.domain.crests.MatchArtWarmer
     @Binds abstract fun bindPlaylistRepository(impl: PlaylistRepositoryImpl): PlaylistRepository
     @Binds abstract fun bindCatalogSync(impl: CatalogSyncer): CatalogSync
 }

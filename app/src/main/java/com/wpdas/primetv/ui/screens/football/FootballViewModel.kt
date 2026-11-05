@@ -23,14 +23,21 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@OptIn(kotlinx.coroutines.FlowPreview::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class FootballViewModel @Inject constructor(
     private val catalog: CatalogRepository,
     private val home: HomeRepository,
     private val sync: CatalogSync,
+    private val artWarmer: com.wpdas.primetv.domain.crests.MatchArtWarmer,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(FootballUiState())
@@ -49,6 +56,14 @@ class FootballViewModel @Inject constructor(
     init {
         combine(catalog.matchSchedule(), ticker) { events, now -> events to now }
             .onEach { (events, now) -> _state.update { it.copy(events = events, now = now) } }
+            .launchIn(viewModelScope)
+
+        // Escudos e competições dos jogos, só com a tela aberta; recomeça se a lista de jogos mudar.
+        _state.map { it.events }
+            .filterNotNull()
+            .distinctUntilChanged { old, new -> old.map { it.home to it.away } == new.map { it.home to it.away } }
+            .debounce(WARM_DELAY_MS)
+            .mapLatest { events -> runCatching { artWarmer.warm(events) } }
             .launchIn(viewModelScope)
 
         combine(catalog.channels(ChannelFilter.Football), ticker) { channels, now ->
@@ -114,6 +129,8 @@ class FootballViewModel @Inject constructor(
     fun onFocusConsumed() = _state.update { it.copy(focusEventKey = null) }
 
     private companion object {
+        /** Espera a tela assentar (e a lista de jogos parar de mudar) antes de buscar. */
+        const val WARM_DELAY_MS = 800L
         const val LIVE_STALE_MS = 60 * 60_000L
         const val EPG_STALE_MS = 6 * 60 * 60_000L
     }
