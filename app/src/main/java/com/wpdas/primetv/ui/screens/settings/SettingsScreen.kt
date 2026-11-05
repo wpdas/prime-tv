@@ -362,6 +362,12 @@ private fun PlayerPane(state: SettingsUiState, viewModel: SettingsViewModel) {
         value = t(if (state.settings.resumeLive) "settings.on" else "settings.off"),
         onClick = viewModel::toggleResumeLive,
     )
+    SettingRow(
+        title = t("settings.match_display_mode"),
+        subtitle = t("settings.match_display_mode_hint"),
+        value = t(if (state.settings.matchDisplayMode) "settings.on" else "settings.off"),
+        onClick = viewModel::toggleMatchDisplayMode,
+    )
 }
 
 @Composable

@@ -41,14 +41,16 @@ fun CategoryRail(
     val shape = PrimeTheme.shapes.card
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     if (selectedFocus != null) {
-        androidx.compose.runtime.LaunchedEffect(Unit) {
+        // Os grupos podem chegar depois da primeira composição: rola quando a lista ou o grupo mudam.
+        androidx.compose.runtime.LaunchedEffect(categories.size, selectedId) {
             val index = categories.indexOfFirst { it.id == selectedId }
             if (index >= 0) runCatching { listState.scrollToItem(index) }
         }
     }
     LazyColumn(
         state = listState,
-        modifier = modifier.width(width).focusRestorer().focusGroup().throttleHeldDpad(vertical = true) { listState.isScrollInProgress },
+        // Entrando no trilho pela primeira vez, o foco cai no grupo em uso (não no vizinho geométrico); depois, no último focado.
+        modifier = modifier.width(width).then(if (selectedFocus != null) Modifier.focusRestorer(selectedFocus) else Modifier.focusRestorer()).focusGroup().throttleHeldDpad(vertical = true) { listState.isScrollInProgress },
         verticalArrangement = Arrangement.spacedBy(4.dp),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 8.dp, horizontal = 6.dp),
     ) {

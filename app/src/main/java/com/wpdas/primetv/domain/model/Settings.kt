@@ -41,9 +41,11 @@ data class AppSettings(
     val language: String = "pt-BR",
     /** Margem de segurança (overscan) em % de cada borda: TVs que cortam as bordas da imagem. */
     val overscanPercent: Int = 0,
-    val previewSound: Boolean = false,
+    val previewSound: Boolean = true,
     /** Fechou o app assistindo a um canal ao vivo: ao abrir, volta direto nesse canal. */
     val resumeLive: Boolean = true,
+    /** Em tela cheia, a box passa a enviar à TV a resolução do próprio vídeo (a TV faz o upscaling). Desligado: algumas boxes piscam ou não expõem os modos. */
+    val matchDisplayMode: Boolean = false,
 ) {
     companion object {
         val OVERSCAN_OPTIONS = listOf(0, 2, 4, 6)

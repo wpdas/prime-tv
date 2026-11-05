@@ -42,8 +42,9 @@ class SettingsStore @Inject constructor(
                 bufferProfile = prefs[KEY_BUFFER]?.let { v -> BufferProfile.entries.firstOrNull { it.name == v } } ?: BufferProfile.NORMAL,
                 language = prefs[KEY_LANGUAGE] ?: "pt-BR",
                 overscanPercent = prefs[KEY_OVERSCAN] ?: 0,
-                previewSound = prefs[KEY_PREVIEW_SOUND] ?: false,
+                previewSound = prefs[KEY_PREVIEW_SOUND] ?: true,
                 resumeLive = prefs[KEY_RESUME_LIVE] ?: true,
+                matchDisplayMode = prefs[KEY_MATCH_DISPLAY_MODE] ?: false,
             )
         }
         // Primeiro valor lido de forma síncrona: arquivo minúsculo, evita "piscar" com padrões errados.
@@ -61,8 +62,9 @@ class SettingsStore @Inject constructor(
             bufferProfile = prefs[KEY_BUFFER]?.let { v -> BufferProfile.entries.firstOrNull { it.name == v } } ?: BufferProfile.NORMAL,
             language = prefs[KEY_LANGUAGE] ?: "pt-BR",
             overscanPercent = prefs[KEY_OVERSCAN] ?: 0,
-            previewSound = prefs[KEY_PREVIEW_SOUND] ?: false,
+            previewSound = prefs[KEY_PREVIEW_SOUND] ?: true,
             resumeLive = prefs[KEY_RESUME_LIVE] ?: true,
+            matchDisplayMode = prefs[KEY_MATCH_DISPLAY_MODE] ?: false,
         )
     }.getOrDefault(AppSettings(footballKeywords = FootballClassifier.DEFAULT_KEYWORDS))
 
@@ -98,6 +100,10 @@ class SettingsStore @Inject constructor(
         store.edit { it[KEY_PREVIEW_SOUND] = enabled }
     }
 
+    override suspend fun setMatchDisplayMode(enabled: Boolean) {
+        store.edit { it[KEY_MATCH_DISPLAY_MODE] = enabled }
+    }
+
     override suspend fun setResumeLive(enabled: Boolean) {
         store.edit { it[KEY_RESUME_LIVE] = enabled }
     }
@@ -112,5 +118,6 @@ class SettingsStore @Inject constructor(
         val KEY_OVERSCAN = androidx.datastore.preferences.core.intPreferencesKey("overscan_percent")
         val KEY_PREVIEW_SOUND = booleanPreferencesKey("preview_sound")
         val KEY_RESUME_LIVE = booleanPreferencesKey("player_resume_live")
+        val KEY_MATCH_DISPLAY_MODE = booleanPreferencesKey("player_match_display_mode")
     }
 }

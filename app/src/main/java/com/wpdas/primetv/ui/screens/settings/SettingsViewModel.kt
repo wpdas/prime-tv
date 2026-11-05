@@ -118,6 +118,10 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settingsRepository.setResumeLive(!_state.value.settings.resumeLive) }
     }
 
+    fun toggleMatchDisplayMode() {
+        viewModelScope.launch { settingsRepository.setMatchDisplayMode(!_state.value.settings.matchDisplayMode) }
+    }
+
     fun selectLanguage(language: String) {
         viewModelScope.launch {
             settingsRepository.setLanguage(language)

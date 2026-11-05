@@ -45,7 +45,11 @@ data class PlayerUiState(
     /** Grupos de canais (esquerda no painel): Favoritos, Futebol, Todos e categorias; o id do grupo em uso. */
     val zapRail: List<com.wpdas.primetv.ui.components.RailCategory> = emptyList(),
     val zapRailId: String = ZAP_ALL,
-    val zapRailOpen: Boolean = false,
+    /** Tamanho real do vídeo em reprodução (0 = ainda não sabe). */
+    val videoWidth: Int = 0,
+    val videoHeight: Int = 0,
+    /** Configuração: saída de vídeo na resolução do conteúdo (a TV faz o upscaling). */
+    val matchDisplayMode: Boolean = false,
     /** Sinaliza à tela que a reprodução terminou e ela deve fechar. */
     val finished: Boolean = false,
     /** Ao vivo: dígitos sendo digitados para pular de canal ("12_"). */

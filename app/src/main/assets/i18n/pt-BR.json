@@ -282,6 +282,8 @@
   "settings.preview_sound_hint": "Na tela Ao vivo, a prévia do canal em foco toca com áudio.",
   "settings.resume_live": "Reabrir no canal que estava",
   "settings.resume_live_hint": "Se o app for fechado durante um canal ao vivo, volta direto nele ao abrir.",
+  "settings.match_display_mode": "Saída na resolução do vídeo",
+  "settings.match_display_mode_hint": "Em tela cheia, a box envia à TV a resolução do próprio vídeo (ex.: 1080p) e a TV faz o upscaling. A tela pode piscar ao entrar e sair; depende de a box expor os modos.",
   "settings.on": "Ligado",
   "settings.off": "Desligado",
   "category.count_filtered": "{n} de {total} títulos",

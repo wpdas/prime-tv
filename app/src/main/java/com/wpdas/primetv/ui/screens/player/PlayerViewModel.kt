@@ -16,6 +16,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.navigation.toRoute
 import com.wpdas.primetv.core.util.TextNormalizer
+import com.wpdas.primetv.core.util.Variants
 import com.wpdas.primetv.data.player.PlayerFactory
 import com.wpdas.primetv.domain.model.Channel
 import com.wpdas.primetv.domain.model.Episode
@@ -50,6 +51,7 @@ class PlayerViewModel @Inject constructor(
     private val liveState: com.wpdas.primetv.data.local.prefs.LiveStateStore,
     @com.wpdas.primetv.core.di.ApplicationScope private val appScope: kotlinx.coroutines.CoroutineScope,
     playerFactory: PlayerFactory,
+    settings: com.wpdas.primetv.domain.repository.SettingsRepository,
 ) : ViewModel() {
 
     private val route = savedStateHandle.toRoute<PlayerRoute>()
@@ -151,12 +153,17 @@ class PlayerViewModel @Inject constructor(
         }
 
         override fun onTracksChanged(tracks: Tracks) = updateTracks(tracks)
+
+        override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
+            _state.update { it.copy(videoWidth = videoSize.width, videoHeight = videoSize.height) }
+        }
     }
 
     init {
         player.addListener(listener)
         viewModelScope.launch { load() }
         viewModelScope.launch { tick() }
+        viewModelScope.launch { settings.settings.collect { s -> _state.update { it.copy(matchDisplayMode = s.matchDisplayMode) } } }
     }
 
     // ------------------------------------------------------------------ carga
@@ -227,17 +234,6 @@ class PlayerViewModel @Inject constructor(
 
     // ------------------------------------------------------------------ grupos de canais (painel)
 
-    /** Esquerda no painel de canais: abre o trilho de grupos (montado na primeira vez). */
-    fun openZapRail() {
-        if (_state.value.panel != PlayerPanel.CHANNELS) return
-        viewModelScope.launch {
-            if (_state.value.zapRail.isEmpty()) _state.update { it.copy(zapRail = buildZapRail()) }
-            _state.update { it.copy(zapRailOpen = true) }
-        }
-    }
-
-    fun closeZapRail() = _state.update { it.copy(zapRailOpen = false) }
-
     /** Grupo escolhido: a lista do painel (e o zapping cima/baixo) passa a ser a desse grupo. */
     fun selectZapRail(id: String) {
         viewModelScope.launch {
@@ -251,7 +247,7 @@ class PlayerViewModel @Inject constructor(
             val list = runCatching { catalog.channelsOnce(filter) }.getOrDefault(emptyList())
             val now = runCatching { catalog.nowPlaying(filter, System.currentTimeMillis()) }.getOrDefault(emptyMap())
             content = live.copy(zapList = list, zapFilter = filter)
-            _state.update { it.copy(zapList = list, zapNowPlaying = now, zapRailId = id, zapRailOpen = false) }
+            _state.update { it.copy(zapList = list, zapNowPlaying = now, zapRailId = id) }
         }
     }
 
@@ -314,9 +310,9 @@ class PlayerViewModel @Inject constructor(
      */
     private fun giveUpChannel(live: Content.Live): Boolean {
         signal.stop()
-        val lower = live.variants.firstOrNull { it.qualityRank > live.channel.qualityRank }
+        val lower = Variants.next(live.variants, live.channel.id, live.channel.qualityRank, { it.id }, { it.qualityRank })
         if (lower != null) {
-            showToast("player.switching_quality", lower.qualityLabel ?: "")
+            showToast("player.switching_quality", Variants.label(lower.name, lower.qualityRank) ?: "")
             viewModelScope.launch { tuneChannel(lower, keepVariants = true) }
             return true
         }
@@ -355,17 +351,18 @@ class PlayerViewModel @Inject constructor(
         }
         when (val c = content) {
             is Content.Movie -> {
-                val next = c.variants.ifEmpty { catalog.movieVariants(c.movie.id) }.firstOrNull { it.qualityRank > c.playing.qualityRank }
+                val list = c.variants.ifEmpty { catalog.movieVariants(c.movie.id) }
+                val next = Variants.next(list, c.playing.id, c.playing.qualityRank, { it.id }, { it.qualityRank })
                 if (next != null) {
-                    showToast("player.slow_switching", next.qualityLabel ?: "")
+                    showToast("player.slow_switching", Variants.label(next.title, next.qualityRank) ?: "")
                     playMovieVariant(next)
                     return
                 }
             }
             is Content.Live -> {
-                val next = c.variants.firstOrNull { it.qualityRank > c.channel.qualityRank }
+                val next = Variants.next(c.variants, c.channel.id, c.channel.qualityRank, { it.id }, { it.qualityRank })
                 if (next != null) {
-                    showToast("player.slow_switching", next.qualityLabel ?: "")
+                    showToast("player.slow_switching", Variants.label(next.name, next.qualityRank) ?: "")
                     tuneChannel(next, keepVariants = true)
                     return
                 }
@@ -430,8 +427,8 @@ class PlayerViewModel @Inject constructor(
         val height = currentVideoHeight.takeIf { it > 0 }?.let { "${it}p" }
         fun variant(id: String, label: String?, playing: Boolean) = SourceVariant(id, label, if (playing) height else null)
         val (sources, playing) = when (val c = content) {
-            is Content.Movie -> c.variants.map { variant(it.id, it.qualityLabel, it.id == c.playing.id) } to c.playing.id
-            is Content.Live -> c.variants.map { variant(it.id, it.qualityLabel, it.id == c.channel.id) } to c.channel.id
+            is Content.Movie -> c.variants.map { variant(it.id, Variants.label(it.title, it.qualityRank), it.id == c.playing.id) } to c.playing.id
+            is Content.Live -> c.variants.map { variant(it.id, Variants.label(it.name, it.qualityRank), it.id == c.channel.id) } to c.channel.id
             else -> emptyList<SourceVariant>() to null
         }
         val options = QualityOptions.build(videoTracks, manualTrackId, sources, playing)
@@ -481,6 +478,8 @@ class PlayerViewModel @Inject constructor(
         if (!_state.value.isLive) return
         signal.stop() // o usuário está escolhendo: não troca o canal por baixo dele
         openPanel(PlayerPanel.CHANNELS)
+        // Grupos (Favoritos, Futebol, Todos, categorias) ficam sempre à esquerda da lista; montados na primeira vez.
+        if (_state.value.zapRail.isEmpty()) viewModelScope.launch { _state.update { it.copy(zapRail = buildZapRail()) } }
     }
 
     /** Canal escolhido no painel. */
@@ -514,7 +513,7 @@ class PlayerViewModel @Inject constructor(
         player.setMediaItem(MediaItem.fromUri(url), positionMs.coerceAtLeast(0))
         player.prepare()
         player.playWhenReady = true
-        _state.update { it.copy(isBuffering = true, errorKey = null, errorDetail = null, controlsVisible = true, bitrateBps = null, qualityOptions = emptyList()) }
+        _state.update { it.copy(isBuffering = true, errorKey = null, errorDetail = null, controlsVisible = true, bitrateBps = null, qualityOptions = emptyList(), videoWidth = 0, videoHeight = 0) }
         refreshQualityOptions()
         scheduleHide()
     }
@@ -642,7 +641,7 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun closePanel() {
-        _state.update { it.copy(panel = PlayerPanel.NONE, zapRailOpen = false) }
+        _state.update { it.copy(panel = PlayerPanel.NONE) }
         showControls()
     }
 

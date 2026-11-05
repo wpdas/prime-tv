@@ -125,9 +125,15 @@ fun PlayerScreen(
 
     LaunchedEffect(state.finished) { if (state.finished) leave() }
 
+    // Saída de vídeo na resolução do conteúdo (opcional): a TV faz o upscaling no lugar da box.
+    LaunchedEffect(state.videoWidth, state.videoHeight, state.matchDisplayMode) {
+        val activity = context as? Activity ?: return@LaunchedEffect
+        DisplayModeSwitcher.apply(activity, if (state.matchDisplayMode) state.videoWidth to state.videoHeight else null)
+    }
+    DisposableEffect(Unit) { onDispose { (context as? Activity)?.let { DisplayModeSwitcher.apply(it, null) } } }
+
     BackHandler {
         when {
-            state.zapRailOpen -> viewModel.closeZapRail()
             state.panel != PlayerPanel.NONE -> viewModel.closePanel()
             state.liveMenu -> viewModel.closeLiveMenu()
             state.controlsVisible && !state.hasError && !state.isBuffering -> viewModel.hideControls()
@@ -244,7 +250,6 @@ fun PlayerScreen(
             PlayerPanel.CHANNELS -> ChannelsPanel(
                 state = state,
                 onSelect = viewModel::selectChannel,
-                onOpenRail = viewModel::openZapRail,
                 onSelectRail = viewModel::selectZapRail,
                 modifier = Modifier.align(Alignment.CenterStart),
             )
@@ -270,7 +275,6 @@ private fun handleKey(event: androidx.compose.ui.input.key.KeyEvent, state: Play
         if (!hasOverlay) return false
         if (event.type == KeyEventType.KeyUp) {
             when {
-                state.zapRailOpen -> vm.closeZapRail()
                 state.panel != PlayerPanel.NONE -> vm.closePanel()
                 else -> vm.closeLiveMenu()
             }
@@ -712,7 +716,6 @@ private fun EpisodesPanel(state: PlayerUiState, onPlay: (Episode) -> Unit, modif
 private fun ChannelsPanel(
     state: PlayerUiState,
     onSelect: (com.wpdas.primetv.domain.model.Channel) -> Unit,
-    onOpenRail: () -> Unit,
     onSelectRail: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -724,43 +727,29 @@ private fun ChannelsPanel(
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     val currentIndex = channels.indexOfFirst { it.id == currentId }.coerceAtLeast(0)
     // Ao abrir e a cada troca de grupo: rola até o canal em exibição (ou o primeiro) e foca.
+    // Esquerda leva ao trilho de grupos, sempre visível ao lado (sem tecla especial: só o foco anda).
     LaunchedEffect(state.zapRailId, channels.firstOrNull()?.id) {
-        if (state.zapRailOpen) return@LaunchedEffect
         listState.scrollToItem(currentIndex)
         repeat(10) {
             kotlinx.coroutines.delay(50)
             if (first.tryRequestFocus()) return@LaunchedEffect
         }
     }
-    // Trilho aberto: foco no grupo em uso.
-    LaunchedEffect(state.zapRailOpen) {
-        if (!state.zapRailOpen) return@LaunchedEffect
-        repeat(10) {
-            kotlinx.coroutines.delay(50)
-            if (railFocus.tryRequestFocus()) return@LaunchedEffect
-        }
-    }
     val now = System.currentTimeMillis()
     Row(modifier.fillMaxHeight().background(colors.surface.copy(alpha = 0.97f))) {
-        if (state.zapRailOpen) {
-            com.wpdas.primetv.ui.components.CategoryRail(
-                categories = state.zapRail,
-                selectedId = state.zapRailId,
-                onSelect = { onSelectRail(it.id) },
-                selectedFocus = railFocus,
-                modifier = Modifier.fillMaxHeight().padding(start = 14.dp, top = 24.dp, bottom = 24.dp),
-                width = 250.dp,
-            )
-        }
+        com.wpdas.primetv.ui.components.CategoryRail(
+            categories = state.zapRail,
+            selectedId = state.zapRailId,
+            onSelect = { onSelectRail(it.id) },
+            selectedFocus = railFocus,
+            modifier = Modifier.fillMaxHeight().padding(start = 14.dp, top = 24.dp, bottom = 24.dp),
+            width = 250.dp,
+        )
         Column(
             Modifier
                 .width(480.dp)
                 .fillMaxHeight()
-                .padding(horizontal = 20.dp, vertical = 24.dp)
-                .onPreviewKeyEvent { event ->
-                    // Esquerda na lista (trilho fechado) abre os grupos; com ele aberto, o foco anda sozinho.
-                    if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionLeft && !state.zapRailOpen) { onOpenRail(); true } else false
-                },
+                .padding(horizontal = 20.dp, vertical = 24.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             val title = state.zapRail.firstOrNull { it.id == state.zapRailId }?.label ?: state.subtitle ?: t("live.all")
@@ -768,9 +757,7 @@ private fun ChannelsPanel(
                 Text(title, style = PrimeTheme.typography.subtitle, color = colors.text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
                 Text(t("live.channels_count", "n" to channels.size), style = PrimeTheme.typography.caption, color = colors.textSecondary)
             }
-            if (!state.zapRailOpen) {
-                Text(t("player.channels_groups_hint"), style = PrimeTheme.typography.caption, color = colors.textSecondary, modifier = Modifier.padding(start = 6.dp))
-            }
+            Text(t("player.channels_groups_hint"), style = PrimeTheme.typography.caption, color = colors.textSecondary, modifier = Modifier.padding(start = 6.dp))
             if (channels.isEmpty()) {
                 Text(t("live.empty"), style = PrimeTheme.typography.body, color = colors.textSecondary, modifier = Modifier.padding(6.dp))
             }

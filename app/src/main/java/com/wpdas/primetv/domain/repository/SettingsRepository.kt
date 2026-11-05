@@ -19,4 +19,5 @@ interface SettingsRepository {
     suspend fun setOverscanPercent(percent: Int)
     suspend fun setPreviewSound(enabled: Boolean)
     suspend fun setResumeLive(enabled: Boolean)
+    suspend fun setMatchDisplayMode(enabled: Boolean)
 }
