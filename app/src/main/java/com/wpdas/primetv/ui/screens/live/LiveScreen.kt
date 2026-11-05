@@ -75,6 +75,14 @@ fun LiveScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val colors = PrimeTheme.colors
     val firstChannelFocus = remember { FocusRequester() }
+    val previewHolder = rememberPreviewPlayerHolder(viewModel.playerFactory)
+    // Abrir em tela cheia: solta a prévia já, antes de o player principal nascer.
+    val play: (Channel) -> Unit = { channel ->
+        previewHolder.release()
+        viewModel.stopPreview()
+        viewModel.markReturnFocus()
+        onPlay(channel)
+    }
     val jumpFocus = remember { FocusRequester() }
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     val channels = state.channels
@@ -173,7 +181,7 @@ fun LiveScreen(
                                 nowTitle = now?.title,
                                 timeRange = now?.let { timeRange(it) },
                                 progress = now?.progressAt(state.now) ?: 0f,
-                                onClick = { viewModel.stopPreview(); viewModel.markReturnFocus(); onPlay(channel) },
+                                onClick = { play(channel) },
                                 onLongClick = { viewModel.toggleFavorite(channel) },
                                 onFocused = { viewModel.onChannelFocused(channel) },
                                 qualityLabel = channel.qualityLabel,
@@ -189,9 +197,9 @@ fun LiveScreen(
             }
             PreviewPanel(
                 state = state,
-                onPlay = { viewModel.stopPreview(); viewModel.markReturnFocus(); onPlay(it) },
+                onPlay = play,
                 onToggleFavorite = viewModel::toggleFavorite,
-                playerFactory = viewModel.playerFactory,
+                previewHolder = previewHolder,
                 modifier = Modifier.width(380.dp).fillMaxHeight(),
             )
         }
@@ -220,7 +228,7 @@ private fun PreviewPanel(
     state: LiveUiState,
     onPlay: (Channel) -> Unit,
     onToggleFavorite: (Channel) -> Unit,
-    playerFactory: com.wpdas.primetv.data.player.PlayerFactory,
+    previewHolder: PreviewPlayerHolder,
     modifier: Modifier = Modifier,
 ) {
     val colors = PrimeTheme.colors
@@ -232,7 +240,7 @@ private fun PreviewPanel(
                 Box(Modifier.align(Alignment.Center).size(160.dp, 90.dp).clip(PrimeTheme.shapes.card)) {
                     Artwork(channel.logoUrl, colors.surface, Modifier.fillMaxSize(), channel.name, contentScale = androidx.compose.ui.layout.ContentScale.Fit)
                 }
-                LivePreview(url = state.previewUrl, playerFactory = playerFactory, modifier = Modifier.fillMaxSize(), withSound = state.previewSound)
+                LivePreview(url = state.previewUrl, holder = previewHolder, modifier = Modifier.fillMaxSize(), withSound = state.previewSound)
                 LiveBadge(t("common.live"), Modifier.align(Alignment.TopStart).padding(12.dp))
                 Text(
                     listOfNotNull(channel.displayName, channel.qualityLabel).joinToString(" · "),
