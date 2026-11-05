@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -77,8 +78,20 @@ fun LiveScreen(
     val jumpFocus = remember { FocusRequester() }
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     val channels = state.channels
+    // Chegando pela barra, o foco fica na aba Ao vivo; a lista só recebe foco quando o usuário desce.
+    val tabFocus = remember { FocusRequester() }
+    var screenHasFocus by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var topBarFocused by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        repeat(10) {
+            if (screenHasFocus || state.jumpToChannelId != null) return@LaunchedEffect
+            if (tabFocus.tryRequestFocus()) return@LaunchedEffect
+            kotlinx.coroutines.delay(50)
+        }
+    }
     LaunchedEffect(channels?.firstOrNull()?.id, state.selectedRailId) {
-        if (!channels.isNullOrEmpty() && state.focused == null && state.jumpToChannelId == null) firstChannelFocus.tryRequestFocus()
+        if (channels.isNullOrEmpty() || state.focused != null || state.jumpToChannelId != null) return@LaunchedEffect
+        if (screenHasFocus && !topBarFocused) firstChannelFocus.tryRequestFocus()
     }
     // Voltando do player: a tela entra de novo na composição; foca o canal que estava tocando.
     LaunchedEffect(Unit) { viewModel.focusLastPlayed() }
@@ -104,6 +117,7 @@ fun LiveScreen(
         Modifier
             .fillMaxSize()
             .background(colors.background)
+            .onFocusChanged { screenHasFocus = it.hasFocus }
             .onPreviewKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                 val digit = digitOf(event.key)
@@ -120,9 +134,11 @@ fun LiveScreen(
             selectedTab = HomeTab.LIVE,
             tabs = state.tabs,
             onTabSelected = onTabSelected,
+            selectedTabFocus = tabFocus,
+            modifier = Modifier.onFocusChanged { topBarFocused = it.hasFocus },
             onTabFocused = { tab ->
                 tabFocusJob?.cancel()
-                if (tab != null && tab != HomeTab.LIVE) tabFocusJob = tabScope.launch { kotlinx.coroutines.delay(700); onTabSelected(tab) }
+                if (tab != null && tab != HomeTab.LIVE) tabFocusJob = tabScope.launch { kotlinx.coroutines.delay(TAB_FOCUS_DELAY_MS); onTabSelected(tab) }
             },
             onSearchClick = onOpenSearch,
             onMenuClick = onOpenAppMenu,
@@ -286,3 +302,6 @@ private fun digitOf(key: Key): Int? = when (key) {
     Key.Nine, Key.NumPad9 -> 9
     else -> null
 }
+
+/** Aba muda ao ficar em foco por um instante; troca de tela, então um pouco mais que na Início. */
+private const val TAB_FOCUS_DELAY_MS = 350L

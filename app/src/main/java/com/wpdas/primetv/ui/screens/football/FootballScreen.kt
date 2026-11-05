@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -96,12 +97,26 @@ fun FootballScreen(
         viewModel.onFocusConsumed()
     }
 
-    Column(Modifier.fillMaxSize().background(colors.background)) {
+    // Chegando pela barra, o foco fica na aba Futebol; a lista só recebe foco quando o usuário desce.
+    val tabFocus = remember { FocusRequester() }
+    var screenHasFocus by remember { mutableStateOf(false) }
+    var topBarFocused by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        repeat(10) {
+            if (screenHasFocus || state.focusEventKey != null) return@LaunchedEffect
+            if (tabFocus.tryRequestFocus()) return@LaunchedEffect
+            delay(50)
+        }
+    }
+
+    Column(Modifier.fillMaxSize().background(colors.background).onFocusChanged { screenHasFocus = it.hasFocus }) {
         var tabFocusJob by remember { mutableStateOf<Job?>(null) }
         TopBar(
             selectedTab = HomeTab.FOOTBALL,
             tabs = state.tabs,
             onTabSelected = onTabSelected,
+            selectedTabFocus = tabFocus,
+            modifier = Modifier.onFocusChanged { topBarFocused = it.hasFocus },
             onTabFocused = { tab ->
                 tabFocusJob?.cancel()
                 if (tab != null && tab != HomeTab.FOOTBALL) tabFocusJob = scope.launch { delay(TAB_FOCUS_DELAY_MS); onTabSelected(tab) }
@@ -130,6 +145,7 @@ fun FootballScreen(
                         jumpFocus = jumpFocus,
                         jumpKey = state.focusEventKey,
                         liveOnly = state.selectedRailId == FootballUiState.RAIL_LIVE,
+                        autoFocus = screenHasFocus && !topBarFocused,
                         onRefresh = viewModel::refresh,
                         onShowChannels = { viewModel.selectRail(FootballUiState.RAIL_CHANNELS) },
                         onPlay = { event -> viewModel.markPlayed(event); onPlayChannel(event.channelId) },
@@ -155,6 +171,8 @@ private fun MatchList(
     jumpFocus: FocusRequester,
     jumpKey: String?,
     liveOnly: Boolean,
+    /** Lista pode puxar o foco (usuário já está na tela e fora da barra). */
+    autoFocus: Boolean,
     onRefresh: () -> Unit,
     onShowChannels: () -> Unit,
     onPlay: (MatchEvent) -> Unit,
@@ -172,7 +190,7 @@ private fun MatchList(
                 Text("· ${today.format(LONG_DAY)} · ${t("football.hint_ok")}", style = typography.cardBody, color = colors.textSecondary)
             }
             LaunchedEffect(events.firstOrNull()?.key, liveOnly) {
-                if (jumpKey == null) firstFocus.tryRequestFocus()
+                if (jumpKey == null && autoFocus) firstFocus.tryRequestFocus()
             }
             LazyColumn(
                 Modifier.fillMaxSize().focusRestorer().focusGroup().throttleHeldDpad(vertical = true) { listState.isScrollInProgress },
@@ -266,4 +284,4 @@ private fun ChannelList(state: FootballUiState, onPlayChannel: (String) -> Unit)
 
 private fun formatTime(millis: Long): String = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).format(HOUR_MINUTE)
 
-private const val TAB_FOCUS_DELAY_MS = 700L
+private const val TAB_FOCUS_DELAY_MS = 350L

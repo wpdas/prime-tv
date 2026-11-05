@@ -50,8 +50,10 @@ fun TopBar(
     onTabFocused: ((HomeTab?) -> Unit)? = null,
     /** Abas visíveis; Kids e Anime só entram quando a lista tem conteúdo para elas. */
     tabs: List<HomeTab> = HomeTab.entries.filter { it !in HomeTab.OPTIONAL },
+    /** Quando informado, fica na aba ativa: a tela pede foco nela ao chegar pela barra. */
+    selectedTabFocus: FocusRequester? = null,
 ) {
-    val selectedRequester = remember { FocusRequester() }
+    val selectedRequester = selectedTabFocus ?: remember { FocusRequester() }
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -74,14 +76,18 @@ fun TopBar(
                 size = 44.dp,
                 modifier = Modifier.onFocusChanged { if (it.isFocused) onTabFocused?.invoke(null) },
             )
+            // key(tab): a lista de abas chega em duas etapas (padrão e depois com Kids/Anime/Novelas). Sem a
+            // chave, o Compose reaproveita os nós por posição e a aba em foco "vira" outra quando uma entra antes.
             tabs.forEach { tab ->
-                TabItem(
-                    label = t(tab.labelKey),
-                    selected = tab == selectedTab,
-                    onClick = { onTabSelected(tab) },
-                    onFocused = onTabFocused?.let { cb -> { cb(tab) } },
-                    modifier = if (tab == selectedTab) Modifier.focusRequester(selectedRequester) else Modifier,
-                )
+                androidx.compose.runtime.key(tab) {
+                    TabItem(
+                        label = t(tab.labelKey),
+                        selected = tab == selectedTab,
+                        onClick = { onTabSelected(tab) },
+                        onFocused = onTabFocused?.let { cb -> { cb(tab) } },
+                        modifier = if (tab == selectedTab) Modifier.focusRequester(selectedRequester) else Modifier,
+                    )
+                }
             }
         }
         Spacer(Modifier.weight(1f))

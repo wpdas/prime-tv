@@ -164,9 +164,20 @@ fun HomeContent(
     }
 
     // Primeira abertura: foco no "Assistir" do destaque. Ao voltar de outra tela: a linha onde o usuário estava.
+    // Com o foco na barra (trocando de seção), nada rouba o foco dela; chegando pela barra em outra
+    // seção (ex.: vindo de Ao vivo para Filmes), o foco fica na aba, não no destaque.
+    val tabFocus = remember { FocusRequester() }
+    var topBarFocused by remember { androidx.compose.runtime.mutableStateOf(false) }
     LaunchedEffect(state.hero != null) {
-        if (state.hero == null) return@LaunchedEffect
+        if (state.hero == null || topBarFocused) return@LaunchedEffect
         val row = viewModel?.lastFocusedRow
+        if (viewModel?.initialFocusDone != true && state.selectedTab != HomeTab.HOME) {
+            repeat(15) {
+                if (tabFocus.tryRequestFocus()) { viewModel?.initialFocusDone = true; return@LaunchedEffect }
+                kotlinx.coroutines.delay(50)
+            }
+            return@LaunchedEffect
+        }
         if (viewModel?.initialFocusDone != true || row == null || row == "hero") {
             // Primeira abertura: o destaque pode ter entrado acima do que já estava visível; volta ao topo.
             listState.scrollToItem(0)
@@ -203,6 +214,8 @@ fun HomeContent(
                 selectedTab = state.selectedTab,
                 tabs = state.tabs,
                 onTabSelected = onTabSelected,
+                selectedTabFocus = tabFocus,
+                modifier = Modifier.onFocusChanged { topBarFocused = it.hasFocus },
                 onTabFocused = { tab ->
                     tabFocusJob?.cancel()
                     // Ao vivo troca de tela, então espera mais para não disparar a caminho de Filmes/Séries.
@@ -355,7 +368,7 @@ private fun continueMeta(cw: ContinueWatchingItem): String {
     return "$prefix · ${t("meta.remaining", "time" to time)}"
 }
 
-private const val TAB_FOCUS_DELAY_MS = 350L
+private const val TAB_FOCUS_DELAY_MS = 150L
 private const val EXIT_CONFIRM_MS = 2_500L
 private const val EXIT_KILL_DELAY_MS = 300L
-private const val LIVE_TAB_FOCUS_DELAY_MS = 700L
+private const val LIVE_TAB_FOCUS_DELAY_MS = 350L
