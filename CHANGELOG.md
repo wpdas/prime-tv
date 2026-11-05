@@ -4,6 +4,16 @@ Formato: uma seção por versão, com **Novidades** e **Correções**. A seção
 
 ## [Não lançado]
 
+### Novidades
+- Configurações › Player › "Saída na resolução do vídeo" (desligado por padrão): em tela cheia a box pede ao sistema o modo de saída com a resolução do próprio vídeo (ex.: 1080p), e a TV faz o upscaling no lugar da box. Depende de a box expor os modos pelo HDMI; a tela pode piscar ao entrar e sair
+
+### Correções
+- Canal que falha ou trava: antes de descer de qualidade, o app tenta o servidor repetido da mesma qualidade ("FHD²"), que muitas vezes funciona quando o primeiro não responde (ex.: The History Channel)
+- Lista de canais sobre a transmissão: os grupos (Favoritos, Futebol, Todos, categorias) ficam sempre visíveis à esquerda da lista; o botão esquerdo só move o foco, sem comando especial
+- Barra do topo: a seção troca mais rápido ao mover o foco entre as abas (metade do tempo de antes)
+- Ao trocar de seção pela barra (Novelas, Futebol, Filmes…), o foco não pula mais sozinho para o "Assistir" do destaque nem para o primeiro jogo: fica na aba até você descer
+- Som da prévia de canais em Ao vivo vem ligado por padrão
+
 ## [0.2.3] - 2026-11-04
 
 ### Correções
