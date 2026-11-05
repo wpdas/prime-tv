@@ -8,6 +8,8 @@ Formato: uma seção por versão, com **Novidades** e **Correções**. A seção
 - Configurações › Player › "Saída na resolução do vídeo" (desligado por padrão): em tela cheia a box pede ao sistema o modo de saída com a resolução do próprio vídeo (ex.: 1080p), e a TV faz o upscaling no lugar da box. Depende de a box expor os modos pelo HDMI; a tela pode piscar ao entrar e sair
 
 ### Correções
+- Mais leve: a prévia de Ao vivo solta o vídeo e a conexão na hora em que você abre o canal em tela cheia (antes os dois tocavam juntos por um instante, o que pesava em boxes fracas e em listas que limitam conexões) e também quando o app vai para segundo plano
+- Mais leve: os escudos e competições dos jogos passam a ser buscados só com a tela de Futebol aberta, e não mais desde a abertura do app; o que já foi buscado continua guardado
 - Canal que falha ou trava: antes de descer de qualidade, o app tenta o servidor repetido da mesma qualidade ("FHD²"), que muitas vezes funciona quando o primeiro não responde (ex.: The History Channel)
 - Lista de canais sobre a transmissão: os grupos (Favoritos, Futebol, Todos, categorias) ficam sempre visíveis à esquerda da lista; o botão esquerdo só move o foco, sem comando especial
 - Barra do topo: a seção troca mais rápido ao mover o foco entre as abas (metade do tempo de antes)
