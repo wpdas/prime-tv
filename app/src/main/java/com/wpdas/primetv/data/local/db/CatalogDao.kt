@@ -16,6 +16,11 @@ interface CatalogDao {
     // --- categorias ---
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertCategories(list: List<CategoryEntity>)
     @Query("DELETE FROM categories WHERE section = :section") suspend fun deleteCategories(section: String)
+    // Modo simples: itens da categoria exatamente como vieram da lista (sem juntar versões 4K/FHD/HD), na ordem dela.
+    @Query("SELECT * FROM channels WHERE categoryId = :categoryId ORDER BY number, rowid") fun observeCategoryChannelsRaw(categoryId: String): Flow<List<ChannelEntity>>
+    @Query("SELECT * FROM channels WHERE categoryId = :categoryId ORDER BY number, rowid") suspend fun categoryChannelsRawList(categoryId: String): List<ChannelEntity>
+    @Query("SELECT * FROM movies WHERE categoryId = :categoryId ORDER BY rowid") fun observeCategoryMoviesRaw(categoryId: String): Flow<List<MovieEntity>>
+    @Query("SELECT * FROM series WHERE categoryId = :categoryId ORDER BY rowid") fun observeCategorySeriesRaw(categoryId: String): Flow<List<SeriesEntity>>
     @Query("SELECT * FROM categories WHERE section = :section ORDER BY sortOrder") fun observeCategories(section: String): Flow<List<CategoryEntity>>
 
     // --- canais ---

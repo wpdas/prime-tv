@@ -43,8 +43,10 @@ data class LiveUiState(
     val focused: Channel? = null,
     val focusedNowNext: NowNext = NowNext(null, emptyList()),
     val favoriteIds: Set<String> = emptySet(),
-    /** URL da prévia (1 s depois do foco) ou null. */
+    /** URL da prévia (canal escolhido com OK) ou null. */
     val previewUrl: String? = null,
+    /** Canal tocando na prévia; OK nele de novo abre em tela cheia. */
+    val previewChannel: Channel? = null,
     /** Chave i18n de um aviso curto (favoritado/removido). */
     val toastKey: String? = null,
     /** Dígitos digitados para pular ao canal com esse número. */
@@ -57,13 +59,11 @@ data class LiveUiState(
 ) {
     companion object {
         const val RAIL_ALL = "all"
-        const val RAIL_FOOTBALL = "football"
         const val RAIL_FAVORITES = "favorites"
     }
 }
 
 private const val RAIL_ALL = LiveUiState.RAIL_ALL
-private const val RAIL_FOOTBALL = LiveUiState.RAIL_FOOTBALL
 private const val RAIL_FAVORITES = LiveUiState.RAIL_FAVORITES
 
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
@@ -84,6 +84,9 @@ class LiveViewModel @Inject constructor(
 
     private val _state = MutableStateFlow(LiveUiState())
     val state: StateFlow<LiveUiState> = _state.asStateFlow()
+
+    /** Interface simples: grupos e canais exatamente como vêm na lista. */
+    private val simple = settings.settings.value.uiMode == com.wpdas.primetv.domain.model.UiMode.SIMPLE
 
     private val selected = MutableStateFlow(RAIL_ALL)
     private val focusedChannel = MutableStateFlow<Channel?>(null)
@@ -115,21 +118,28 @@ class LiveViewModel @Inject constructor(
         val favoriteChannels = library.favoriteIds(MediaType.CHANNEL)
         favoriteChannels.onEach { ids -> _state.update { it.copy(favoriteIds = ids.toSet()) } }.launchIn(viewModelScope)
 
+        // Grupos como vêm na lista. No modo completo, Favoritos e Todos na frente; no simples, só os da lista.
         combine(
             catalog.categories(ContentSection.LIVE),
             catalog.categoryCounts(ContentSection.LIVE),
-            catalog.footballChannelCount(),
             favoriteChannels,
-        ) { categories, counts, football, favorites ->
+        ) { categories, counts, favorites ->
             val byId = counts.associate { it.categoryId to it.count }
             val total = counts.sumOf { it.count }
             buildList {
-                if (favorites.isNotEmpty()) add(RailCategory(RAIL_FAVORITES, "Favoritos", favorites.size))
-                if (football > 0) add(RailCategory(RAIL_FOOTBALL, "Futebol", football))
-                add(RailCategory(RAIL_ALL, "Todos", total))
+                if (!simple) {
+                    if (favorites.isNotEmpty()) add(RailCategory(RAIL_FAVORITES, "Favoritos", favorites.size))
+                    add(RailCategory(RAIL_ALL, "Todos", total))
+                }
                 categories.forEach { add(RailCategory(it.id, it.name, byId[it.id] ?: 0)) }
             }
-        }.onEach { rail -> _state.update { it.copy(rail = rail) } }.launchIn(viewModelScope)
+        }.onEach { rail ->
+            _state.update { it.copy(rail = rail) }
+            // Grupo lembrado que não existe mais aqui (ex.: o antigo "Futebol", ou "Todos" no modo simples).
+            if (rail.isNotEmpty() && rail.none { it.id == selected.value }) {
+                selectRail(if (simple) rail.first().id else RAIL_ALL)
+            }
+        }.launchIn(viewModelScope)
 
         combine(selected, favoriteChannels) { id, favs -> filterOf(id, favs) }
             .flatMapLatest { filter -> catalog.channels(filter) }
@@ -141,11 +151,6 @@ class LiveViewModel @Inject constructor(
                 val airing = runCatching { catalog.nowPlaying(filter, now) }.getOrDefault(emptyMap())
                 _state.update { it.copy(nowPlaying = airing, now = now) }
             }
-            .launchIn(viewModelScope)
-
-        // Prévia: só depois de ~1 s parado no canal, para não abrir stream a cada tecla.
-        focusedChannel.debounce(PREVIEW_DELAY_MS)
-            .onEach { channel -> _state.update { it.copy(previewUrl = channel?.streamUrl) } }
             .launchIn(viewModelScope)
 
         focusedChannel.debounce(150)
@@ -161,6 +166,16 @@ class LiveViewModel @Inject constructor(
         if (selected.value == id) return
         selected.value = id
         _state.update { it.copy(selectedRailId = id, channels = null) }
+    }
+
+    /**
+     * OK num canal da lista. Mover o seletor não toca nada; o primeiro OK abre a prévia desse canal e o
+     * segundo OK no mesmo canal pede tela cheia (devolve true).
+     */
+    fun onChannelClicked(channel: Channel): Boolean {
+        if (_state.value.previewChannel?.id == channel.id) return true
+        _state.update { it.copy(previewChannel = channel, previewUrl = channel.streamUrl) }
+        return false
     }
 
     fun onChannelFocused(channel: Channel) {
@@ -200,7 +215,7 @@ class LiveViewModel @Inject constructor(
                 val all = catalog.channelsOnce(ChannelFilter.All)
                 val found = all.firstOrNull { it.number == number }
                 if (found != null) {
-                    selectRail(RAIL_ALL)
+                    selectRail(if (simple) found.categoryId ?: RAIL_ALL else RAIL_ALL)
                     _state.update { it.copy(channelInput = null, jumpToChannelId = found.id) }
                 } else {
                     _state.update { it.copy(channelInput = null, toastKey = "player.channel_not_found") }
@@ -227,26 +242,23 @@ class LiveViewModel @Inject constructor(
         viewModelScope.launch {
             val last = library.recentChannels(1).firstOrNull()?.firstOrNull() ?: return@launch
             val inList = _state.value.channels?.any { it.id == last.id } == true
-            if (!inList) selectRail(RAIL_ALL)
+            if (!inList) selectRail(if (simple) last.categoryId ?: RAIL_ALL else RAIL_ALL)
             _state.update { it.copy(jumpToChannelId = last.id) }
         }
     }
 
     /** Libera a prévia ao sair da tela para o player principal (servidores com 1 conexão). */
     fun stopPreview() {
-        focusedChannel.value = null
-        _state.update { it.copy(previewUrl = null) }
+        _state.update { it.copy(previewUrl = null, previewChannel = null) }
     }
 
     private fun filterOf(id: String, favorites: List<String>): ChannelFilter = when (id) {
         RAIL_ALL -> ChannelFilter.All
-        RAIL_FOOTBALL -> ChannelFilter.Football
         RAIL_FAVORITES -> ChannelFilter.Favorites(favorites)
-        else -> ChannelFilter.Category(id)
+        else -> ChannelFilter.Category(id, raw = simple)
     }
 
     private companion object {
-        const val PREVIEW_DELAY_MS = 1_000L
         const val DIGIT_COMMIT_MS = 1_500L
         const val TOAST_MS = 2_500L
     }

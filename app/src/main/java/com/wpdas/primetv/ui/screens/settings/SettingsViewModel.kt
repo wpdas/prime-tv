@@ -24,6 +24,7 @@ import javax.inject.Inject
 
 enum class SettingsSection(val labelKey: String) {
     PLAYLIST("settings.playlist"),
+    INTERFACE("settings.interface"),
     UPDATES("settings.updates"),
     FOOTBALL("settings.football"),
     PLAYER("settings.player"),

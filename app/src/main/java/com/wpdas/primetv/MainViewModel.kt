@@ -50,11 +50,15 @@ class MainViewModel @Inject constructor(
         .onEach { source -> if (source != null) catalogSync.syncStale() }
         .map<Any?, Start?> { source ->
             if (source == null) return@map Start(SetupRoute(), null)
+            val prefs = settings.settings.value
+            // Lista já configurada, mas a pergunta da interface ainda não foi feita (ex.: quem atualizou o app).
+            if (!prefs.uiModeChosen) return@map Start(com.wpdas.primetv.ui.navigation.UiModeRoute, null)
             // Canal "em exibição" quando o app foi fechado, se a opção estiver ligada e ele ainda existir na lista.
             val resume = if (settings.settings.value.resumeLive) {
                 liveState.readWatching()?.takeIf { id -> runCatching { catalog.channelOnce(id) }.getOrNull() != null }
             } else null
-            Start(HomeRoute(), resume)
+            val home: Any = if (prefs.uiMode == com.wpdas.primetv.domain.model.UiMode.SIMPLE) com.wpdas.primetv.ui.navigation.LiveRoute else HomeRoute()
+            Start(home, resume)
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 }

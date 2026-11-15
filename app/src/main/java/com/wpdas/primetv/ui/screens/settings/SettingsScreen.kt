@@ -58,6 +58,7 @@ fun SettingsScreen(
     onChangePlaylist: () -> Unit,
     onReceiveLink: () -> Unit,
     onAbout: () -> Unit,
+    onChangeUiMode: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -90,6 +91,7 @@ fun SettingsScreen(
         ) {
             when (state.section) {
                 SettingsSection.PLAYLIST -> PlaylistPane(state, onChangePlaylist, onReceiveLink, viewModel::syncAllNow)
+                SettingsSection.INTERFACE -> InterfacePane(state, onChangeUiMode)
                 SettingsSection.UPDATES -> UpdatesPane(state, viewModel)
                 SettingsSection.FOOTBALL -> FootballPane(state, viewModel)
                 SettingsSection.PLAYER -> PlayerPane(state, viewModel)
@@ -326,6 +328,17 @@ private fun KeywordChip(keyword: String, onRemove: () -> Unit) {
             Text("×", style = PrimeTheme.typography.caption, color = colors.textSecondary)
         }
     }
+}
+
+@Composable
+private fun InterfacePane(state: SettingsUiState, onChangeUiMode: () -> Unit) {
+    PaneTitle(t("settings.interface"), t("settings.interface_desc"))
+    SettingRow(
+        title = t("settings.ui_mode"),
+        subtitle = t("settings.ui_mode_hint"),
+        value = t(if (state.settings.uiMode == com.wpdas.primetv.domain.model.UiMode.SIMPLE) "uimode.simple" else "uimode.complete"),
+        onClick = onChangeUiMode,
+    )
 }
 
 @Composable

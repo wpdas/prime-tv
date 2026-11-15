@@ -15,7 +15,8 @@ import kotlinx.coroutines.flow.Flow
 sealed interface ChannelFilter {
     data object All : ChannelFilter
     data object Football : ChannelFilter
-    data class Category(val id: String) : ChannelFilter
+    /** [raw]: canais como vieram na lista (modo simples), sem juntar as versões de qualidade. */
+    data class Category(val id: String, val raw: Boolean = false) : ChannelFilter
     data class Favorites(val ids: List<String>) : ChannelFilter
 }
 
@@ -75,6 +76,10 @@ interface CatalogRepository {
     suspend fun channelsOnce(filter: ChannelFilter): List<Channel>
     /** Todas as variantes de qualidade de um canal, da melhor para a pior. */
     suspend fun channelVariants(groupKey: String): List<Channel>
+
+    /** Modo simples: filmes e séries da categoria na ordem da lista, sem juntar versões. */
+    fun moviesInListOrder(categoryId: String): Flow<List<Movie>>
+    fun seriesInListOrder(categoryId: String): Flow<List<Series>>
 
     /** Busca por prefixo no índice FTS. Deve responder em menos de 100 ms. */
     suspend fun search(query: String, limit: Int): SearchResults

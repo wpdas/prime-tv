@@ -20,3 +20,7 @@ import kotlinx.serialization.Serializable
 /** [prefill]: URL recebida pelo celular; o Setup conecta automaticamente. */
 @Serializable data class SetupRoute(val prefill: String? = null)
 @Serializable data object ReceiveLinkRoute
+/** Pergunta "Simples ou Completa" (uma vez depois da primeira lista; de novo por Configurações). */
+@Serializable data object UiModeRoute
+/** Modo simples: Filmes ou Séries ([section] = MOVIES/SERIES) com as categorias da lista. */
+@Serializable data class BrowseRoute(val section: String)

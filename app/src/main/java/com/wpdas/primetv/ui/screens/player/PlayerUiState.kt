@@ -64,7 +64,6 @@ data class PlayerUiState(
 ) {
     companion object {
         const val ZAP_ALL = "all"
-        const val ZAP_FOOTBALL = "football"
         const val ZAP_FAVORITES = "favorites"
     }
 

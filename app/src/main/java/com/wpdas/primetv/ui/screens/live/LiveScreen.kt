@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import com.wpdas.primetv.ui.components.DoubleBackToExit
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
@@ -70,6 +71,8 @@ fun LiveScreen(
     onOpenAppMenu: () -> Unit,
     onOpenSettings: () -> Unit,
     onPlay: (Channel) -> Unit,
+    /** Sem tela atrás (modo simples): Voltar pede confirmação antes de fechar o app. */
+    isRoot: Boolean = false,
     viewModel: LiveViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -181,7 +184,8 @@ fun LiveScreen(
                                 nowTitle = now?.title,
                                 timeRange = now?.let { timeRange(it) },
                                 progress = now?.progressAt(state.now) ?: 0f,
-                                onClick = { play(channel) },
+                                // 1º OK: prévia ao lado; 2º OK no mesmo canal: tela cheia.
+                                onClick = { if (viewModel.onChannelClicked(channel)) play(channel) },
                                 onLongClick = { viewModel.toggleFavorite(channel) },
                                 onFocused = { viewModel.onChannelFocused(channel) },
                                 qualityLabel = channel.qualityLabel,
@@ -205,6 +209,7 @@ fun LiveScreen(
         }
     }
     Box(Modifier.fillMaxSize()) {
+        DoubleBackToExit(enabled = isRoot)
         state.channelInput?.let { input ->
             Text(
                 "$input\u2009_",
@@ -234,16 +239,25 @@ private fun PreviewPanel(
     val colors = PrimeTheme.colors
     val typography = PrimeTheme.typography
     val channel = state.focused
+    // A caixa de vídeo mostra o canal escolhido com OK (que continua tocando enquanto o seletor anda);
+    // sem prévia, o logo do canal em foco e a dica de como abrir.
+    val boxChannel = state.previewChannel ?: channel
     Column(modifier.focusGroup(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Box(Modifier.fillMaxWidth().height(214.dp).clip(PrimeTheme.shapes.panel).background(colors.surface2)) {
-            if (channel != null) {
+            if (boxChannel != null) {
                 Box(Modifier.align(Alignment.Center).size(160.dp, 90.dp).clip(PrimeTheme.shapes.card)) {
-                    Artwork(channel.logoUrl, colors.surface, Modifier.fillMaxSize(), channel.name, contentScale = androidx.compose.ui.layout.ContentScale.Fit)
+                    Artwork(boxChannel.logoUrl, colors.surface, Modifier.fillMaxSize(), boxChannel.name, contentScale = androidx.compose.ui.layout.ContentScale.Fit)
                 }
                 LivePreview(url = state.previewUrl, holder = previewHolder, modifier = Modifier.fillMaxSize(), withSound = state.previewSound)
-                LiveBadge(t("common.live"), Modifier.align(Alignment.TopStart).padding(12.dp))
+                if (state.previewChannel != null) LiveBadge(t("common.live"), Modifier.align(Alignment.TopStart).padding(12.dp))
+                else Text(
+                    t("live.preview_hint"),
+                    style = typography.captionStrong,
+                    color = colors.text,
+                    modifier = Modifier.align(Alignment.TopStart).padding(10.dp).background(colors.background, PrimeTheme.shapes.small).padding(horizontal = 8.dp, vertical = 4.dp),
+                )
                 Text(
-                    listOfNotNull(channel.displayName, channel.qualityLabel).joinToString(" · "),
+                    listOfNotNull(boxChannel.displayName, boxChannel.qualityLabel).joinToString(" · "),
                     style = typography.captionStrong,
                     color = colors.text,
                     modifier = Modifier.align(Alignment.BottomEnd).padding(10.dp).background(colors.background, PrimeTheme.shapes.small).padding(horizontal = 8.dp, vertical = 4.dp),

@@ -20,4 +20,5 @@ interface SettingsRepository {
     suspend fun setPreviewSound(enabled: Boolean)
     suspend fun setResumeLive(enabled: Boolean)
     suspend fun setMatchDisplayMode(enabled: Boolean)
+    suspend fun setUiMode(mode: com.wpdas.primetv.domain.model.UiMode)
 }

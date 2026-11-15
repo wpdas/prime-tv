@@ -307,5 +307,19 @@
   "football.refreshing": "Atualizando canais e guia…",
   "football.see_channels": "Ver canais",
   "football.see_guide": "Ver guia de jogos",
-  "football.no_videos": "Nenhum filme ou série de futebol nesta lista."
+  "football.no_videos": "Nenhum filme ou série de futebol nesta lista.",
+  "live.preview_hint": "OK: prévia · OK de novo: tela cheia",
+  "uimode.title": "Como você quer usar o PrimeTV?",
+  "uimode.subtitle": "Dá para trocar depois em Configurações › Interface.",
+  "uimode.complete": "Completa",
+  "uimode.complete_desc": "Início com destaques e capas, Ao vivo com prévia e guia, abas de Futebol, Novelas, Kids e Anime, e Minha lista.",
+  "uimode.simple": "Simples",
+  "uimode.simple_desc": "Só Ao vivo, Filmes e Séries, com as categorias e os canais do jeito que vêm na sua lista. Mais leve para boxes simples.",
+  "uimode.current": "Em uso",
+  "settings.interface": "Interface",
+  "settings.interface_desc": "Escolha entre a interface completa e a simples. O app volta para a tela inicial do modo escolhido.",
+  "settings.ui_mode": "Modo da interface",
+  "settings.ui_mode_hint": "Completa: Início com destaques e abas temáticas. Simples: só Ao vivo, Filmes e Séries como vêm na lista.",
+  "browse.empty": "Nada nesta categoria.",
+  "browse.count": "{n} títulos"
 }

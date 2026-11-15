@@ -32,6 +32,8 @@ enum class BufferProfile(val labelKey: String, val minBufferMs: Int, val maxBuff
     fun next(): BufferProfile = entries[(ordinal + 1) % entries.size]
 }
 
+enum class UiMode { COMPLETE, SIMPLE }
+
 data class AppSettings(
     val syncIntervals: Map<ContentSection, SyncInterval> = ContentSection.entries.associateWith { SyncInterval.defaultFor(it) },
     val unmeteredOnly: Boolean = false,
@@ -46,6 +48,10 @@ data class AppSettings(
     val resumeLive: Boolean = true,
     /** Em tela cheia, a box passa a enviar à TV a resolução do próprio vídeo (a TV faz o upscaling). Desligado: algumas boxes piscam ou não expõem os modos. */
     val matchDisplayMode: Boolean = false,
+    /** Interface Completa (Início com destaques, abas temáticas, guia de jogos) ou Simples (Ao vivo, Filmes e Séries como vêm na lista). */
+    val uiMode: UiMode = UiMode.COMPLETE,
+    /** A pergunta "Simples ou Completa" já foi respondida (aparece uma vez, depois da primeira lista). */
+    val uiModeChosen: Boolean = false,
 ) {
     companion object {
         val OVERSCAN_OPTIONS = listOf(0, 2, 4, 6)

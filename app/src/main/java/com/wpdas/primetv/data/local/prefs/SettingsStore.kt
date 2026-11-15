@@ -1,5 +1,7 @@
 package com.wpdas.primetv.data.local.prefs
 
+import com.wpdas.primetv.domain.model.UiMode
+
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -45,6 +47,8 @@ class SettingsStore @Inject constructor(
                 previewSound = prefs[KEY_PREVIEW_SOUND] ?: true,
                 resumeLive = prefs[KEY_RESUME_LIVE] ?: true,
                 matchDisplayMode = prefs[KEY_MATCH_DISPLAY_MODE] ?: false,
+                uiMode = prefs[KEY_UI_MODE]?.let { v -> UiMode.entries.firstOrNull { it.name == v } } ?: UiMode.COMPLETE,
+                uiModeChosen = prefs[KEY_UI_MODE] != null,
             )
         }
         // Primeiro valor lido de forma síncrona: arquivo minúsculo, evita "piscar" com padrões errados.
@@ -65,6 +69,8 @@ class SettingsStore @Inject constructor(
             previewSound = prefs[KEY_PREVIEW_SOUND] ?: true,
             resumeLive = prefs[KEY_RESUME_LIVE] ?: true,
             matchDisplayMode = prefs[KEY_MATCH_DISPLAY_MODE] ?: false,
+            uiMode = prefs[KEY_UI_MODE]?.let { v -> UiMode.entries.firstOrNull { it.name == v } } ?: UiMode.COMPLETE,
+            uiModeChosen = prefs[KEY_UI_MODE] != null,
         )
     }.getOrDefault(AppSettings(footballKeywords = FootballClassifier.DEFAULT_KEYWORDS))
 
@@ -100,6 +106,10 @@ class SettingsStore @Inject constructor(
         store.edit { it[KEY_PREVIEW_SOUND] = enabled }
     }
 
+    override suspend fun setUiMode(mode: UiMode) {
+        store.edit { it[KEY_UI_MODE] = mode.name }
+    }
+
     override suspend fun setMatchDisplayMode(enabled: Boolean) {
         store.edit { it[KEY_MATCH_DISPLAY_MODE] = enabled }
     }
@@ -119,5 +129,6 @@ class SettingsStore @Inject constructor(
         val KEY_PREVIEW_SOUND = booleanPreferencesKey("preview_sound")
         val KEY_RESUME_LIVE = booleanPreferencesKey("player_resume_live")
         val KEY_MATCH_DISPLAY_MODE = booleanPreferencesKey("player_match_display_mode")
+        val KEY_UI_MODE = stringPreferencesKey("ui_mode")
     }
 }

@@ -45,6 +45,7 @@ class HomeRepositoryImpl @Inject constructor(
     private val library: LibraryRepository,
     private val recommendations: RecommendationRepository,
     private val updates: UpdateRepository,
+    private val settings: com.wpdas.primetv.domain.repository.SettingsRepository,
 ) : HomeRepository {
 
     private val myList: Flow<Set<String>> get() = library.favoriteIds()
@@ -198,7 +199,10 @@ class HomeRepositoryImpl @Inject constructor(
         catalog.categories(ContentSection.LIVE),
         catalog.categories(ContentSection.MOVIES),
         catalog.categories(ContentSection.SERIES),
-    ) { live, movies, series ->
+        settings.settings,
+    ) { live, movies, series, prefs ->
+        // Modo simples: só as três seções da lista.
+        if (prefs.uiMode == com.wpdas.primetv.domain.model.UiMode.SIMPLE) return@combine SIMPLE_TABS
         val present = (live + movies + series).mapNotNullTo(HashSet()) { TabKeywords.tabOf(it.name) }
         HomeTab.entries.filter { it !in HomeTab.OPTIONAL || it in present }
     }
@@ -272,6 +276,7 @@ class HomeRepositoryImpl @Inject constructor(
     }
 
     companion object {
+        val SIMPLE_TABS = listOf(HomeTab.LIVE, HomeTab.MOVIES, HomeTab.SERIES)
         private const val FEATURED_MOVIES = 4
         private const val FEATURED_TMDB = 8
         private const val FEATURED_TAB = 8

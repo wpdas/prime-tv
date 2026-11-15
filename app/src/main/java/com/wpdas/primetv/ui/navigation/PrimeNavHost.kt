@@ -32,7 +32,27 @@ fun PrimeNavHost(
     navController: NavHostController = rememberNavController(),
     resumeChannelId: String? = null,
     onResumeConsumed: () -> Unit = {},
+    uiMode: com.wpdas.primetv.domain.model.UiMode = com.wpdas.primetv.domain.model.UiMode.COMPLETE,
+    uiModeChosen: Boolean = true,
 ) {
+    val simple = uiMode == com.wpdas.primetv.domain.model.UiMode.SIMPLE
+
+    /** Troca de "raiz": a pilha recomeça na tela pedida (Voltar nela sai do app). */
+    fun resetTo(route: Any) = navController.navigate(route) {
+        popUpTo(navController.graph.id) { inclusive = true }
+        launchSingleTop = true
+    }
+
+    fun startOf(mode: com.wpdas.primetv.domain.model.UiMode): Any =
+        if (mode == com.wpdas.primetv.domain.model.UiMode.SIMPLE) LiveRoute else HomeRoute()
+
+    /** Abas do modo simples: Ao vivo, Filmes e Séries, cada uma como raiz. */
+    fun simpleTab(tab: HomeTab) = when (tab) {
+        HomeTab.LIVE -> resetTo(LiveRoute)
+        HomeTab.MOVIES, HomeTab.SERIES -> resetTo(BrowseRoute(tab.name))
+        else -> Unit
+    }
+
     fun openItem(item: MediaItem) {
         if (item.type == MediaType.CHANNEL) navController.navigate(PlayerRoute(item.id))
         else navController.navigate(DetailsRoute(item.id))
@@ -64,7 +84,7 @@ fun PrimeNavHost(
         composable<LiveRoute> {
             LiveScreen(
                 onTabSelected = { tab ->
-                    when (tab) {
+                    if (simple) simpleTab(tab) else when (tab) {
                         HomeTab.LIVE -> Unit
                         HomeTab.FOOTBALL -> navController.navigate(FootballRoute) { popUpTo<LiveRoute> { inclusive = true } }
                         else -> navController.navigate(HomeRoute(tab.name)) { popUpTo<HomeRoute> { inclusive = true } }
@@ -74,6 +94,7 @@ fun PrimeNavHost(
                 onOpenAppMenu = { navController.navigate(AppMenuRoute) },
                 onOpenSettings = { navController.navigate(SettingsRoute) },
                 onPlay = { channel -> navController.navigate(PlayerRoute(channel.id)) },
+                isRoot = navController.previousBackStackEntry == null,
             )
         }
         composable<FootballRoute> {
@@ -121,16 +142,29 @@ fun PrimeNavHost(
                 onChangePlaylist = { navController.navigate(SetupRoute()) },
                 onReceiveLink = { navController.navigate(ReceiveLinkRoute) },
                 onAbout = { navController.navigate(AboutRoute) },
+                onChangeUiMode = { navController.navigate(UiModeRoute) },
             )
         }
         composable<SetupRoute> {
             SetupScreen(
                 onStartWatching = {
-                    // Lista nova: a Início recomeça do zero, sem telas antigas na pilha.
-                    navController.navigate(HomeRoute()) { popUpTo(navController.graph.id) { inclusive = true } }
+                    // Lista nova: recomeça do zero, sem telas antigas na pilha. Na primeira vez, pergunta a interface.
+                    resetTo(if (uiModeChosen) startOf(uiMode) else UiModeRoute)
                 },
                 onReceiveLink = { navController.navigate(ReceiveLinkRoute) },
                 onOpenUpdate = { navController.navigate(UpdateRoute) },
+            )
+        }
+        composable<UiModeRoute> {
+            com.wpdas.primetv.ui.screens.uimode.UiModeScreen(onChosen = { mode -> resetTo(startOf(mode)) })
+        }
+        composable<BrowseRoute> {
+            com.wpdas.primetv.ui.screens.browse.BrowseScreen(
+                onTabSelected = ::simpleTab,
+                onOpenSearch = { navController.navigate(SearchRoute) },
+                onOpenAppMenu = { navController.navigate(AppMenuRoute) },
+                onOpenItem = ::openItem,
+                isRoot = navController.previousBackStackEntry == null,
             )
         }
         composable<ReceiveLinkRoute> {

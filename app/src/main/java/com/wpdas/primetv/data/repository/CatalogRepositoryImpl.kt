@@ -62,7 +62,7 @@ class CatalogRepositoryImpl @Inject constructor(
     override fun channels(filter: ChannelFilter): Flow<List<Channel>> = when (filter) {
         ChannelFilter.All -> dao.observeAllChannels().map { list -> list.map { it.toDomain() } }
         ChannelFilter.Football -> dao.observeFootballChannelsAll().map { list -> list.map { it.toDomain() } }
-        is ChannelFilter.Category -> dao.observeCategoryChannels(filter.id).map { list -> list.map { it.toDomain() } }
+        is ChannelFilter.Category -> (if (filter.raw) dao.observeCategoryChannelsRaw(filter.id) else dao.observeCategoryChannels(filter.id)).map { list -> list.map { it.toDomain() } }
         is ChannelFilter.Favorites -> channelsByIds(filter.ids)
     }
 
@@ -85,6 +85,9 @@ class CatalogRepositoryImpl @Inject constructor(
             )
         }.flowOn(io)
     }
+
+    override fun moviesInListOrder(categoryId: String): Flow<List<Movie>> = dao.observeCategoryMoviesRaw(categoryId).map { l -> l.map { it.toDomain() } }
+    override fun seriesInListOrder(categoryId: String): Flow<List<Series>> = dao.observeCategorySeriesRaw(categoryId).map { l -> l.map { it.toDomain() } }
 
     override fun movies(categoryId: String?, limit: Int): Flow<List<Movie>> =
         (if (categoryId == null) dao.observeAllMovies(limit) else dao.observeCategoryMovies(categoryId, limit)).map { l -> l.map { it.toDomain() } }
@@ -173,7 +176,7 @@ class CatalogRepositoryImpl @Inject constructor(
         when (filter) {
             ChannelFilter.All -> dao.allChannelsList()
             ChannelFilter.Football -> dao.footballChannelsList()
-            is ChannelFilter.Category -> dao.categoryChannelsList(filter.id)
+            is ChannelFilter.Category -> if (filter.raw) dao.categoryChannelsRawList(filter.id) else dao.categoryChannelsList(filter.id)
             is ChannelFilter.Favorites -> dao.channelsByIds(filter.ids).sortedBy { filter.ids.indexOf(it.id) }
         }.map { it.toDomain() }
     }

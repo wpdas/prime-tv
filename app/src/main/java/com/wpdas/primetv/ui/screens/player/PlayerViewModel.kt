@@ -55,6 +55,8 @@ class PlayerViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val route = savedStateHandle.toRoute<PlayerRoute>()
+    /** Interface simples: grupos de canais só os da lista, e canais como vieram (sem juntar versões). */
+    private val simple = settings.settings.value.uiMode == com.wpdas.primetv.domain.model.UiMode.SIMPLE
     val player: ExoPlayer = playerFactory.create()
 
     private val _state = MutableStateFlow(PlayerUiState())
@@ -225,7 +227,7 @@ class PlayerViewModel @Inject constructor(
 
     private suspend fun loadChannel(id: String) {
         val channel = catalog.channelOnce(id) ?: return notFound()
-        val filter = channel.categoryId?.let { ChannelFilter.Category(it) } ?: ChannelFilter.All
+        val filter = channel.categoryId?.let { ChannelFilter.Category(it, raw = simple) } ?: ChannelFilter.All
         val zap = catalog.channelsOnce(filter)
         content = Content.Live(channel, zap, filter)
         _state.update { it.copy(zapRailId = channel.categoryId ?: PlayerUiState.ZAP_ALL) }
@@ -240,9 +242,8 @@ class PlayerViewModel @Inject constructor(
             val live = content as? Content.Live ?: return@launch
             val filter = when (id) {
                 PlayerUiState.ZAP_ALL -> ChannelFilter.All
-                PlayerUiState.ZAP_FOOTBALL -> ChannelFilter.Football
                 PlayerUiState.ZAP_FAVORITES -> ChannelFilter.Favorites(library.favoriteIds(MediaType.CHANNEL).first())
-                else -> ChannelFilter.Category(id)
+                else -> ChannelFilter.Category(id, raw = simple)
             }
             val list = runCatching { catalog.channelsOnce(filter) }.getOrDefault(emptyList())
             val now = runCatching { catalog.nowPlaying(filter, System.currentTimeMillis()) }.getOrDefault(emptyMap())
@@ -254,13 +255,13 @@ class PlayerViewModel @Inject constructor(
     private suspend fun buildZapRail(): List<com.wpdas.primetv.ui.components.RailCategory> {
         val categories = runCatching { catalog.categories(com.wpdas.primetv.domain.model.ContentSection.LIVE).first() }.getOrDefault(emptyList())
         val counts = runCatching { catalog.categoryCounts(com.wpdas.primetv.domain.model.ContentSection.LIVE).first() }.getOrDefault(emptyList())
-        val football = runCatching { catalog.footballChannelCount().first() }.getOrDefault(0)
         val favorites = runCatching { library.favoriteIds(MediaType.CHANNEL).first() }.getOrDefault(emptyList())
         val byId = counts.associate { it.categoryId to it.count }
         return buildList {
-            if (favorites.isNotEmpty()) add(com.wpdas.primetv.ui.components.RailCategory(PlayerUiState.ZAP_FAVORITES, "Favoritos", favorites.size))
-            if (football > 0) add(com.wpdas.primetv.ui.components.RailCategory(PlayerUiState.ZAP_FOOTBALL, "Futebol", football))
-            add(com.wpdas.primetv.ui.components.RailCategory(PlayerUiState.ZAP_ALL, "Todos", counts.sumOf { it.count }))
+            if (!simple) {
+                if (favorites.isNotEmpty()) add(com.wpdas.primetv.ui.components.RailCategory(PlayerUiState.ZAP_FAVORITES, "Favoritos", favorites.size))
+                add(com.wpdas.primetv.ui.components.RailCategory(PlayerUiState.ZAP_ALL, "Todos", counts.sumOf { it.count }))
+            }
             categories.forEach { add(com.wpdas.primetv.ui.components.RailCategory(it.id, it.name, byId[it.id] ?: 0)) }
         }
     }

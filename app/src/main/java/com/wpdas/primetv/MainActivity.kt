@@ -57,6 +57,8 @@ class MainActivity : ComponentActivity() {
                                     // Só depois da vinheta, para o som dela não se misturar ao do canal.
                                     resumeChannelId = s.resumeChannelId?.takeIf { freshLaunch && !mainViewModel.showIntro && !mainViewModel.resumeConsumed },
                                     onResumeConsumed = { mainViewModel.resumeConsumed = true },
+                                    uiMode = prefs.uiMode,
+                                    uiModeChosen = prefs.uiModeChosen,
                                 )
                             }
                             // Vinheta só na abertura a frio do processo; a tela de baixo carrega enquanto ela roda.
