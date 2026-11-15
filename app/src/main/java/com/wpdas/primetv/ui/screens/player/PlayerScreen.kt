@@ -268,6 +268,8 @@ fun PlayerScreen(
  */
 private fun handleKey(event: androidx.compose.ui.input.key.KeyEvent, state: PlayerUiState, vm: PlayerViewModel): Boolean {
     val key = event.key
+    // Volume e mudo são do Android (barra de volume do sistema): o player não reage nem mostra controles.
+    if (key == Key.VolumeUp || key == Key.VolumeDown || key == Key.VolumeMute) return false
     // Voltar com um painel aberto fecha o painel de uma vez (consome down e up, para o
     // sistema não tratar o segundo evento como outro "voltar").
     if (key == Key.Back || key == Key.Escape) {
