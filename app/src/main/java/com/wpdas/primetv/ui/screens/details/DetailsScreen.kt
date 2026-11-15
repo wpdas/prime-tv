@@ -76,10 +76,6 @@ fun DetailsScreen(
     }
 
     val item = state.display
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val trailerIntent = androidx.compose.runtime.remember(state.tmdb?.trailerYoutubeKey) {
-        state.tmdb?.trailerYoutubeKey?.let { key -> youtubeIntent(context, key) }
-    }
     if (!state.loaded) {
         Box(Modifier.fillMaxSize().background(colors.background), contentAlignment = Alignment.Center) { LoadingSpinner(size = 32.dp) }
         return
@@ -152,16 +148,6 @@ fun DetailsScreen(
                     textStyle = typography.listTitle,
                 )
             }
-            if (trailerIntent != null) {
-                PrimeButton(
-                    text = t("details.watch_trailer"),
-                    onClick = { runCatching { context.startActivity(trailerIntent) } },
-                    style = PrimeButtonStyle.Outline,
-                    icon = Icons.Rounded.PlayArrow,
-                    height = 44.dp,
-                    horizontalPadding = 16.dp,
-                )
-            }
             state.tmdb?.let { Text(t("details.tmdb_credit"), style = typography.captionSmall, color = colors.textSecondary) }
         }
 
@@ -184,17 +170,6 @@ fun DetailsScreen(
         }
     }
     }
-}
-
-/** Abre o trailer no app do YouTube (celular ou TV). null quando nenhum está instalado. */
-private fun youtubeIntent(context: android.content.Context, key: String): android.content.Intent? {
-    val pm = context.packageManager
-    val candidates = listOf(
-        android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("vnd.youtube:$key")),
-        android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://www.youtube.com/watch?v=$key")).setPackage("com.google.android.youtube.tv"),
-        android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://www.youtube.com/watch?v=$key")).setPackage("com.google.android.youtube"),
-    )
-    return candidates.firstOrNull { it.resolveActivity(pm) != null }
 }
 
 @Composable
