@@ -4,6 +4,8 @@ Formato: uma seção por versão, com **Novidades** e **Correções**. A seção
 
 ## [Não lançado]
 
+## [0.4.0] - 2026-11-15
+
 ### Novidades
 - Interface Simples ou Completa: depois de carregar a lista o app pergunta uma vez como você quer usá-lo, e dá para trocar em Configurações › Interface. A Completa é a de sempre. A Simples tem só Ao vivo, Filmes e Séries, com as categorias, os canais e a ordem exatamente como vêm na lista (sem juntar as versões 4K/FHD/HD), mantendo as capas dos filmes e séries
 - Ao vivo: mover o seletor não abre mais o canal na prévia. OK abre a prévia ao lado (ela continua tocando enquanto você navega) e OK de novo no mesmo canal abre em tela cheia
