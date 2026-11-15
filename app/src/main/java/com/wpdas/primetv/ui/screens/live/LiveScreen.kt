@@ -78,11 +78,8 @@ fun LiveScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val colors = PrimeTheme.colors
     val firstChannelFocus = remember { FocusRequester() }
-    val previewHolder = rememberPreviewPlayerHolder(viewModel.playerFactory)
-    // Abrir em tela cheia: solta a prévia já, antes de o player principal nascer.
+    // Abrir em tela cheia: o player da prévia é o mesmo; se o canal já está nela, continua sem recarregar.
     val play: (Channel) -> Unit = { channel ->
-        previewHolder.release()
-        viewModel.stopPreview()
         viewModel.markReturnFocus()
         onPlay(channel)
     }
@@ -203,7 +200,7 @@ fun LiveScreen(
                 state = state,
                 onPlay = play,
                 onToggleFavorite = viewModel::toggleFavorite,
-                previewHolder = previewHolder,
+                sharedPlayer = viewModel.sharedPlayer,
                 modifier = Modifier.width(380.dp).fillMaxHeight(),
             )
         }
@@ -233,7 +230,7 @@ private fun PreviewPanel(
     state: LiveUiState,
     onPlay: (Channel) -> Unit,
     onToggleFavorite: (Channel) -> Unit,
-    previewHolder: PreviewPlayerHolder,
+    sharedPlayer: com.wpdas.primetv.data.player.SharedLivePlayer,
     modifier: Modifier = Modifier,
 ) {
     val colors = PrimeTheme.colors
@@ -248,7 +245,7 @@ private fun PreviewPanel(
                 Box(Modifier.align(Alignment.Center).size(160.dp, 90.dp).clip(PrimeTheme.shapes.card)) {
                     Artwork(boxChannel.logoUrl, colors.surface, Modifier.fillMaxSize(), boxChannel.name, contentScale = androidx.compose.ui.layout.ContentScale.Fit)
                 }
-                LivePreview(url = state.previewUrl, holder = previewHolder, modifier = Modifier.fillMaxSize(), withSound = state.previewSound)
+                LivePreview(url = state.previewUrl, channelId = state.previewChannel?.id, shared = sharedPlayer, modifier = Modifier.fillMaxSize(), withSound = state.previewSound)
                 if (state.previewChannel != null) LiveBadge(t("common.live"), Modifier.align(Alignment.TopStart).padding(12.dp))
                 else Text(
                     t("live.preview_hint"),

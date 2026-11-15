@@ -52,12 +52,19 @@ class PlayerViewModel @Inject constructor(
     @com.wpdas.primetv.core.di.ApplicationScope private val appScope: kotlinx.coroutines.CoroutineScope,
     playerFactory: PlayerFactory,
     settings: com.wpdas.primetv.domain.repository.SettingsRepository,
+    private val sharedLive: com.wpdas.primetv.data.player.SharedLivePlayer,
 ) : ViewModel() {
 
     private val route = savedStateHandle.toRoute<PlayerRoute>()
     /** Interface simples: grupos de canais só os da lista, e canais como vieram (sem juntar versões). */
     private val simple = settings.settings.value.uiMode == com.wpdas.primetv.domain.model.UiMode.SIMPLE
-    val player: ExoPlayer = playerFactory.create()
+    /** Canal ao vivo (ids de canal começam com xl-/ml-): usa o player único do ao vivo, o mesmo da prévia. */
+    private val liveRoute = route.itemId.startsWith("xl-") || route.itemId.startsWith("ml-")
+    val player: ExoPlayer =
+        if (liveRoute) sharedLive.claim(com.wpdas.primetv.data.player.SharedLivePlayer.OWNER_FULLSCREEN).also { it.volume = 1f }
+        else playerFactory.create()
+    /** Saindo de propósito (Voltar): o ON_STOP que vem junto não deve pausar o ao vivo, que segue na prévia. */
+    private var leaving = false
 
     private val _state = MutableStateFlow(PlayerUiState())
     val state: StateFlow<PlayerUiState> = _state.asStateFlow()
@@ -511,12 +518,33 @@ class PlayerViewModel @Inject constructor(
         wasReady = false
         seekPending = false
         stalls.reset()
+        val liveChannel = (content as? Content.Live)?.channel
+        if (liveRoute && liveChannel != null && sharedLive.isActive(url)) {
+            // O canal já está tocando na prévia: continua no mesmo player, sem reconectar nem recarregar.
+            player.playWhenReady = true
+            sharedLive.markCurrent(url, liveChannel.id)
+            _state.update { it.copy(errorKey = null, errorDetail = null, controlsVisible = true, bitrateBps = null, qualityOptions = emptyList()) }
+            syncFromPlayer()
+            refreshQualityOptions()
+            scheduleHide()
+            return
+        }
+        if (liveRoute && liveChannel != null) sharedLive.markCurrent(url, liveChannel.id)
         player.setMediaItem(MediaItem.fromUri(url), positionMs.coerceAtLeast(0))
         player.prepare()
         player.playWhenReady = true
         _state.update { it.copy(isBuffering = true, errorKey = null, errorDetail = null, controlsVisible = true, bitrateBps = null, qualityOptions = emptyList(), videoWidth = 0, videoHeight = 0) }
         refreshQualityOptions()
         scheduleHide()
+    }
+
+    /** Player recebido já tocando: aplica o estado dele como se os eventos tivessem chegado agora. */
+    private fun syncFromPlayer() {
+        listener.onPlaybackStateChanged(player.playbackState)
+        listener.onIsPlayingChanged(player.isPlaying)
+        updateTracks(player.currentTracks)
+        val size = player.videoSize
+        _state.update { it.copy(videoWidth = size.width, videoHeight = size.height) }
     }
 
     private fun notFound() {
@@ -753,6 +781,7 @@ class PlayerViewModel @Inject constructor(
     // ------------------------------------------------------------------ ciclo de vida
 
     fun onBackground() {
+        if (leaving && liveRoute) return
         wasPlayingBeforeBackground = player.isPlaying
         saveProgress()
         player.pause()
@@ -767,13 +796,16 @@ class PlayerViewModel @Inject constructor(
      * não reabre nele. Fechar o app no meio da transmissão mantém a marca (ver Configurações › Player).
      */
     fun onLeave() {
+        leaving = true
         if (content is Content.Live) appScope.launch { liveState.saveWatching(null) }
     }
 
     override fun onCleared() {
         saveProgress()
         player.removeListener(listener)
-        player.release()
+        // Ao vivo: o player é da prévia também; só solta (ele é liberado se ninguém mais usar).
+        if (liveRoute) sharedLive.unclaim(com.wpdas.primetv.data.player.SharedLivePlayer.OWNER_FULLSCREEN)
+        else player.release()
         super.onCleared()
     }
 

@@ -75,6 +75,8 @@ class LiveViewModel @Inject constructor(
     private val liveState: com.wpdas.primetv.data.local.prefs.LiveStateStore,
     private val home: com.wpdas.primetv.domain.repository.HomeRepository,
     val playerFactory: PlayerFactory,
+    /** Player único do ao vivo: prévia e tela cheia. */
+    val sharedPlayer: com.wpdas.primetv.data.player.SharedLivePlayer,
 ) : ViewModel() {
 
     /** Posição lembrada da última visita (categoria + canal), aplicada quando a lista carregar. */
@@ -240,16 +242,17 @@ class LiveViewModel @Inject constructor(
         if (!returnFromPlayer) return
         returnFromPlayer = false
         viewModelScope.launch {
+            // A prévia continua no canal que estava em tela cheia (o mesmo player, sem recarregar).
+            val playingId = sharedPlayer.currentChannelId
+            val playingUrl = sharedPlayer.currentUrl
+            if (playingId != null && playingUrl != null) {
+                catalog.channelOnce(playingId)?.let { ch -> _state.update { it.copy(previewChannel = ch, previewUrl = playingUrl) } }
+            }
             val last = library.recentChannels(1).firstOrNull()?.firstOrNull() ?: return@launch
             val inList = _state.value.channels?.any { it.id == last.id } == true
             if (!inList) selectRail(if (simple) last.categoryId ?: RAIL_ALL else RAIL_ALL)
             _state.update { it.copy(jumpToChannelId = last.id) }
         }
-    }
-
-    /** Libera a prévia ao sair da tela para o player principal (servidores com 1 conexão). */
-    fun stopPreview() {
-        _state.update { it.copy(previewUrl = null, previewChannel = null) }
     }
 
     private fun filterOf(id: String, favorites: List<String>): ChannelFilter = when (id) {

@@ -7,6 +7,7 @@ Formato: uma seção por versão, com **Novidades** e **Correções**. A seção
 ### Novidades
 - Interface Simples ou Completa: depois de carregar a lista o app pergunta uma vez como você quer usá-lo, e dá para trocar em Configurações › Interface. A Completa é a de sempre. A Simples tem só Ao vivo, Filmes e Séries, com as categorias, os canais e a ordem exatamente como vêm na lista (sem juntar as versões 4K/FHD/HD), mantendo as capas dos filmes e séries
 - Ao vivo: mover o seletor não abre mais o canal na prévia. OK abre a prévia ao lado (ela continua tocando enquanto você navega) e OK de novo no mesmo canal abre em tela cheia
+- Ao vivo com um player só: a prévia e a tela cheia usam o mesmo vídeo. Abrir em tela cheia o canal que está na prévia é instantâneo (sem carregar de novo nem abrir outra conexão com o servidor) e, ao voltar, a prévia continua no canal que estava em tela cheia
 
 ### Correções
 - Teclas de volume do controle voltam a ser só do Android: no player elas não mostram mais os controles do vídeo
